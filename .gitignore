@@ -1,0 +1,10 @@
+target
+build
+.gradle
+
+.idea
+
+*.csv
+*.mf4
+*.mdf
+*.dat

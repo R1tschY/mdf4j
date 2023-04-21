@@ -4,7 +4,7 @@ plugins {
     id "io.freefair.lombok" version "8.0.1"
 }
 
-group 'de.richardliebscher'
+group 'de.richardliebscher.mdf4j'
 version '0.1.0-SNAPSHOT'
 
 java {
@@ -28,7 +28,7 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            from(components.java)
+            from components.java
         }
     }
 }

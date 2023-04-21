@@ -6,10 +6,7 @@ import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.de.*;
-import de.richardliebscher.mdf4.extract.read.DataRead;
-import de.richardliebscher.mdf4.extract.read.DataSource;
-import de.richardliebscher.mdf4.extract.read.NoValueRead;
-import de.richardliebscher.mdf4.extract.read.ValueRead;
+import de.richardliebscher.mdf4.extract.read.*;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -122,7 +119,29 @@ public class RecordReader<R> {
         }
 
         // TODO: Conversion
-
+        final var channelConversion = channel.getConversionRule().resolve(ChannelConversion.META, input);
+        if (channelConversion.isPresent()) {
+            final var cc = channelConversion.get();
+            switch (cc.getType()) {
+                case IDENTITY:
+                    break;
+                case LINEAR:
+                    valueRead = new LinearConversion(cc, valueRead);
+                    break;
+                case RATIONAL:
+                case ALGEBRAIC:
+                case INTERPOLATED_VALUE_TABLE:
+                case VALUE_VALUE_TABLE:
+                case VALUE_RANGE_VALUE_TABLE:
+                case VALUE_TEXT_TABLE:
+                case VALUE_RANGE_TEXT_TABLE:
+                case TEXT_VALUE_TABLE:
+                case TEXT_TEXT_TABLE:
+                case BITFIELD_TEXT_TABLE:
+                default:
+                    throw new NotImplementedFeatureException("Channel conversion not implemented: " + cc.getType());
+            }
+        }
 
         valueRead = new SeekingReader(valueRead, channel.getByteOffset());
 
@@ -450,4 +469,5 @@ public class RecordReader<R> {
             return inner.read(input, visitor);
         }
     }
+
 }

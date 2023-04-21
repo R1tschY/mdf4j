@@ -1,8 +1,7 @@
 package de.richardliebscher.mdf4.blocks;
 
-import lombok.*;
-
-import java.nio.charset.StandardCharsets;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 @AllArgsConstructor(staticName = "of")
@@ -16,6 +15,7 @@ public class BlockId {
     public static final BlockId DT = BlockId.of('#', '#', 'D', 'T');
     public static final BlockId SI = BlockId.of('#', '#', 'S', 'I');
     public static final BlockId DL = BlockId.of('#', '#', 'D', 'L');
+    public static final BlockId CC = BlockId.of('#', '#', 'C', 'C');
 
     int id;
 

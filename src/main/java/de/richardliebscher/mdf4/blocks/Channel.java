@@ -17,7 +17,7 @@ public class Channel {
     long component; // CA,CN
     Link<Text> channelName;
     long channelSource; // SI
-    long conversionRule; // CC
+    Link<ChannelConversion> conversionRule;
     long signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
     Link<TextBased> physicalUnit;
     Link<TextBased> comment;
@@ -64,7 +64,7 @@ public class Channel {
 
         final var links = blockHeader.getLinks();
         return new Channel(
-                Link.of(links[0]), links[1], Link.of(links[2]), links[3], links[4], links[5], Link.of(links[6]), Link.of(links[7]),
+                Link.of(links[0]), links[1], Link.of(links[2]), links[3], Link.of(links[4]), links[5], Link.of(links[6]), Link.of(links[7]),
                 type, syncType, dataType, bitOffset, byteOffset, bitCount, flags,
                 invalidationBit, precision, attachmentCount, valueRangeMin, valueRangeMax, limitMin, limitMax,
                 limitExtendedMin, limitExtendedMax);

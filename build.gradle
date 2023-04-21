@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.apache.spark:spark-core_2.13:3.3.2'
+    compileOnly 'org.apache.spark:spark-core_2.13:3.4.0'
     compileOnly 'org.apache.spark:spark-sql_2.13:3.3.2'
     //testImplementation 'org.apache.spark:spark-hive:3.3.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'

@@ -27,7 +27,9 @@ publishing {
         }
     }
     publications {
+        //noinspection GroovyAssignabilityCheck
         mavenJava(MavenPublication) {
+            //noinspection GroovyAssignabilityCheck
             from components.java
         }
     }

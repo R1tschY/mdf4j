@@ -7,7 +7,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -43,7 +42,6 @@ public class Header {
     /**
      * Daylight saving time (DST) offset in minutes
      */
-    @Nullable
     ZoneOffset dstOffset;
 
     byte timeClass;

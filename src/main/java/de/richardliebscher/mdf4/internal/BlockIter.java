@@ -1,13 +1,9 @@
 package de.richardliebscher.mdf4.internal;
 
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Spliterator;
 
@@ -17,7 +13,6 @@ public class BlockIter<T> implements Iterable<T> {
     private final ByteInput input;
     private final FromBytesInput<T> parse;
 
-    @NotNull
     @Override
     public Iterator<T> iterator() {
         throw new RuntimeException();

@@ -8,7 +8,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 
 import static de.richardliebscher.mdf4.blocks.ChannelConversionFlags.PHYSICAL_VALUE_RANGE_VALID;
@@ -24,9 +23,9 @@ public class ChannelConversion {
     // TODO: List<Link<Text | ChannelConversion>> ref
 
     ChannelConversionType type;
-    @Nullable Integer precision;
+    Integer precision;
     ChannelConversionFlags flags;
-    @Nullable Pair<Double, Double> physicalRange;
+    Pair<Double, Double> physicalRange;
     long[] vals;
 
     public static ChannelConversion parse(ByteInput input) throws IOException {

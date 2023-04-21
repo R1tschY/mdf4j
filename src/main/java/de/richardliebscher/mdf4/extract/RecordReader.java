@@ -12,7 +12,6 @@ import de.richardliebscher.mdf4.io.ByteBufferInput;
 import de.richardliebscher.mdf4.io.ByteInput;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -152,7 +151,6 @@ public class RecordReader<R> {
         return valueRead;
     }
 
-    @NotNull
     private static ValueRead createInvalidationReader(
             DataGroup dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead, ByteInput input) throws FormatException {
         final var groupBits = group.getInvalidationBytes() * 8;
@@ -209,7 +207,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createUintLeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 8:
@@ -245,7 +242,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createUintBeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 8:
@@ -281,7 +277,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createIntLeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 8:
@@ -317,8 +312,6 @@ public class RecordReader<R> {
         }
     }
 
-
-    @NotNull
     private static ValueRead createIntBeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 8:
@@ -354,7 +347,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createFloatLeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 32:
@@ -377,7 +369,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createFloatBeRead(Channel channel) throws NotImplementedFeatureException {
         switch (channel.getBitCount()) {
             case 32:
@@ -399,7 +390,6 @@ public class RecordReader<R> {
         }
     }
 
-    @NotNull
     private static ValueRead createVirtualMasterReader(Channel channel) throws FormatException {
         final ValueRead valueRead;
         if (channel.getBitCount() != 0) {

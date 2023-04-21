@@ -1,6 +1,5 @@
 package de.richardliebscher.mdf4.extract.read;
 
-import io.netty.buffer.ByteBuf;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;

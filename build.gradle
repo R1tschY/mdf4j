@@ -1,11 +1,15 @@
 plugins {
-    id 'java'
+    id 'java-library'
     id 'maven-publish'
     id "io.freefair.lombok" version "8.0.1"
 }
 
 group 'de.richardliebscher'
-version '0.1-SNAPSHOT'
+version '0.1.0-SNAPSHOT'
+
+java {
+    withSourcesJar()
+}
 
 repositories {
     mavenCentral()
@@ -20,6 +24,11 @@ publishing {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
             }
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            from(components.java)
         }
     }
 }

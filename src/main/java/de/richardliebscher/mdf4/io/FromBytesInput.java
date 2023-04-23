@@ -1,6 +1,9 @@
-package de.richardliebscher.mdf4.io;
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
 
-import de.richardliebscher.mdf4.exceptions.ParseException;
+package de.richardliebscher.mdf4.io;
 
 import java.io.IOException;
 import java.util.Optional;

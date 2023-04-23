@@ -1,13 +1,19 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.InternalReader;
-import de.richardliebscher.mdf4.blocks.*;
-import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
+import de.richardliebscher.mdf4.blocks.Data;
+import de.richardliebscher.mdf4.blocks.DataGroup;
+import de.richardliebscher.mdf4.blocks.DataList;
+import de.richardliebscher.mdf4.blocks.DataRoot;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 
 @RequiredArgsConstructor

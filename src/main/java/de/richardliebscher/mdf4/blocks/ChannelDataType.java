@@ -1,7 +1,11 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
-import lombok.RequiredArgsConstructor;
 
 public enum ChannelDataType {
     UINT_LE, UINT_BE,

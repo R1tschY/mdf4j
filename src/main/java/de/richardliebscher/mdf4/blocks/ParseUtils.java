@@ -1,13 +1,16 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Optional;
 
 class ParseUtils {
     static Instant toInstant(long nanoSeconds) {

@@ -1,9 +1,16 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.Value;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

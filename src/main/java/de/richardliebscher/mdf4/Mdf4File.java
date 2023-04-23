@@ -1,3 +1,8 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.Header;
@@ -5,8 +10,8 @@ import de.richardliebscher.mdf4.blocks.Id;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
-import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.io.ByteInput;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;

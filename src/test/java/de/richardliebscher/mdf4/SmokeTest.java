@@ -1,9 +1,16 @@
+/**
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
-import de.richardliebscher.mdf4.extract.de.*;
+import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
+import de.richardliebscher.mdf4.extract.de.RecordAccess;
+import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import org.junit.jupiter.api.Test;
 

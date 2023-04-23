@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import lombok.AccessLevel;
@@ -16,9 +17,9 @@ import java.io.IOException;
 @Value
 public class SourceInformation {
 
-    long sourceName; // TX
-    long sourcePath; // TX
-    long commentOrMetadata; // MD
+    Link<Text> sourceName;
+    Link<Text> sourcePath;
+    Link<TextBased> commentOrMetadata;
     byte type;
     byte busType;
     byte flags;
@@ -29,7 +30,7 @@ public class SourceInformation {
         final var busType = input.readU8();
         final var flags = input.readU8();
         final var links = blockHeader.getLinks();
-        return new SourceInformation(links[0], links[1], links[2], type, busType, flags);
+        return new SourceInformation(Link.of(links[0]), Link.of(links[1]), Link.of(links[2]), type, busType, flags);
     }
 
     public static final Meta META = new Meta();

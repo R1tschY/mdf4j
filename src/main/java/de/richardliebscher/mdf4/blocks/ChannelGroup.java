@@ -22,9 +22,9 @@ public class ChannelGroup {
     Link<ChannelGroup> nextChannelGroup;
     Link<Channel> firstChannel;
     Link<Text> acquisitionName;
-    long acquisitionSource; // SI
+    Link<SourceInformation> acquisitionSource;
     long firstSampleReduction; // SR
-    long comment; // TX,MD
+    Link<TextBased> comment;
 
     long recordId;
     long cycleCount;
@@ -43,9 +43,9 @@ public class ChannelGroup {
         final Link<ChannelGroup> nextChannelGroup = Link.of(links[0]);
         final Link<Channel> firstChannel = Link.of(links[1]);
         final Link<Text> acquisitionName = Link.of(links[2]);
-        final var acquisitionSource = links[3];
+        final Link<SourceInformation> acquisitionSource = Link.of(links[3]);
         final var firstSampleReduction = links[4];
-        final var comment = links[5];
+        final Link<TextBased> comment = Link.of(links[5]);
 
         final var recordId = input.readI64LE();
         final var cycleCount = input.readI64LE();

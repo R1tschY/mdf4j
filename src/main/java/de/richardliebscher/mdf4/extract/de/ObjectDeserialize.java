@@ -13,22 +13,22 @@ public class ObjectDeserialize implements Deserialize<Object> {
         return deserializer.deserialize_value(new Visitor<>() {
             @Override
             public Object visitU8(byte value) {
-                return value;
+                return Byte.toUnsignedInt(value);
             }
 
             @Override
             public Object visitU16(short value) {
-                return value;
+                return Short.toUnsignedInt(value);
             }
 
             @Override
             public Object visitU32(int value) {
-                return value;
+                return Integer.toUnsignedLong(value);
             }
 
             @Override
             public Object visitU64(long value) {
-                return value;
+                return Long.toUnsignedString(value);
             }
 
             @Override

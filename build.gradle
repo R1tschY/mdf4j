@@ -1,7 +1,11 @@
+// SPDX-License-Identifier: CC0-1.0
+
 plugins {
     id 'java-library'
+    id "signing"
     id 'maven-publish'
     id "io.freefair.lombok" version "8.0.1"
+    id "io.github.gradle-nexus.publish-plugin" version "1.0.0"
 }
 
 group 'de.richardliebscher.mdf4j'
@@ -9,30 +13,15 @@ version '0.1.0-SNAPSHOT'
 
 java {
     withSourcesJar()
+    withJavadocJar()
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
 }
 
 repositories {
     mavenCentral()
-}
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/R1tschY/mdf4j")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-    publications {
-        //noinspection GroovyAssignabilityCheck
-        mavenJava(MavenPublication) {
-            //noinspection GroovyAssignabilityCheck
-            from components.java
-        }
-    }
 }
 
 dependencies {
@@ -42,4 +31,109 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+//uploadArchives {
+//    repositories {
+//        mavenDeployer {
+//            beforeDeployment { deployment -> signing.signPom(deployment) }
+//
+//            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+//                authentication(userName: System.getenv("MAVEN_USERNAME"), password: System.getenv("MAVEN_PASSWORD"))
+//            }
+//
+//            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+//                authentication(userName: System.getenv("MAVEN_USERNAME"), password: System.getenv("MAVEN_PASSWORD"))
+//            }
+//
+//            pom.project {
+//                inceptionYear = '2023'
+//                name = project.name
+//                packaging = "jar"
+//                description = project.description
+//
+//                url = "https://github.com/R1tschY/mdf4j"
+//
+//                scm {
+//                    connection = "scm:git:https://github.com/R1tschY/mdf4j.git"
+//                    url = "https://github.com/R1tschY/mdf4j"
+//                    issueManagement {
+//                        url = "https://github.com/R1tschY/mdf4j/issues"
+//                    }
+//                }
+//
+//                licenses {
+//                    license {
+//                        name = "Apache-2.0"
+//                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+//                    }
+//                }
+//
+//                developers {
+//                    developer {
+//                        id = "richardliebscher"
+//                        name = "Richard Liebscher"
+//                        email = "r1tschy@posteo.de"
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                inceptionYear = '2023'
+                name = project.name
+                packaging = "jar"
+                description = "MDF4 reader"
+
+                url = "https://github.com/R1tschY/mdf4j"
+
+                scm {
+                    connection = "scm:git:https://github.com/R1tschY/mdf4j.git"
+                    url = "https://github.com/R1tschY/mdf4j"
+                    issueManagement {
+                        url = "https://github.com/R1tschY/mdf4j/issues"
+                    }
+                }
+
+                licenses {
+                    license {
+                        name = "Apache-2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "richardliebscher"
+                        name = "Richard Liebscher"
+                        email = "r1tschy@posteo.de"
+                    }
+                }
+            }
+        }
+    }
+}
+
+nexusPublishing {
+    repositories {
+        ossrh {
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+            username = System.getenv("OSSRH_USERNAME")
+            password = System.getenv("OSSRH_TOKEN")
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(System.getenv("SIGNING_KEY"), System.getenv("SIGNING_PASSWORD"))
+
+    sign(publishing.publications.mavenJava)
 }

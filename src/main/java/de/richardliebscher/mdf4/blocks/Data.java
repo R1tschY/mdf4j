@@ -9,13 +9,15 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.Value;
 
 import java.io.IOException;
 
 @Value
-public class Data implements DataRoot, DataBlock {
+public class Data implements DataRoot, UncompressedData {
 
+    @ToString.Exclude
     byte[] data;
 
     public static Data parse(ByteInput input) throws IOException {

@@ -108,13 +108,13 @@ public class RecordReader<R> {
         ValueRead valueRead;
         switch (channel.getType()) {
             case FIXED_LENGTH_DATA_CHANNEL:
+            case MASTER_CHANNEL:
                 valueRead = createFixedLengthDataReader(channel);
                 break;
             case VIRTUAL_MASTER_CHANNEL:
                 valueRead = createVirtualMasterReader(channel);
                 break;
             case VARIABLE_LENGTH_DATA_CHANNEL:
-            case MASTER_CHANNEL:
             case SYNCHRONIZATION_CHANNEL:
             case MAXIMUM_LENGTH_CHANNEL:
             case VIRTUAL_DATA_CHANNEL:

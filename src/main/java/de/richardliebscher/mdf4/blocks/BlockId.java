@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 @AllArgsConstructor(staticName = "of")
-public class BlockId {
+public final class BlockId {
     public static final BlockId HD = BlockId.of('#', '#', 'H', 'D');
     public static final BlockId TX = BlockId.of('#', '#', 'T', 'X');
     public static final BlockId MD = BlockId.of('#', '#', 'M', 'D');
@@ -21,6 +21,8 @@ public class BlockId {
     public static final BlockId SI = BlockId.of('#', '#', 'S', 'I');
     public static final BlockId DL = BlockId.of('#', '#', 'D', 'L');
     public static final BlockId CC = BlockId.of('#', '#', 'C', 'C');
+    public static final BlockId HL = BlockId.of('#', '#', 'H', 'L');
+    public static final BlockId DZ = BlockId.of('#', '#', 'D', 'Z');
 
     int id;
 

@@ -19,6 +19,10 @@ public interface DataRoot {
         final var blockId = ParseUtils.peekBlockId(input);
         if (blockId.equals(BlockId.DL)) {
             return DataList.parse(input);
+        } else if (blockId.equals(BlockId.DZ)) {
+            return DataZipped.parse(input);
+        } else if (blockId.equals(BlockId.HL)) {
+            return HeaderList.parse(input);
         } else if (blockId.equals(BlockId.DT)) {
             return Data.parse(input);
         } else {

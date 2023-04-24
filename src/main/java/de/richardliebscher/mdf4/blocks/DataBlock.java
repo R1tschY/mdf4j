@@ -19,12 +19,15 @@ public interface DataBlock {
         final var blockId = ParseUtils.peekBlockId(input);
         if (blockId.equals(BlockId.DT)) {
             return Data.parse(input);
+        } else if (blockId.equals(BlockId.DZ)) {
+            return DataZipped.parse(input);
         } else {
             throw new NotImplementedFeatureException("Data block not implemented: " + blockId);
         }
     }
 
     Meta META = new Meta();
+
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     class Meta implements FromBytesInput<DataBlock> {
         @Override

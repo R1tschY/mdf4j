@@ -11,6 +11,7 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.Value;
 
 import java.io.IOException;
@@ -22,6 +23,7 @@ import static de.richardliebscher.mdf4.internal.Arrays.newArray;
 public class DataList implements DataRoot {
 
     Link<DataList> nextDataList;
+    @ToString.Exclude
     List<Link<DataBlock>> data; // DT,SD,RD,DZ
 
     DataListFlags flags;

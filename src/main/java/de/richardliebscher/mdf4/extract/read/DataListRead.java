@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
+import de.richardliebscher.mdf4.blocks.DataZipped;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 
@@ -48,11 +49,20 @@ public class DataListRead implements DataRead {
                 }
             }
 
-            // TODO: fix cast
-            final var dataBlock = (Data) dataBlocks.next().resolveNonCached(DataBlock.META, input)
+            final var dataBlock = dataBlocks.next().resolveNonCached(DataBlock.META, input)
                     .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-
-            currentBlock = ByteBuffer.wrap(dataBlock.getData());
+            if (dataBlock instanceof Data) {
+                currentBlock = ByteBuffer.wrap(((Data) dataBlock).getData());
+            } else if (dataBlock instanceof DataZipped) {
+                final var uncompressedDataBlock = ((DataZipped) dataBlock).getUncompressed();
+                if (uncompressedDataBlock instanceof Data) {
+                    currentBlock = ByteBuffer.wrap(((Data) uncompressedDataBlock).getData());
+                } else {
+                    throw new FormatException("Unexpected data block in zipped data: " + uncompressedDataBlock);
+                }
+            } else {
+                throw new FormatException("Unexpected data block in data list: " + dataBlock);
+            }
         }
 
         int bytesToRead = Math.min(currentBlock.remaining(), dst.remaining());
@@ -67,7 +77,7 @@ public class DataListRead implements DataRead {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         closed = true;
     }
 }

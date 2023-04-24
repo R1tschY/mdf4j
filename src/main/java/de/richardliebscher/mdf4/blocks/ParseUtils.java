@@ -30,6 +30,10 @@ class ParseUtils {
         final var backup = input.pos();
         final var id = input.readI32LE();
         input.seek(backup);
+        if ((id & 0xFFFF) != ((int)'#' | ((int)'#' << 8))) {
+            throw new FormatException(
+                    "Not a block: prefix: " + (id & 0xFF) + "," + ((id >> 8) & 0xFF));
+        }
         return BlockId.of(id);
     }
 

@@ -24,9 +24,9 @@ public class Id {
     short customUnfinalizedFlags;
 
     public static Id parse(ByteInput input) throws IOException {
-        final var fileId = input.readString(8, StandardCharsets.US_ASCII);
+        final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
         final var version = MdfFormatVersion.parse(input);
-        final var program = input.readString(8, StandardCharsets.US_ASCII);
+        final var program = input.readString(8, StandardCharsets.ISO_8859_1);
         final var defaultByteOrder = input.readI16LE();// for 3.x
         final var defaultFloatingPointFormat = input.readI16LE();// for 3.x
         final var versionNumber = input.readI16LE();

@@ -22,7 +22,7 @@ public class MdfFormatVersion {
     int minor;
 
     public static MdfFormatVersion parse(ByteInput input) throws IOException {
-        final var formatId = input.readString(8, StandardCharsets.US_ASCII);
+        final var formatId = input.readString(8, StandardCharsets.ISO_8859_1);
         final var matcher = VERSION_RE.matcher(formatId);
         if (matcher.find()) {
             return new MdfFormatVersion(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)));

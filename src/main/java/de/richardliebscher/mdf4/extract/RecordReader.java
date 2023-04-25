@@ -122,7 +122,6 @@ public class RecordReader<R> {
                 throw new NotImplementedFeatureException("Channel type not implemented: " + channel.getType());
         }
 
-        // TODO: Conversion
         final var channelConversion = channel.getConversionRule().resolve(ChannelConversion.META, input);
         if (channelConversion.isPresent()) {
             final var cc = channelConversion.get();
@@ -425,7 +424,7 @@ public class RecordReader<R> {
         // select
         final var group = streamBlockSeq(reader.getHeader().iterDataGroups(input))
                 .flatMap(dg -> streamBlockSeq(dg.iterChannelGroups(input)).map(cg -> Pair.of(dg, cg)))
-                .filter(g -> selector.selectGroup(g.getRight()))
+                .filter(g -> selector.selectGroup(g.getLeft(), g.getRight()))
                 .findFirst()
                 .orElseThrow(() -> new ChannelGroupNotFoundException("No matching channel group found"));
 
@@ -445,8 +444,14 @@ public class RecordReader<R> {
         // build extractor
         final var channelReaders = new ArrayList<ValueRead>();
         for (var ch : asIterable(() -> channelGroup.iterChannels(input))) {
-            if (selector.selectChannel(channelGroup, ch)) {
-                channelReaders.add(createChannelReader(dataGroup, channelGroup, ch, input));
+            try {
+                final var channelReader = createChannelReader(dataGroup, channelGroup, ch, input);
+                if (selector.selectChannel(dataGroup, channelGroup, ch)) {
+                    channelReaders.add(channelReader);
+                }
+            } catch (NotImplementedFeatureException exception) {
+                log.warning("Ignoring channel '" + ch.getChannelName().resolve(Text.META, input) + "': "
+                        + exception.getMessage());
             }
         }
 

@@ -6,7 +6,6 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import lombok.AccessLevel;
@@ -30,7 +29,7 @@ public class ChannelConversion {
     ChannelConversionType type;
     Integer precision;
     ChannelConversionFlags flags;
-    Pair<Double, Double> physicalRange;
+    Range physicalRange;
     long[] vals;
 
     public static ChannelConversion parse(ByteInput input) throws IOException {
@@ -51,7 +50,7 @@ public class ChannelConversion {
 
         final var precision = flags.test(PRECISION_VALID) ? maybePrecision : null;
         final var physicalRange = flags.test(PHYSICAL_VALUE_RANGE_VALID)
-                ? Pair.of(physicalRangeMin, physicalRangeMax)
+                ? new Range(physicalRangeMin, physicalRangeMax)
                 : null;
 
         final var links = blockHeader.getLinks();

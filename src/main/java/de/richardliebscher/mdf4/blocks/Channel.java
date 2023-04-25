@@ -40,12 +40,9 @@ public class Channel {
     int invalidationBit;
     byte precision;
     short attachmentCount;
-    double valueRangeMin;
-    double valueRangeMax;
-    double limitMin;
-    double limitMax;
-    double limitExtendedMin;
-    double limitExtendedMax;
+    Range valueRange;
+    Range limit;
+    Range limitExtended;
 
     public static Channel parse(ByteInput input) throws IOException {
         final var blockHeader = BlockHeader.parseExpecting(BlockId.CN, input, 8, 72);
@@ -60,20 +57,17 @@ public class Channel {
         final var precision = input.readU8();
         input.skip(1);
         final var attachmentCount = input.readI16LE();
-        final var valueRangeMin = input.readF64LE();
-        final var valueRangeMax = input.readF64LE();
-        final var limitMin = input.readF64LE();
-        final var limitMax = input.readF64LE();
-        final var limitExtendedMin = input.readF64LE();
-        final var limitExtendedMax = input.readF64LE();
+        final var valueRange = new Range(input.readF64LE(), input.readF64LE());
+        final var limit = new Range(input.readF64LE(), input.readF64LE());
+        final var limitExtended = new Range(input.readF64LE(), input.readF64LE());
 
         final var links = blockHeader.getLinks();
         return new Channel(
                 Link.of(links[0]), links[1], Link.of(links[2]), Link.of(links[3]), Link.of(links[4]), links[5],
                 Link.of(links[6]), Link.of(links[7]),
                 type, syncType, dataType, bitOffset, byteOffset, bitCount, flags,
-                invalidationBit, precision, attachmentCount, valueRangeMin, valueRangeMax, limitMin, limitMax,
-                limitExtendedMin, limitExtendedMax);
+                invalidationBit, precision, attachmentCount, valueRange, limit,
+                limitExtended);
     }
 
     public static class Iterator implements java.util.Iterator<Channel> {

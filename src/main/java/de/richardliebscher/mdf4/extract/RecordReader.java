@@ -112,12 +112,12 @@ public class RecordReader<R> {
                 valueRead = createFixedLengthDataReader(channel);
                 break;
             case VIRTUAL_MASTER_CHANNEL:
+            case VIRTUAL_DATA_CHANNEL:
                 valueRead = createVirtualMasterReader(channel);
                 break;
             case VARIABLE_LENGTH_DATA_CHANNEL:
             case SYNCHRONIZATION_CHANNEL:
             case MAXIMUM_LENGTH_CHANNEL:
-            case VIRTUAL_DATA_CHANNEL:
             default:
                 throw new NotImplementedFeatureException("Channel type not implemented: " + channel.getType());
         }

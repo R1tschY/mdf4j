@@ -7,6 +7,7 @@ package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
+import de.richardliebscher.mdf4.blocks.DataGroup;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
@@ -34,12 +35,12 @@ public class SmokeTest {
 
         final var channelSelector = new ChannelSelector() {
             @Override
-            public boolean selectChannel(ChannelGroup group, Channel channel) {
+            public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
                 return true;
             }
 
             @Override
-            public boolean selectGroup(ChannelGroup group) {
+            public boolean selectGroup(DataGroup dg, ChannelGroup group) {
                 return true;
             }
         };

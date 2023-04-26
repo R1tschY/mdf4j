@@ -30,7 +30,7 @@ public class DataList implements DataRoot {
     long count;
 
     public static DataList parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.DL, input, 1, 8);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.DL, input, 1, 8);
         final var links = blockHeader.getLinks();
         final Link<DataList> nextDataList = Link.of(links[0]);
         final var data = getDataLinks(links);

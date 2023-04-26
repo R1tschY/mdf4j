@@ -19,9 +19,9 @@ public interface TextBased {
 
     static TextBased parse(ByteInput input) throws IOException {
         final var blockId = peekBlockId(input);
-        if (BlockId.MD.equals(blockId)) {
+        if (BlockType.MD.equals(blockId)) {
             return Metadata.parse(input);
-        } else if (BlockId.TX.equals(blockId)) {
+        } else if (BlockType.TX.equals(blockId)) {
             return Text.parse(input);
         } else {
             throw new FormatException("Expected MD or TX block, bot got " + blockId);

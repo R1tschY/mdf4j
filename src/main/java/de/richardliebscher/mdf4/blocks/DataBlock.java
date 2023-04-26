@@ -17,9 +17,9 @@ public interface DataBlock {
 
     static DataBlock parse(ByteInput input) throws IOException {
         final var blockId = ParseUtils.peekBlockId(input);
-        if (blockId.equals(BlockId.DT)) {
+        if (blockId.equals(BlockType.DT)) {
             return Data.parse(input);
-        } else if (blockId.equals(BlockId.DZ)) {
+        } else if (blockId.equals(BlockType.DZ)) {
             return DataZipped.parse(input);
         } else {
             throw new NotImplementedFeatureException("Data block not implemented: " + blockId);

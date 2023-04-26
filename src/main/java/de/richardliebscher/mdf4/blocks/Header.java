@@ -65,7 +65,7 @@ public class Header {
     }
 
     public static Header parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.HD, input, 6, 24);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.HD, input, 6, 24);
         final var startTime = ParseUtils.toInstant(input.readI64LE());
         final var tzOffsetMin = input.readI16LE();
         final var dstOffsetMin = input.readI16LE();

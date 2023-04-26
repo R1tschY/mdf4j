@@ -25,7 +25,7 @@ public class SourceInformation {
     byte flags;
 
     public static SourceInformation parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parse(BlockId.SI, input);
+        final var blockHeader = BlockHeader.parse(BlockType.SI, input);
         final var type = input.readU8();
         final var busType = input.readU8();
         final var flags = input.readU8();

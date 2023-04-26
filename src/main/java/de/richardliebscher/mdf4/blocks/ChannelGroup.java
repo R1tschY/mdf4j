@@ -38,7 +38,7 @@ public class ChannelGroup {
     }
 
     public static ChannelGroup parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parse(BlockId.CG, input);
+        final var blockHeader = BlockHeader.parse(BlockType.CG, input);
         final var links = blockHeader.getLinks();
         final Link<ChannelGroup> nextChannelGroup = Link.of(links[0]);
         final Link<Channel> firstChannel = Link.of(links[1]);

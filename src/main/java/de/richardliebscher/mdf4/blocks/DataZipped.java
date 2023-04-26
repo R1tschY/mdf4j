@@ -21,7 +21,7 @@ import java.util.zip.InflaterInputStream;
 @Value
 public class DataZipped implements DataRoot, DataBlock {
 
-    BlockId originalBlockType;
+    BlockType originalBlockType;
     ZipType zipType;
     long zipParameter;
     long originalDataLength;
@@ -29,10 +29,10 @@ public class DataZipped implements DataRoot, DataBlock {
     byte[] data;
 
     public static DataZipped parse(ByteInput input) throws IOException {
-        BlockHeader.parseExpecting(BlockId.DZ, input, 0, 24);
+        BlockHeader.parseExpecting(BlockType.DZ, input, 0, 24);
         final var originalBlockType1 = (char) input.readU8();
         final var originalBlockType2 = (char) input.readU8();
-        final var blockId = BlockId.of('#', '#', originalBlockType1, originalBlockType2);
+        final var blockId = BlockType.of('#', '#', originalBlockType1, originalBlockType2);
         final var zipType = ZipType.parse(input.readU8());
         input.skip(1);
         final var zipParameter = Integer.toUnsignedLong(input.readI32LE());
@@ -45,7 +45,7 @@ public class DataZipped implements DataRoot, DataBlock {
     public UncompressedData getUncompressed() throws IOException {
         try (var stream = createUncompressedStream(new ByteArrayInputStream(data))) {
             final var buffer = stream.readAllBytes(); // PERF: reduce copying
-            if (originalBlockType.equals(BlockId.DT)) {
+            if (originalBlockType.equals(BlockType.DT)) {
                 return new Data(buffer);
             } else {
                 throw new NotImplementedFeatureException(

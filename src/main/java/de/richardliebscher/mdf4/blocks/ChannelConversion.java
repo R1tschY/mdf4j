@@ -33,7 +33,7 @@ public class ChannelConversion {
     long[] vals;
 
     public static ChannelConversion parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.CC, input, 4, 24);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.CC, input, 4, 24);
         final var type = ChannelConversionType.parse(input.readU8());
         final var maybePrecision = Byte.toUnsignedInt(input.readU8());
         final var flags = ChannelConversionFlags.of(input.readI16LE());

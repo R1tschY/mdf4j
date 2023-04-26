@@ -29,7 +29,7 @@ public class Text implements TextBased {
     }
 
     public static Text parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parse(BlockId.TX, input);
+        final var blockHeader = BlockHeader.parse(BlockType.TX, input);
         return new Text(parseText(input, blockHeader.getDataLength()));
     }
 }

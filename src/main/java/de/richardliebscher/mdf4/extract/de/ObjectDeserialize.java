@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.extract.de;
 
 import java.io.IOException;
+import java.math.BigInteger;
 
 public class ObjectDeserialize implements Deserialize<Object> {
     @Override
@@ -28,7 +29,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
 
             @Override
             public Object visitU64(long value) {
-                return Long.toUnsignedString(value);
+                return new BigInteger(Long.toUnsignedString(value));
             }
 
             @Override

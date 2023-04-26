@@ -20,10 +20,10 @@ public class BlockHeader {
         return length - 24L - links.length * 8L;
     }
 
-    public static BlockHeader parse(BlockId id, ByteInput input) throws IOException {
+    public static BlockHeader parse(BlockType id, ByteInput input) throws IOException {
         final var typeId = input.readI32LE();
         if (id.asInt() != typeId) {
-            throw new FormatException("Got unexpected block " + BlockId.of(typeId) + ", but expected " + id);
+            throw new FormatException("Got unexpected block " + BlockType.of(typeId) + ", but expected " + id);
         }
 
         input.readI32LE(); // padding
@@ -37,7 +37,7 @@ public class BlockHeader {
         return new BlockHeader(length, links);
     }
 
-    public static BlockHeader parseExpecting(BlockId id, ByteInput input, int links, int miniumSize) throws IOException {
+    public static BlockHeader parseExpecting(BlockType id, ByteInput input, int links, int miniumSize) throws IOException {
         final var blockHeader = parse(id, input);
         if (blockHeader.links.length < links) {
             throw new FormatException(

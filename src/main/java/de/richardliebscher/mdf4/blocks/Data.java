@@ -21,7 +21,7 @@ public class Data implements DataRoot, UncompressedData {
     byte[] data;
 
     public static Data parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parse(BlockId.DT, input);
+        final var blockHeader = BlockHeader.parse(BlockType.DT, input);
         final var bytes = input.readBytes(blockHeader.getDataLength());
         return new Data(bytes);
     }

@@ -29,7 +29,7 @@ public class Metadata implements TextBased {
     }
 
     public static Metadata parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parse(BlockId.MD, input);
+        final var blockHeader = BlockHeader.parse(BlockType.MD, input);
         return new Metadata(parseText(input, blockHeader.getDataLength()));
     }
 }

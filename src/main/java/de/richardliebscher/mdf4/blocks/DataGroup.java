@@ -30,7 +30,7 @@ public class DataGroup {
     }
 
     public static DataGroup parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.DG, input, 4, 1);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.DG, input, 4, 1);
         final var recordIdSize = input.readU8();
 
         final var links = blockHeader.getLinks();

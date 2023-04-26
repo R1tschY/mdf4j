@@ -24,7 +24,7 @@ public class HeaderList implements DataRoot {
     ZipType zipType;
 
     public static HeaderList parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.HL, input, 1, 3);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.HL, input, 1, 3);
         final var links = blockHeader.getLinks();
         final Link<DataList> firstDataList = Link.of(links[0]);
 

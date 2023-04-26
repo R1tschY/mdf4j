@@ -45,7 +45,7 @@ public class Channel {
     Range limitExtended;
 
     public static Channel parse(ByteInput input) throws IOException {
-        final var blockHeader = BlockHeader.parseExpecting(BlockId.CN, input, 8, 72);
+        final var blockHeader = BlockHeader.parseExpecting(BlockType.CN, input, 8, 72);
         final var type = ChannelType.parse(input.readU8());
         final var syncType = SyncType.parse(input.readU8());
         final var dataType = ChannelDataType.parse(input.readU8());

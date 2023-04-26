@@ -26,17 +26,6 @@ class ParseUtils {
         return data.substring(0, size);
     }
 
-    static BlockType peekBlockId(ByteInput input) throws IOException {
-        final var backup = input.pos();
-        final var id = input.readI32LE();
-        input.seek(backup);
-        if ((id & 0xFFFF) != ((int)'#' | ((int)'#' << 8))) {
-            throw new FormatException(
-                    "Not a block: prefix: " + (id & 0xFF) + "," + ((id >> 8) & 0xFF));
-        }
-        return BlockType.of(id);
-    }
-
     static boolean flagsSet(int toTest, int flags) {
         return (toTest & flags) == flags;
     }

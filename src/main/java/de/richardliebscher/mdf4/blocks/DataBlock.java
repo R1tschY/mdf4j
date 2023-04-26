@@ -16,7 +16,7 @@ import java.io.IOException;
 public interface DataBlock {
 
     static DataBlock parse(ByteInput input) throws IOException {
-        final var blockId = ParseUtils.peekBlockId(input);
+        final var blockId = BlockType.parse(input);
         if (blockId.equals(BlockType.DT)) {
             return Data.parse(input);
         } else if (blockId.equals(BlockType.DZ)) {

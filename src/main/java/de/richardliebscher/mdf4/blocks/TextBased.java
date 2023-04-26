@@ -13,12 +13,10 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 
-import static de.richardliebscher.mdf4.blocks.ParseUtils.peekBlockId;
-
 public interface TextBased {
 
     static TextBased parse(ByteInput input) throws IOException {
-        final var blockId = peekBlockId(input);
+        final var blockId = BlockType.parse(input);
         if (BlockType.MD.equals(blockId)) {
             return Metadata.parse(input);
         } else if (BlockType.TX.equals(blockId)) {

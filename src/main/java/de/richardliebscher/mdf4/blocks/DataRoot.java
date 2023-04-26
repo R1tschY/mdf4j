@@ -16,7 +16,7 @@ import java.io.IOException;
 public interface DataRoot {
 
     static DataRoot parse(ByteInput input) throws IOException {
-        final var blockId = ParseUtils.peekBlockId(input);
+        final var blockId = BlockType.parse(input);
         if (blockId.equals(BlockType.DL)) {
             return DataList.parse(input);
         } else if (blockId.equals(BlockType.DZ)) {

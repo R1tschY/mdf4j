@@ -30,9 +30,9 @@ public class DataZipped implements DataRoot, DataBlock {
 
     public static DataZipped parse(ByteInput input) throws IOException {
         BlockHeader.parseExpecting(BlockType.DZ, input, 0, 24);
-        final var originalBlockType1 = (char) input.readU8();
-        final var originalBlockType2 = (char) input.readU8();
-        final var blockId = BlockType.of('#', '#', originalBlockType1, originalBlockType2);
+        final var originalBlockType1 = input.readU8();
+        final var originalBlockType2 = input.readU8();
+        final var blockId = BlockType.of(originalBlockType1, originalBlockType2);
         final var zipType = ZipType.parse(input.readU8());
         input.skip(1);
         final var zipParameter = Integer.toUnsignedLong(input.readI32LE());

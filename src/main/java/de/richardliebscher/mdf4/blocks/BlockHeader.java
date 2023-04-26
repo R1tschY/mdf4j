@@ -23,7 +23,7 @@ public class BlockHeader {
     public static BlockHeader parse(BlockType id, ByteInput input) throws IOException {
         final var typeId = input.readI32LE();
         if (id.asInt() != typeId) {
-            throw new FormatException("Got unexpected block " + BlockType.of(typeId) + ", but expected " + id);
+            throw newWrongBlockTypeException(id, typeId);
         }
 
         input.readI32LE(); // padding
@@ -35,6 +35,20 @@ public class BlockHeader {
             links[i] = input.readI64LE();
         }
         return new BlockHeader(length, links);
+    }
+
+    private static FormatException newWrongBlockTypeException(BlockType expected, int typeId) {
+        final byte hash1 = (byte) (typeId & 0xFF);
+        final byte hash2 = (byte) ((typeId >> 8) & 0xFF);
+        if (hash1 != '#' || hash2 != '#') {
+            return new FormatException(String.format(
+                    "Block type does not start with '##', got %02x%02x", hash1, hash2));
+        }
+        final byte first = (byte) ((typeId >> 16) & 0xFF);
+        final byte second = (byte) ((typeId >> 24) & 0xFF);
+        return new FormatException(String.format(
+                "Expected block type '%s', got %s (%02x%02x)", expected,
+                new String(new char[]{ (char) first, (char) second}), first, second));
     }
 
     public static BlockHeader parseExpecting(BlockType id, ByteInput input, int links, int miniumSize) throws IOException {

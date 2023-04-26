@@ -51,7 +51,7 @@ public class Mdf4File {
         return new Mdf4File(new InternalReader(input, idBlock, hdBlock));
     }
 
-    public <R> RecordReader<R> newRowReader(ChannelSelector selector, RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
+    public <R> RecordReader<R> newRecordReader(ChannelSelector selector, RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
         return RecordReader.createFor(inner, selector, recordVisitor);
     }
 }

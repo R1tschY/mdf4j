@@ -59,7 +59,7 @@ public class SmokeTest {
             }
         };
 
-        final var newRowReader = mdf4File.newRowReader(channelSelector, rowDe);
+        final var newRowReader = mdf4File.newRecordReader(channelSelector, rowDe);
 
         List<Object> row;
         while ((row = newRowReader.next()) != null) {

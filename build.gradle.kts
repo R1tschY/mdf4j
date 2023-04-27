@@ -1,5 +1,3 @@
-import java.net.URI
-
 // SPDX-License-Identifier: CC0-1.0
 
 plugins {
@@ -36,61 +34,13 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            beforeDeployment { deployment -> signing.signPom(deployment) }
-
-//            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-//                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_TOKEN"))
-//            }
-//
-//            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-//                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_TOKEN"))
-//            }
-//
-//            pom.project {
-//                inceptionYear = "2023"
-//                name = project.name
-//                packaging = "jar"
-//                description = project.description
-//
-//                url = "https://github.com/R1tschY/mdf4j"
-//
-//                scm {
-//                    connection = "scm:git:https://github.com/R1tschY/mdf4j.git"
-//                    url = "https://github.com/R1tschY/mdf4j"
-//                    issueManagement {
-//                        url = "https://github.com/R1tschY/mdf4j/issues"
-//                    }
-//                }
-//
-//                licenses {
-//                    license {
-//                        name = "Apache-2.0"
-//                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-//                    }
-//                }
-//
-//                developers {
-//                    developer {
-//                        id = "richardliebscher"
-//                        name = "Richard Liebscher"
-//                        email = "r1tschy@posteo.de"
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
 
-//            artifact(tasks["sourcesJar"])
-//            artifact(tasks["javadocJar"])
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
 
             pom {
                 inceptionYear.set("2023")
@@ -125,34 +75,7 @@ publishing {
             }
         }
     }
-
-    repositories {
-        maven {
-            name = "OSSRH"
-            url = if (version.toString().endsWith("SNAPSHOT")) {
-                URI("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            } else {
-                URI("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            }
-
-            credentials {
-                username = System.getenv("OSSRH_USERNAME")
-                password = System.getenv("OSSRH_TOKEN")
-            }
-        }
-    }
 }
-
-//nexusPublishing {
-//    repositories {
-//        sonatype {
-//            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
-//            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-//            username = System.getenv("OSSRH_USERNAME")
-//            password = System.getenv("OSSRH_TOKEN")
-//        }
-//    }
-//}
 
 signing {
     useInMemoryPgpKeys(System.getenv("SIGNING_KEY"), System.getenv("SIGNING_PASSWORD"))
@@ -176,14 +99,3 @@ nexusPublishing {
         }
     }
 }
-
-//nexusPublishing {
-//    repositories {
-//        sonatype {
-//            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
-//            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-//            username = System.getenv("OSSRH_USERNAME")
-//            password = System.getenv("OSSRH_TOKEN")
-//        }
-//    }
-//}

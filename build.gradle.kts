@@ -9,17 +9,12 @@ plugins {
 }
 
 group = "de.richardliebscher.mdf4j"
-//archivesBaseName = "mdf4j"
 version = "0.1.0-SNAPSHOT"
 
 java {
     withSourcesJar()
     withJavadocJar()
 }
-
-//artifacts {
-//    archives(javadocJar, sourcesJar)
-//}
 
 repositories {
     mavenCentral()
@@ -87,7 +82,7 @@ signing {
 //}
 
 nexusPublishing {
-    repositories {
+    this.repositories {
         create("OSSRH") {
             nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
             snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))

@@ -9,6 +9,7 @@ plugins {
 }
 
 group 'de.richardliebscher.mdf4j'
+archivesBaseName = "mdf4j"
 version '0.1.0-SNAPSHOT'
 
 java {
@@ -37,13 +38,13 @@ test {
 //    repositories {
 //        mavenDeployer {
 //            beforeDeployment { deployment -> signing.signPom(deployment) }
-//
+
 //            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-//                authentication(userName: System.getenv("MAVEN_USERNAME"), password: System.getenv("MAVEN_PASSWORD"))
+//                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_TOKEN"))
 //            }
 //
 //            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-//                authentication(userName: System.getenv("MAVEN_USERNAME"), password: System.getenv("MAVEN_PASSWORD"))
+//                authentication(userName: System.getenv("OSSRH_USERNAME"), password: System.getenv("OSSRH_TOKEN"))
 //            }
 //
 //            pom.project {
@@ -104,14 +105,14 @@ publishing {
 
                 licenses {
                     license {
-                        name = "Apache-2.0"
+                        name = "The Apache License, Version 2.0"
                         url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
                     }
                 }
 
                 developers {
                     developer {
-                        id = "richardliebscher"
+                        id = "r1tschy"
                         name = "Richard Liebscher"
                         email = "r1tschy@posteo.de"
                     }
@@ -119,21 +120,40 @@ publishing {
             }
         }
     }
-}
 
-nexusPublishing {
     repositories {
-        sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-            username = System.getenv("OSSRH_USERNAME")
-            password = System.getenv("OSSRH_TOKEN")
+        maven {
+            name = "OSSRH"
+            url = version.endsWith('SNAPSHOT')
+                    ? "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                    : "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = System.getenv("OSSRH_USERNAME")
+                password = System.getenv("OSSRH_TOKEN")
+            }
         }
     }
 }
+
+//nexusPublishing {
+//    repositories {
+//        sonatype {
+//            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"))
+//            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+//            username = System.getenv("OSSRH_USERNAME")
+//            password = System.getenv("OSSRH_TOKEN")
+//        }
+//    }
+//}
 
 signing {
     useInMemoryPgpKeys(System.getenv("SIGNING_KEY"), System.getenv("SIGNING_PASSWORD"))
 
     sign(publishing.publications.mavenJava)
+}
+
+javadoc {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
 }

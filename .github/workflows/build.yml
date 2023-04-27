@@ -24,6 +24,14 @@ jobs:
           arguments: build
 
       - name: Publish package
+        run: env
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Publish package
         uses: gradle/gradle-build-action@v2
         with:
           arguments: publish

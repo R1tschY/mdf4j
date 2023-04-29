@@ -10,17 +10,17 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @EqualsAndHashCode
-public abstract class FlagsBase<Self extends FlagsBase<Self>> {
+public abstract class FlagsBase<SELF extends FlagsBase<SELF>> {
 
   protected final int value;
 
-  protected abstract Self create(int a);
+  protected abstract SELF create(int a);
 
-  public Self merge(Self other) {
+  public SELF merge(SELF other) {
     return create(this.value | other.value);
   }
 
-  public boolean test(Self test) {
+  public boolean test(SELF test) {
     return (value & test.value) == test.value;
   }
 

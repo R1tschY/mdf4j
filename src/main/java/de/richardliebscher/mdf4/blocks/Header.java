@@ -37,15 +37,15 @@ public class Header {
   Link<TextBased> comment;
 
   /**
-   * Absolute start time in nanoseconds since midnight Jan 1st, 1970
+   * Absolute start time in nanoseconds since midnight Jan 1st, 1970.
    */
   Instant startTime;
   /**
-   * Time zone offset in minutes
+   * Time zone offset in minutes.
    */
   ZoneOffset timeZoneOffset;
   /**
-   * Daylight saving time (DST) offset in minutes
+   * Daylight saving time (DST) offset in minutes.
    */
   ZoneOffset dstOffset;
 
@@ -67,15 +67,15 @@ public class Header {
 
   public static Header parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.HD, input, 6, 24);
-    final var startTime = ParseUtils.toInstant(input.readI64LE());
-    final var tzOffsetMin = input.readI16LE();
-    final var dstOffsetMin = input.readI16LE();
+    final var startTime = ParseUtils.toInstant(input.readI64Le());
+    final var tzOffsetMin = input.readI16Le();
+    final var dstOffsetMin = input.readI16Le();
     final var timeFlags = input.readU8();
     final var timeClass = input.readU8();
     final var flags = input.readU8();
     input.skip(1);
-    final var startAngleRad = input.readF32LE();
-    final var startDistanceM = input.readF32LE();
+    final var startAngleRad = input.readF32Le();
+    final var startDistanceM = input.readF32Le();
 
     final var links = blockHeader.getLinks();
     return new Header(

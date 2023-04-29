@@ -34,9 +34,9 @@ public class DataZipped implements DataRoot, DataBlock {
     final var blockId = BlockType.of(originalBlockType1, originalBlockType2);
     final var zipType = ZipType.parse(input.readU8());
     input.skip(1);
-    final var zipParameter = Integer.toUnsignedLong(input.readI32LE());
-    final var originalDataLength = input.readI64LE();
-    final var dataLength = input.readI64LE();
+    final var zipParameter = Integer.toUnsignedLong(input.readI32Le());
+    final var originalDataLength = input.readI64Le();
+    final var dataLength = input.readI64Le();
     final var data = input.readBytes(dataLength);
     return new DataZipped(blockId, zipType, zipParameter, originalDataLength, data);
   }

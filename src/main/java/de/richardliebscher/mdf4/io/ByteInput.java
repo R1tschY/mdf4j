@@ -12,25 +12,25 @@ public interface ByteInput {
 
   byte readU8() throws IOException;
 
-  short readI16LE() throws IOException;
+  short readI16Le() throws IOException;
 
-  int readI32LE() throws IOException;
+  int readI32Le() throws IOException;
 
-  long readI64LE() throws IOException;
+  long readI64Le() throws IOException;
 
-  float readF32LE() throws IOException;
+  float readF32Le() throws IOException;
 
-  double readF64LE() throws IOException;
+  double readF64Le() throws IOException;
 
-  short readI16BE() throws IOException;
+  short readI16Be() throws IOException;
 
-  int readI32BE() throws IOException;
+  int readI32Be() throws IOException;
 
-  long readI64BE() throws IOException;
+  long readI64Be() throws IOException;
 
-  float readF32BE() throws IOException;
+  float readF32Be() throws IOException;
 
-  double readF64BE() throws IOException;
+  double readF64Be() throws IOException;
 
   String readString(int bytes, Charset charset) throws IOException;
 

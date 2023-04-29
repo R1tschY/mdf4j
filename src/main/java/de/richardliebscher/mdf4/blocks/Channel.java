@@ -49,16 +49,16 @@ public class Channel {
     final var syncType = SyncType.parse(input.readU8());
     final var dataType = ChannelDataType.parse(input.readU8());
     final var bitOffset = input.readU8();
-    final var byteOffset = input.readI32LE();
-    final var bitCount = input.readI32LE();
-    final var flags = ChannelFlags.of(input.readI32LE());
-    final var invalidationBit = input.readI32LE();
+    final var byteOffset = input.readI32Le();
+    final var bitCount = input.readI32Le();
+    final var flags = ChannelFlags.of(input.readI32Le());
+    final var invalidationBit = input.readI32Le();
     final var precision = input.readU8();
     input.skip(1);
-    final var attachmentCount = input.readI16LE();
-    final var valueRange = new Range(input.readF64LE(), input.readF64LE());
-    final var limit = new Range(input.readF64LE(), input.readF64LE());
-    final var limitExtended = new Range(input.readF64LE(), input.readF64LE());
+    final var attachmentCount = input.readI16Le();
+    final var valueRange = new Range(input.readF64Le(), input.readF64Le());
+    final var limit = new Range(input.readF64Le(), input.readF64Le());
+    final var limitExtended = new Range(input.readF64Le(), input.readF64Le());
 
     final var links = blockHeader.getLinks();
     return new Channel(

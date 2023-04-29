@@ -27,7 +27,7 @@ public class HeaderList implements DataRoot {
     final var links = blockHeader.getLinks();
     final Link<DataList> firstDataList = Link.of(links[0]);
 
-    final var flags = HeaderListFlags.of(input.readI16LE());
+    final var flags = HeaderListFlags.of(input.readI16Le());
     if (flags.hasUnknown()) {
       throw new ParseException("Future MDF4 could not be read: Unknown flags set in HL block");
     }

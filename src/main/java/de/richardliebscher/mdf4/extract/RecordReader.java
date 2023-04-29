@@ -249,21 +249,21 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16LE());
+            return visitor.visitU16(input.readI16Le());
           }
         };
       case 32:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32LE());
+            return visitor.visitU32(input.readI32Le());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64LE());
+            return visitor.visitU64(input.readI64Le());
           }
         };
       default:
@@ -285,21 +285,21 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16BE());
+            return visitor.visitU16(input.readI16Be());
           }
         };
       case 32:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32BE());
+            return visitor.visitU32(input.readI32Be());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64BE());
+            return visitor.visitU64(input.readI64Be());
           }
         };
       default:
@@ -321,21 +321,21 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16LE());
+            return visitor.visitI16(input.readI16Le());
           }
         };
       case 32:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32LE());
+            return visitor.visitI32(input.readI32Le());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64LE());
+            return visitor.visitI64(input.readI64Le());
           }
         };
       default:
@@ -357,21 +357,21 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16BE());
+            return visitor.visitI16(input.readI16Be());
           }
         };
       case 32:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32BE());
+            return visitor.visitI32(input.readI32Be());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64BE());
+            return visitor.visitI64(input.readI64Be());
           }
         };
       default:
@@ -387,14 +387,14 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32LE());
+            return visitor.visitF32(input.readF32Le());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64LE());
+            return visitor.visitF64(input.readF64Le());
           }
         };
       default:
@@ -411,14 +411,14 @@ public class RecordReader<R> {
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32BE());
+            return visitor.visitF32(input.readF32Be());
           }
         };
       case 64:
         return new ValueRead() {
           @Override
           public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64BE());
+            return visitor.visitF64(input.readF64Be());
           }
         };
       default:
@@ -434,10 +434,11 @@ public class RecordReader<R> {
           + channel.getBitCount());
     }
     // TODO
-//        if (channel.getDataType() != ChannelDataType.UINT_LE) {
-//            throw new FormatException("Data type of virtual master channel must be little endian unsigned integer, but got "
-//                    + channel.getDataType());
-//        }
+    // if (channel.getDataType() != ChannelDataType.UINT_LE) {
+    //     throw new FormatException("Data type of virtual master channel must be little endian
+    //     unsigned integer, but got "
+    //             + channel.getDataType());
+    // }
     // TODO: apply offset from HD block
     valueRead = new ValueRead() {
       private int recordIndex = 0;

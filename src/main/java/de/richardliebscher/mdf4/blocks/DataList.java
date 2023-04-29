@@ -36,36 +36,36 @@ public class DataList implements DataRoot {
 
     final var flags = DataListFlags.of(input.readU8());
     input.skip(3);
-    final var count = input.readI32LE();
+    final var count = input.readI32Le();
     if (count != data.size()) {
       throw new FormatException(
           "Count attribute in DL block is inconsistent: " + count + " vs. " + data.size());
     }
 
-//        if (flags.test(DataListFlags.EQUAL_LENGTH)) {
-//            final var equalLength = input.readI64LE();
-//            for (int i= 0; i < count; i++) {
-//                final var offset = input.readQword(); // if equalLengthFlag
-//            }
-//        }
+//    if (flags.test(DataListFlags.EQUAL_LENGTH)) {
+//      final var equalLength = input.readI64LE();
+//      for (int i = 0; i < count; i++) {
+//        final var offset = input.readQword(); // if equalLengthFlag
+//      }
+//    }
 //
-//        if (flags.test(DataListFlags.TIME_VALUES)) {
-//            for (int i= 0; i < count; i++) {
-//                final var time_values = input.readQword();
-//            }
-//        }
+//    if (flags.test(DataListFlags.TIME_VALUES)) {
+//      for (int i = 0; i < count; i++) {
+//        final var time_values = input.readQword();
+//      }
+//    }
 //
-//        if (flags.test(DataListFlags.ANGLE_VALUES)) {
-//            for (int i= 0; i < count; i++) {
-//                final var angle_values = input.readQword();
-//            }
-//        }
+//    if (flags.test(DataListFlags.ANGLE_VALUES)) {
+//      for (int i = 0; i < count; i++) {
+//        final var angle_values = input.readQword();
+//      }
+//    }
 //
-//        if (flags.test(DataListFlags.DISTANCE_VALUES)) {
-//            for (int i= 0; i < count; i++) {
-//                final var distance_values = input.readQword();
-//            }
-//        }
+//    if (flags.test(DataListFlags.DISTANCE_VALUES)) {
+//      for (int i = 0; i < count; i++) {
+//        final var distance_values = input.readQword();
+//      }
+//    }
 
     return new DataList(nextDataList, data, flags, count);
   }

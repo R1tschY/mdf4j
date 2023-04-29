@@ -25,61 +25,61 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public short readI16LE() {
+  public short readI16Le() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getShort();
   }
 
   @Override
-  public int readI32LE() {
+  public int readI32Le() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getInt();
   }
 
   @Override
-  public long readI64LE() {
+  public long readI64Le() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getLong();
   }
 
   @Override
-  public float readF32LE() {
+  public float readF32Le() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getFloat();
   }
 
   @Override
-  public double readF64LE() throws IOException {
+  public double readF64Le() throws IOException {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getDouble();
   }
 
   @Override
-  public short readI16BE() throws IOException {
+  public short readI16Be() throws IOException {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getShort();
   }
 
   @Override
-  public int readI32BE() throws IOException {
+  public int readI32Be() throws IOException {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getInt();
   }
 
   @Override
-  public long readI64BE() throws IOException {
+  public long readI64Be() throws IOException {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getLong();
   }
 
   @Override
-  public float readF32BE() throws IOException {
+  public float readF32Be() throws IOException {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getFloat();
   }
 
   @Override
-  public double readF64BE() throws IOException {
+  public double readF64Be() throws IOException {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getDouble();
   }

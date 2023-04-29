@@ -32,16 +32,16 @@ public class Id {
     final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
     final var version = MdfFormatVersion.parse(input);
     final var program = input.readString(8, StandardCharsets.ISO_8859_1);
-    final var defaultByteOrder = input.readI16LE();// for 3.x
-    final var defaultFloatingPointFormat = input.readI16LE();// for 3.x
-    final var versionNumber = input.readI16LE();
-    final var codePageNumber = input.readI16LE();// for 3.x
+    final var defaultByteOrder = input.readI16Le(); // for 3.x
+    final var defaultFloatingPointFormat = input.readI16Le(); // for 3.x
+    final var versionNumber = input.readI16Le();
+    final var codePageNumber = input.readI16Le(); // for 3.x
     input.skip(28); // fill bytes
     final UnfinalizedFlags unfinalizedFlags;
     final CustomFlags customUnfinalizedFlags;
     if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
-      unfinalizedFlags = UnfinalizedFlags.of(input.readI16LE());
-      customUnfinalizedFlags = CustomFlags.of(input.readI16LE());
+      unfinalizedFlags = UnfinalizedFlags.of(input.readI16Le());
+      customUnfinalizedFlags = CustomFlags.of(input.readI16Le());
     } else {
       unfinalizedFlags = null;
       customUnfinalizedFlags = null;

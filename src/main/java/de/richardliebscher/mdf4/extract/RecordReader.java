@@ -74,7 +74,7 @@ public class RecordReader<R> {
                     final var valueRead = iterator.next();
                     return seed.deserialize(deserialize, new Deserializer() {
                         @Override
-                        public <R2> R2 deserialize_row(RecordVisitor<R2> recordVisitor) throws IOException {
+                        public <R2> R2 deserialize_row(RecordVisitor<R2> recordVisitor) {
                             throw new UnsupportedOperationException();
                         }
 
@@ -149,14 +149,14 @@ public class RecordReader<R> {
         valueRead = new SeekingReader(valueRead, channel.getByteOffset());
 
         if (channel.getFlags().test(ChannelFlags.INVALIDATION_BIT_VALID)) {
-            valueRead = createInvalidationReader(dataGroup, group, channel, valueRead, input);
+            valueRead = createInvalidationReader(dataGroup, group, channel, valueRead);
         }
 
         return valueRead;
     }
 
     private static ValueRead createInvalidationReader(
-            DataGroup dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead, ByteInput input) throws FormatException {
+            DataGroup dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead) throws FormatException {
         final var groupBits = group.getInvalidationBytes() * 8;
         final var invalidationBit = channel.getInvalidationBit();
         if (invalidationBit >= groupBits) {
@@ -442,6 +442,7 @@ public class RecordReader<R> {
         final var source = DataSource.create(reader, dataGroup);
 
         // build extractor
+        //noinspection ConstantValue
         log.finest(() ->
                 "Record size: " + (dataGroup.getRecordIdSize() + channelGroup.getDataBytes()
                         + channelGroup.getInvalidationBytes())

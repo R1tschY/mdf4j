@@ -109,6 +109,7 @@ public class CsvExample {
 
             final var newRecordReader = mdf4File.newRecordReader(channelSelector, recordDe);
 
+            //noinspection StatementWithEmptyBody
             while (newRecordReader.next() != null) {
                 // noop
             }

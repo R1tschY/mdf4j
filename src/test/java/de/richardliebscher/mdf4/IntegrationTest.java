@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class IntegrationTest {
 
+    @SuppressWarnings("RedundantTypeArguments")
     private static Stream<Arguments> primitive() {
         return Stream.of(
                 Arguments.of("i8", List.<Byte>of((byte) 0, Byte.MAX_VALUE, Byte.MIN_VALUE)),
@@ -50,9 +51,9 @@ public class IntegrationTest {
                         new ObjectDeserialize.UnsignedInteger(1),
                         new ObjectDeserialize.UnsignedInteger(-1))),
                 Arguments.of("u64", List.<ObjectDeserialize.UnsignedLong>of(
-                        new ObjectDeserialize.UnsignedLong((long) 0),
-                        new ObjectDeserialize.UnsignedLong((long) 1),
-                        new ObjectDeserialize.UnsignedLong((long) -1))),
+                        new ObjectDeserialize.UnsignedLong(0L),
+                        new ObjectDeserialize.UnsignedLong(1L),
+                        new ObjectDeserialize.UnsignedLong(-1L))),
                 Arguments.of("f32", List.<Float>of(0.f, Float.MAX_VALUE, Float.POSITIVE_INFINITY)),
                 Arguments.of("f64", List.<Double>of(0.d, Double.MAX_VALUE, Double.POSITIVE_INFINITY))
         );

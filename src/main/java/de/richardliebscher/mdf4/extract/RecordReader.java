@@ -54,11 +54,11 @@ public class RecordReader<R> {
     // PUBLIC
 
     public R next() throws IOException {
-        cycle += 1;
         if (cycle >= group.getCycleCount()) {
             return null;
         }
 
+        cycle += 1;
         buffer.clear();
         final var bytes = dataSource.read(buffer);
         if (bytes != buffer.capacity()) {

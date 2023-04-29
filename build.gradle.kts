@@ -32,6 +32,7 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 
     systemProperty("java.util.logging.config.file", "${projectDir.absolutePath}/src/test/resources/logging.properties")
+    systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
 }
 
 publishing {

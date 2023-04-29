@@ -6,6 +6,7 @@ plugins {
     `maven-publish`
     id("io.freefair.lombok") version "8.0.1"
     id("io.github.gradle-nexus.publish-plugin") version "1.0.0"
+    checkstyle
 }
 
 group = "de.richardliebscher.mdf4j"
@@ -26,6 +27,10 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.4.1")
     testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.7")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.7")
+}
+
+checkstyle {
+    toolVersion = "10.10.0"
 }
 
 tasks.withType<Test>().configureEach {

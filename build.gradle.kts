@@ -23,10 +23,15 @@ repositories {
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.assertj:assertj-core:3.4.1")
+    testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.7")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.7")
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+
+    systemProperty("java.util.logging.config.file", "${projectDir.absolutePath}/src/test/resources/logging.properties")
 }
 
 publishing {

@@ -14,12 +14,23 @@ import java.math.BigInteger;
 public final class Unsigned {
     private static final long LONG_UNSIGNED_MASK = 0x7fffffffffffffffL;
 
-    public static double doubleValue(long value) {
-        var doubleValue = (double) (value & LONG_UNSIGNED_MASK);
+    public static long longValue(long value) {
+        return value & LONG_UNSIGNED_MASK;
+    }
+
+    public static float floatValue(long value) {
         if (value < 0) {
-            return doubleValue + 0x1.0p63;
+            return ((value >>> 1) | (value & 1)) * 2.0f;
         } else {
-            return doubleValue;
+            return value;
+        }
+    }
+
+    public static double doubleValue(long value) {
+        if (value < 0) {
+            return ((value >>> 1) | (value & 1)) * 2.0;
+        } else {
+            return value;
         }
     }
 

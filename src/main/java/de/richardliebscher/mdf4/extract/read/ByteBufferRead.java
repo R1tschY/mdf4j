@@ -28,6 +28,7 @@ public class ByteBufferRead implements DataRead {
 
         int bytesToRead = Math.min(data.remaining(), dst.remaining());
         dst.put(data.slice().limit(bytesToRead));
+        data.position(data.position() + bytesToRead);
         return bytesToRead;
     }
 
@@ -37,7 +38,7 @@ public class ByteBufferRead implements DataRead {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         closed = true;
     }
 }

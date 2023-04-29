@@ -442,11 +442,18 @@ public class RecordReader<R> {
         final var source = DataSource.create(reader, dataGroup);
 
         // build extractor
+        log.finest(() ->
+                "Record size: " + (dataGroup.getRecordIdSize() + channelGroup.getDataBytes()
+                        + channelGroup.getInvalidationBytes())
+                        + " (RecordId: " + dataGroup.getRecordIdSize() + ", Data: " + channelGroup.getDataBytes()
+                        + ", InvalidationBytes: " + channelGroup.getInvalidationBytes() + ")");
+
         final var channelReaders = new ArrayList<ValueRead>();
         for (var ch : asIterable(() -> channelGroup.iterChannels(input))) {
             try {
                 final var channelReader = createChannelReader(dataGroup, channelGroup, ch, input);
                 if (selector.selectChannel(dataGroup, channelGroup, ch)) {
+                    log.finest(() -> "Channel read offset: " + ch.getByteOffset());
                     channelReaders.add(channelReader);
                 }
             } catch (NotImplementedFeatureException exception) {

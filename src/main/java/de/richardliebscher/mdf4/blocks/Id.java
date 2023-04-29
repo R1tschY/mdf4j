@@ -5,75 +5,78 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import static de.richardliebscher.mdf4.blocks.Consts.FILE_MAGIC;
+import static de.richardliebscher.mdf4.blocks.Consts.UNFINISHED_FILE_MAGIC;
+
 import de.richardliebscher.mdf4.MdfFormatVersion;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
-import lombok.Value;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
-import static de.richardliebscher.mdf4.blocks.Consts.FILE_MAGIC;
-import static de.richardliebscher.mdf4.blocks.Consts.UNFINISHED_FILE_MAGIC;
+import lombok.Value;
 
 @Value
 public class Id {
-    MdfFormatVersion formatId;
-    String programId;
-    UnfinalizedFlags unfinalizedFlags;
-    CustomFlags customUnfinalizedFlags;
 
-    public boolean isUnfinalized() {
-        return unfinalizedFlags != null;
+  MdfFormatVersion formatId;
+  String programId;
+  UnfinalizedFlags unfinalizedFlags;
+  CustomFlags customUnfinalizedFlags;
+
+  public boolean isUnfinalized() {
+    return unfinalizedFlags != null;
+  }
+
+  public static Id parse(ByteInput input) throws IOException {
+    final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
+    final var version = MdfFormatVersion.parse(input);
+    final var program = input.readString(8, StandardCharsets.ISO_8859_1);
+    final var defaultByteOrder = input.readI16LE();// for 3.x
+    final var defaultFloatingPointFormat = input.readI16LE();// for 3.x
+    final var versionNumber = input.readI16LE();
+    final var codePageNumber = input.readI16LE();// for 3.x
+    input.skip(28); // fill bytes
+    final UnfinalizedFlags unfinalizedFlags;
+    final CustomFlags customUnfinalizedFlags;
+    if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
+      unfinalizedFlags = UnfinalizedFlags.of(input.readI16LE());
+      customUnfinalizedFlags = CustomFlags.of(input.readI16LE());
+    } else {
+      unfinalizedFlags = null;
+      customUnfinalizedFlags = null;
     }
 
-    public static Id parse(ByteInput input) throws IOException {
-        final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
-        final var version = MdfFormatVersion.parse(input);
-        final var program = input.readString(8, StandardCharsets.ISO_8859_1);
-        final var defaultByteOrder = input.readI16LE();// for 3.x
-        final var defaultFloatingPointFormat = input.readI16LE();// for 3.x
-        final var versionNumber = input.readI16LE();
-        final var codePageNumber = input.readI16LE();// for 3.x
-        input.skip(28); // fill bytes
-        final UnfinalizedFlags unfinalizedFlags;
-        final CustomFlags customUnfinalizedFlags;
-        if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
-            unfinalizedFlags = UnfinalizedFlags.of(input.readI16LE());
-            customUnfinalizedFlags = CustomFlags.of(input.readI16LE());
-        } else {
-            unfinalizedFlags = null;
-            customUnfinalizedFlags = null;
-        }
-
-        if (!fileId.equals(FILE_MAGIC) && !fileId.equals(UNFINISHED_FILE_MAGIC)) {
-            throw new FormatException("File not a MDF file: file does not start with '" + FILE_MAGIC + "'");
-        }
-
-        if (version.asInt() != versionNumber) {
-            throw new FormatException("File MDF versions do not match " + version.asInt() + " vs " + versionNumber);
-        }
-
-        if (defaultByteOrder != 0) {
-            throw new FormatException("Unexpected non-default byte order");
-        }
-
-        if (defaultFloatingPointFormat != 0) {
-            throw new FormatException("Unexpected non-default floating point format");
-        }
-
-        if (codePageNumber != 0) {
-            throw new FormatException("Unexpected code page number");
-        }
-
-        return new Id(version, program, unfinalizedFlags, customUnfinalizedFlags);
+    if (!fileId.equals(FILE_MAGIC) && !fileId.equals(UNFINISHED_FILE_MAGIC)) {
+      throw new FormatException(
+          "File not a MDF file: file does not start with '" + FILE_MAGIC + "'");
     }
 
-    public static class Meta implements FromBytesInput<Id> {
-        @Override
-        public Id parse(ByteInput input) throws IOException {
-            return Id.parse(input);
-        }
+    if (version.asInt() != versionNumber) {
+      throw new FormatException(
+          "File MDF versions do not match " + version.asInt() + " vs " + versionNumber);
     }
+
+    if (defaultByteOrder != 0) {
+      throw new FormatException("Unexpected non-default byte order");
+    }
+
+    if (defaultFloatingPointFormat != 0) {
+      throw new FormatException("Unexpected non-default floating point format");
+    }
+
+    if (codePageNumber != 0) {
+      throw new FormatException("Unexpected code page number");
+    }
+
+    return new Id(version, program, unfinalizedFlags, customUnfinalizedFlags);
+  }
+
+  public static class Meta implements FromBytesInput<Id> {
+
+    @Override
+    public Id parse(ByteInput input) throws IOException {
+      return Id.parse(input);
+    }
+  }
 }

@@ -6,20 +6,21 @@
 package de.richardliebscher.mdf4.blocks;
 
 public class CustomFlags extends FlagsBase<CustomFlags> {
-    public static CustomFlags of(int flags) {
-        return new CustomFlags(flags);
-    }
 
-    public static CustomFlags ofBit(int bit) {
-        return new CustomFlags(1 << bit);
-    }
+  public static CustomFlags of(int flags) {
+    return new CustomFlags(flags);
+  }
 
-    private CustomFlags(int value) {
-        super(value);
-    }
+  public static CustomFlags ofBit(int bit) {
+    return new CustomFlags(1 << bit);
+  }
 
-    @Override
-    protected CustomFlags create(int a) {
-        return new CustomFlags(a);
-    }
+  private CustomFlags(int value) {
+    super(value);
+  }
+
+  @Override
+  protected CustomFlags create(int a) {
+    return new CustomFlags(a);
+  }
 }

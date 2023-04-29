@@ -11,104 +11,105 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 
 public class ByteBufferInput implements ByteInput {
-    private final ByteBuffer buffer;
 
-    public ByteBufferInput(ByteBuffer buffer) {
-        this.buffer = buffer;
-        this.buffer.order(ByteOrder.LITTLE_ENDIAN);
-    }
+  private final ByteBuffer buffer;
 
-    @Override
-    public byte readU8() throws IOException {
-        return buffer.get();
-    }
+  public ByteBufferInput(ByteBuffer buffer) {
+    this.buffer = buffer;
+    this.buffer.order(ByteOrder.LITTLE_ENDIAN);
+  }
 
-    @Override
-    public short readI16LE() {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getShort();
-    }
+  @Override
+  public byte readU8() throws IOException {
+    return buffer.get();
+  }
 
-    @Override
-    public int readI32LE() {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getInt();
-    }
+  @Override
+  public short readI16LE() {
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return buffer.getShort();
+  }
 
-    @Override
-    public long readI64LE() {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getLong();
-    }
+  @Override
+  public int readI32LE() {
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return buffer.getInt();
+  }
 
-    @Override
-    public float readF32LE() {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getFloat();
-    }
+  @Override
+  public long readI64LE() {
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return buffer.getLong();
+  }
 
-    @Override
-    public double readF64LE() throws IOException {
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getDouble();
-    }
+  @Override
+  public float readF32LE() {
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return buffer.getFloat();
+  }
 
-    @Override
-    public short readI16BE() throws IOException {
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        return buffer.getShort();
-    }
+  @Override
+  public double readF64LE() throws IOException {
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return buffer.getDouble();
+  }
 
-    @Override
-    public int readI32BE() throws IOException {
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        return buffer.getInt();
-    }
+  @Override
+  public short readI16BE() throws IOException {
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    return buffer.getShort();
+  }
 
-    @Override
-    public long readI64BE() throws IOException {
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        return buffer.getLong();
-    }
+  @Override
+  public int readI32BE() throws IOException {
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    return buffer.getInt();
+  }
 
-    @Override
-    public float readF32BE() throws IOException {
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        return buffer.getFloat();
-    }
+  @Override
+  public long readI64BE() throws IOException {
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    return buffer.getLong();
+  }
 
-    @Override
-    public double readF64BE() throws IOException {
-        buffer.order(ByteOrder.BIG_ENDIAN);
-        return buffer.getDouble();
-    }
+  @Override
+  public float readF32BE() throws IOException {
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    return buffer.getFloat();
+  }
 
-    @Override
-    public String readString(int bytes, Charset charset) throws IOException {
-        final var buf = new byte[bytes];
-        buffer.get(buf);
-        return new String(buf, charset);
-    }
+  @Override
+  public double readF64BE() throws IOException {
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    return buffer.getDouble();
+  }
 
-    @Override
-    public void skip(int bytes) throws IOException {
-        buffer.position(buffer.position() + bytes);
-    }
+  @Override
+  public String readString(int bytes, Charset charset) throws IOException {
+    final var buf = new byte[bytes];
+    buffer.get(buf);
+    return new String(buf, charset);
+  }
 
-    @Override
-    public void seek(long pos) {
-        buffer.position(Math.toIntExact(pos));
-    }
+  @Override
+  public void skip(int bytes) throws IOException {
+    buffer.position(buffer.position() + bytes);
+  }
 
-    @Override
-    public long pos() {
-        return buffer.position();
-    }
+  @Override
+  public void seek(long pos) {
+    buffer.position(Math.toIntExact(pos));
+  }
 
-    @Override
-    public byte[] readBytes(long dataLength) throws IOException {
-        final var buf = new byte[Math.toIntExact(dataLength)];
-        buffer.get(buf);
-        return buf;
-    }
+  @Override
+  public long pos() {
+    return buffer.position();
+  }
+
+  @Override
+  public byte[] readBytes(long dataLength) throws IOException {
+    final var buf = new byte[Math.toIntExact(dataLength)];
+    buffer.get(buf);
+    return buf;
+  }
 }

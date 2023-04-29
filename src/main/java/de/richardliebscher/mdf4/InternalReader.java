@@ -14,10 +14,11 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class InternalReader {
-    @Getter
-    private final ByteInput input;
-    @Getter
-    private final Id id;
-    @Getter
-    private final Header header;
+
+  @Getter
+  private final ByteInput input;
+  @Getter
+  private final Id id;
+  @Getter
+  private final Header header;
 }

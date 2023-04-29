@@ -6,28 +6,29 @@
 package de.richardliebscher.mdf4.blocks;
 
 public class UnfinalizedFlags extends FlagsBase<UnfinalizedFlags> {
-    public static final UnfinalizedFlags DIRTY_CGCA_CYCLE_COUNTERS = ofBit(0);
-    public static final UnfinalizedFlags DIRTY_SR_CYCLE_COUNTERS = ofBit(1);
-    public static final UnfinalizedFlags DIRTY_LAST_DT_LENGTH = ofBit(2);
-    public static final UnfinalizedFlags DIRTY_LAST_RD_LENGTH = ofBit(3);
-    public static final UnfinalizedFlags DIRTY_LAST_DL = ofBit(4);
-    public static final UnfinalizedFlags DIRTY_VLSD_BYTE_LENGTHS = ofBit(5);
-    public static final UnfinalizedFlags DIRTY_VLSD_OFFSET = ofBit(6);
 
-    public static UnfinalizedFlags of(int flags) {
-        return new UnfinalizedFlags(flags);
-    }
+  public static final UnfinalizedFlags DIRTY_CGCA_CYCLE_COUNTERS = ofBit(0);
+  public static final UnfinalizedFlags DIRTY_SR_CYCLE_COUNTERS = ofBit(1);
+  public static final UnfinalizedFlags DIRTY_LAST_DT_LENGTH = ofBit(2);
+  public static final UnfinalizedFlags DIRTY_LAST_RD_LENGTH = ofBit(3);
+  public static final UnfinalizedFlags DIRTY_LAST_DL = ofBit(4);
+  public static final UnfinalizedFlags DIRTY_VLSD_BYTE_LENGTHS = ofBit(5);
+  public static final UnfinalizedFlags DIRTY_VLSD_OFFSET = ofBit(6);
 
-    private static UnfinalizedFlags ofBit(int bit) {
-        return new UnfinalizedFlags(1 << bit);
-    }
+  public static UnfinalizedFlags of(int flags) {
+    return new UnfinalizedFlags(flags);
+  }
 
-    private UnfinalizedFlags(int value) {
-        super(value);
-    }
+  private static UnfinalizedFlags ofBit(int bit) {
+    return new UnfinalizedFlags(1 << bit);
+  }
 
-    @Override
-    protected UnfinalizedFlags create(int a) {
-        return new UnfinalizedFlags(a);
-    }
+  private UnfinalizedFlags(int value) {
+    super(value);
+  }
+
+  @Override
+  protected UnfinalizedFlags create(int a) {
+    return new UnfinalizedFlags(a);
+  }
 }

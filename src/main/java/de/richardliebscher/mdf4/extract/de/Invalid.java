@@ -5,34 +5,34 @@
 
 package de.richardliebscher.mdf4.extract.de;
 
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Invalid {
-    private static final int HASH = ThreadLocalRandom.current().nextInt();
 
-    private static final Invalid INSTANCE = new Invalid();
+  private static final int HASH = ThreadLocalRandom.current().nextInt();
 
-    public static Invalid get() {
-        return INSTANCE;
-    }
+  private static final Invalid INSTANCE = new Invalid();
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Invalid;
-    }
+  public static Invalid get() {
+    return INSTANCE;
+  }
 
-    @Override
-    public int hashCode() {
-        return HASH;
-    }
+  @Override
+  public boolean equals(Object obj) {
+    return obj instanceof Invalid;
+  }
 
-    @Override
-    public String toString() {
-        return "N/A";
-    }
+  @Override
+  public int hashCode() {
+    return HASH;
+  }
+
+  @Override
+  public String toString() {
+    return "N/A";
+  }
 }

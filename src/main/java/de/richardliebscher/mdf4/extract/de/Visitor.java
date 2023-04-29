@@ -6,15 +6,26 @@
 package de.richardliebscher.mdf4.extract.de;
 
 public interface Visitor<T> {
-    T visitU8(byte value);
-    T visitU16(short value);
-    T visitU32(int value);
-    T visitU64(long value);
-    T visitI8(byte value);
-    T visitI16(short value);
-    T visitI32(int value);
-    T visitI64(long value);
-    T visitF32(float value);
-    T visitF64(double value);
-    T visitInvalid();
+
+  T visitU8(byte value);
+
+  T visitU16(short value);
+
+  T visitU32(int value);
+
+  T visitU64(long value);
+
+  T visitI8(byte value);
+
+  T visitI16(short value);
+
+  T visitI32(int value);
+
+  T visitI64(long value);
+
+  T visitF32(float value);
+
+  T visitF64(double value);
+
+  T visitInvalid();
 }

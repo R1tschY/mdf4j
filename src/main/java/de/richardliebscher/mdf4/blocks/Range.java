@@ -9,6 +9,7 @@ import lombok.Value;
 
 @Value
 public class Range {
-    double min;
-    double max;
+
+  double min;
+  double max;
 }

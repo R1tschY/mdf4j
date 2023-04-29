@@ -10,7 +10,8 @@ import de.richardliebscher.mdf4.blocks.ChannelGroup;
 import de.richardliebscher.mdf4.blocks.DataGroup;
 
 public interface ChannelSelector {
-    boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel);
 
-    boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
+  boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel);
+
+  boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
 }

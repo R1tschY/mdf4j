@@ -9,11 +9,12 @@ import de.richardliebscher.mdf4.MdfFormatVersion;
 import lombok.Getter;
 
 public class VersionException extends ParseException {
-    @Getter
-    private final MdfFormatVersion unsupportedVersion;
 
-    public VersionException(MdfFormatVersion unsupportedVersion) {
-        super("Unsupported major version: " + unsupportedVersion.getMajor());
-        this.unsupportedVersion = unsupportedVersion;
-    }
+  @Getter
+  private final MdfFormatVersion unsupportedVersion;
+
+  public VersionException(MdfFormatVersion unsupportedVersion) {
+    super("Unsupported major version: " + unsupportedVersion.getMajor());
+    this.unsupportedVersion = unsupportedVersion;
+  }
 }

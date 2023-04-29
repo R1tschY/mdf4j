@@ -8,6 +8,7 @@ package de.richardliebscher.mdf4;
 import de.richardliebscher.mdf4.blocks.Header;
 import de.richardliebscher.mdf4.blocks.Id;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
+import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.VersionException;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
@@ -38,6 +39,9 @@ public class Mdf4File {
 
     public static Mdf4File open(ByteInput input) throws IOException {
         final var idBlock = Id.parse(input);
+        if (idBlock.isUnfinalized()) {
+            throw new FormatException("MDF file is unfinalized");
+        }
 
         final var formatId = idBlock.getFormatId();
         if (formatId.getMajor() != TOOL_VERSION.getMajor()) {

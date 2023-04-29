@@ -15,13 +15,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static de.richardliebscher.mdf4.blocks.Consts.FILE_MAGIC;
+import static de.richardliebscher.mdf4.blocks.Consts.UNFINISHED_FILE_MAGIC;
 
 @Value
 public class Id {
     MdfFormatVersion formatId;
     String programId;
-    short unfinalizedFlags;
-    short customUnfinalizedFlags;
+    UnfinalizedFlags unfinalizedFlags;
+    CustomFlags customUnfinalizedFlags;
+
+    public boolean isUnfinalized() {
+        return unfinalizedFlags != null;
+    }
 
     public static Id parse(ByteInput input) throws IOException {
         final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
@@ -32,10 +37,17 @@ public class Id {
         final var versionNumber = input.readI16LE();
         final var codePageNumber = input.readI16LE();// for 3.x
         input.skip(28); // fill bytes
-        final var unfinalizedFlags = input.readI16LE();
-        final var customUnfinalizedFlags = input.readI16LE();
+        final UnfinalizedFlags unfinalizedFlags;
+        final CustomFlags customUnfinalizedFlags;
+        if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
+            unfinalizedFlags = UnfinalizedFlags.of(input.readI16LE());
+            customUnfinalizedFlags = CustomFlags.of(input.readI16LE());
+        } else {
+            unfinalizedFlags = null;
+            customUnfinalizedFlags = null;
+        }
 
-        if (!fileId.equals(FILE_MAGIC)) {
+        if (!fileId.equals(FILE_MAGIC) && !fileId.equals(UNFINISHED_FILE_MAGIC)) {
             throw new FormatException("File not a MDF file: file does not start with '" + FILE_MAGIC + "'");
         }
 

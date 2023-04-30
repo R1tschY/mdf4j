@@ -5,6 +5,9 @@
 
 package de.richardliebscher.mdf4.exceptions;
 
+/**
+ * No channel group was found.
+ */
 public class ChannelGroupNotFoundException extends Exception {
 
   public ChannelGroupNotFoundException(String message) {

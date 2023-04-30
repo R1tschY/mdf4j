@@ -6,7 +6,7 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.exceptions.ParseException;
+import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
@@ -29,7 +29,8 @@ public class HeaderList implements DataRoot {
 
     final var flags = HeaderListFlags.of(input.readI16Le());
     if (flags.hasUnknown()) {
-      throw new ParseException("Future MDF4 could not be read: Unknown flags set in HL block");
+      throw new UnsupportedVersionException(
+          "Future MDF4 could not be read: Unknown flags set in HL block");
     }
     final var zipType = ZipType.parse(input.readU8());
 

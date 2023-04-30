@@ -11,7 +11,7 @@ import de.richardliebscher.mdf4.blocks.Header;
 import de.richardliebscher.mdf4.blocks.Id;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
-import de.richardliebscher.mdf4.exceptions.VersionException;
+import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.ExtractPackageGateway;
 import de.richardliebscher.mdf4.extract.RecordReader;
@@ -72,7 +72,7 @@ public class Mdf4File {
 
     final var formatId = idBlock.getFormatId();
     if (formatId.getMajor() != TOOL_VERSION.getMajor()) {
-      throw new VersionException(formatId);
+      throw new UnsupportedVersionException(formatId);
     }
 
     input.seek(HD_BLOCK_OFFSET);

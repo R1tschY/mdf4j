@@ -100,10 +100,6 @@ public class RecordReader<R> {
         if (iterator.hasNext()) {
           final var valueRead = iterator.next();
           return seed.deserialize(deserialize, new Deserializer() {
-            @Override
-            public <R2> R2 deserialize_row(RecordVisitor<R2> recordVisitor) {
-              throw new UnsupportedOperationException();
-            }
 
             @Override
             public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {

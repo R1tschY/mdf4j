@@ -8,12 +8,20 @@ package de.richardliebscher.mdf4.exceptions;
 import de.richardliebscher.mdf4.MdfFormatVersion;
 import lombok.Getter;
 
-public class VersionException extends ParseException {
+/**
+ * MDF4 file has supported major version or has newer version that forbids reading an HL-Block.
+ */
+public class UnsupportedVersionException extends ParseException {
 
   @Getter
   private final MdfFormatVersion unsupportedVersion;
 
-  public VersionException(MdfFormatVersion unsupportedVersion) {
+  public UnsupportedVersionException(String message) {
+    super(message);
+    this.unsupportedVersion = null;
+  }
+
+  public UnsupportedVersionException(MdfFormatVersion unsupportedVersion) {
     super("Unsupported major version: " + unsupportedVersion.getMajor());
     this.unsupportedVersion = unsupportedVersion;
   }

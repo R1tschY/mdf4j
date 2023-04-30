@@ -5,22 +5,29 @@
 
 package de.richardliebscher.mdf4.io;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 
+/**
+ * Input file as byte buffer.
+ */
 public class ByteBufferInput implements ByteInput {
 
   private final ByteBuffer buffer;
 
+  /**
+   * Create from byte buffer.
+   *
+   * @param buffer byte buffer
+   */
   public ByteBufferInput(ByteBuffer buffer) {
     this.buffer = buffer;
     this.buffer.order(ByteOrder.LITTLE_ENDIAN);
   }
 
   @Override
-  public byte readU8() throws IOException {
+  public byte readU8() {
     return buffer.get();
   }
 
@@ -49,50 +56,50 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public double readF64Le() throws IOException {
+  public double readF64Le() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getDouble();
   }
 
   @Override
-  public short readI16Be() throws IOException {
+  public short readI16Be() {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getShort();
   }
 
   @Override
-  public int readI32Be() throws IOException {
+  public int readI32Be() {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getInt();
   }
 
   @Override
-  public long readI64Be() throws IOException {
+  public long readI64Be() {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getLong();
   }
 
   @Override
-  public float readF32Be() throws IOException {
+  public float readF32Be() {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getFloat();
   }
 
   @Override
-  public double readF64Be() throws IOException {
+  public double readF64Be() {
     buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getDouble();
   }
 
   @Override
-  public String readString(int bytes, Charset charset) throws IOException {
+  public String readString(int bytes, Charset charset) {
     final var buf = new byte[bytes];
     buffer.get(buf);
     return new String(buf, charset);
   }
 
   @Override
-  public void skip(int bytes) throws IOException {
+  public void skip(int bytes) {
     buffer.position(buffer.position() + bytes);
   }
 
@@ -107,7 +114,7 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public byte[] readBytes(long dataLength) throws IOException {
+  public byte[] readBytes(long dataLength) {
     final var buf = new byte[Math.toIntExact(dataLength)];
     buffer.get(buf);
     return buf;

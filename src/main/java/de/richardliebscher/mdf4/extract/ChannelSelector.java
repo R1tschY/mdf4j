@@ -9,9 +9,32 @@ import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
 import de.richardliebscher.mdf4.blocks.DataGroup;
 
+/**
+ * Select channel group and channels.
+ */
 public interface ChannelSelector {
 
+  /**
+   * Select channel group.
+   *
+   * <p>
+   * Search ends on first channel group that return {@code true}.
+   * </p>
+   *
+   * @param dataGroup Data group
+   * @param group     Channel group
+   * @return {@code true}, when channel group should be used
+   */
+  boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
+
+  /**
+   * Select channel.
+   *
+   * @param dataGroup Data group
+   * @param group     Channel group
+   * @param channel   Channel
+   * @return {@code true}, when channel should be used
+   */
   boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel);
 
-  boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
 }

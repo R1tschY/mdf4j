@@ -5,6 +5,9 @@
 
 package de.richardliebscher.mdf4.exceptions;
 
+/**
+ * A feature required to read file is not implemented.
+ */
 public class NotImplementedFeatureException extends ParseException {
 
   public NotImplementedFeatureException(String message) {

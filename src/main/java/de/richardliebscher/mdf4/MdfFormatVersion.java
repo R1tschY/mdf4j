@@ -5,14 +5,16 @@
 
 package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.exceptions.ParseException;
+import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 import lombok.Value;
 
+/**
+ * Version of MDF4 file.
+ */
 @Value(staticConstructor = "of")
 public class MdfFormatVersion {
 
@@ -21,6 +23,13 @@ public class MdfFormatVersion {
   int major;
   int minor;
 
+  /**
+   * Parse MDF4 version from file.
+   *
+   * @param input Input file
+   * @return version
+   * @throws IOException Unable to parse version
+   */
   public static MdfFormatVersion parse(ByteInput input) throws IOException {
     final var formatId = input.readString(8, StandardCharsets.ISO_8859_1);
     final var matcher = VERSION_RE.matcher(formatId);
@@ -28,19 +37,16 @@ public class MdfFormatVersion {
       return new MdfFormatVersion(Integer.parseInt(matcher.group(1)),
           Integer.parseInt(matcher.group(2)));
     } else {
-      throw new ParseException("Unable to parse MDF format version, got " + formatId);
+      throw new FormatException("Unable to parse MDF format version, got " + formatId);
     }
   }
 
+  /**
+   * Get version as number.
+   *
+   * @return MDF version
+   */
   public int asInt() {
     return major * 100 + minor;
-  }
-
-  public static class Meta implements FromBytesInput<MdfFormatVersion> {
-
-    @Override
-    public MdfFormatVersion parse(ByteInput input) throws IOException {
-      return MdfFormatVersion.parse(input);
-    }
   }
 }

@@ -5,6 +5,9 @@
 
 package de.richardliebscher.mdf4.exceptions;
 
+/**
+ * Unable to parse MDF4 file, because it violates specification.
+ */
 public class FormatException extends ParseException {
 
   public FormatException(String message) {

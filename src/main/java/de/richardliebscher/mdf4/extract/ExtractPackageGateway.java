@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
  * Needed to exclude public but module-intern methods from Javadoc.
  * </p>
  */
+@SuppressWarnings("ClassEscapesDefinedScope")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ExtractPackageGateway {
 

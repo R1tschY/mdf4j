@@ -7,9 +7,22 @@ package de.richardliebscher.mdf4.extract.de;
 
 import java.io.IOException;
 
+/**
+ * Format specific deserializer.
+ *
+ * <p>
+ * Normally not implemented by a user.
+ * </p>
+ */
 public interface Deserializer {
 
-  <R> R deserialize_row(RecordVisitor<R> recordVisitor) throws IOException;
-
+  /**
+   * Deserialize a value using visitor.
+   *
+   * @param visitor Visitor
+   * @param <R>     Value type
+   * @return Value
+   * @throws IOException Unable to deserialize
+   */
   <R> R deserialize_value(Visitor<R> visitor) throws IOException;
 }

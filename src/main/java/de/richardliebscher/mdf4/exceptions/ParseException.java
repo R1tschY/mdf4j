@@ -7,7 +7,10 @@ package de.richardliebscher.mdf4.exceptions;
 
 import java.io.IOException;
 
-public class ParseException extends IOException {
+/**
+ * Base for MDF4j exceptions.
+ */
+public abstract class ParseException extends IOException {
 
   public ParseException(String message) {
     super(message);

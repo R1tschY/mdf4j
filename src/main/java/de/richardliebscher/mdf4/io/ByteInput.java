@@ -8,6 +8,9 @@ package de.richardliebscher.mdf4.io;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+/**
+ * Read input file.
+ */
 public interface ByteInput {
 
   byte readU8() throws IOException;

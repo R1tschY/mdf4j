@@ -7,14 +7,30 @@ package de.richardliebscher.mdf4.extract.de;
 
 import java.io.IOException;
 
+/**
+ * Interface to deserialize an arbitrary type using external seed.
+ *
+ * @param <T> Target type
+ */
 public interface DeserializeSeed<T> {
 
-  static final DeserializeSeed<?> EMPTY = (DeserializeSeed<Object>) Deserialize::deserialize;
-
-  @SuppressWarnings("unchecked")
+  /**
+   * Get {@link DeserializeSeed} using empty seed.
+   *
+   * @param <T> Target type
+   * @return {@link DeserializeSeed} with empty seed
+   */
   static <T> DeserializeSeed<T> empty() {
-    return (DeserializeSeed<T>) EMPTY;
+    return Deserialize::deserialize;
   }
 
+  /**
+   * Deserialize an arbitrary type using external seed.
+   *
+   * @param deserialize Real {@link Deserialize} interface
+   * @param deserializer Format specific deserializer
+   * @return Target
+   * @throws IOException Unable to deserialize
+   */
   T deserialize(Deserialize<T> deserialize, Deserializer deserializer) throws IOException;
 }

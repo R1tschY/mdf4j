@@ -11,6 +11,11 @@ import java.io.IOException;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 
+/**
+ * Typed link to a block.
+ *
+ * @param <T> Block type
+ */
 @EqualsAndHashCode
 public final class Link<T> {
 
@@ -19,27 +24,67 @@ public final class Link<T> {
   private final long link;
   private volatile T loaded;
 
-  public Link(long link) {
+  /**
+   * Create link from long.
+   *
+   * @param link Link
+   */
+  private Link(long link) {
     this.link = link;
   }
 
+  /**
+   * Create NIL link.
+   *
+   * @param <T> Block type
+   * @return NIL
+   */
   @SuppressWarnings("unchecked")
   public static <T> Link<T> nil() {
     return (Link<T>) NIL;
   }
 
+  /**
+   * Create link from long.
+   *
+   * @param link Link
+   */
   public static <T> Link<T> of(long link) {
     return link == 0 ? nil() : new Link<>(link);
   }
 
+  /**
+   * Get link as long.
+   *
+   * @return link as long
+   */
   public long asLong() {
     return link;
   }
 
+  /**
+   * Check for NIL.
+   *
+   * @return {@code true} iff link is NIL
+   */
   public boolean isNil() {
     return link == 0;
   }
 
+  /**
+   * Resolve link.
+   *
+   * <p>
+   *   Caches block
+   * </p>
+   *
+   * @param resolver Parser for block type
+   * @param input    Input file
+   * @param <P>      Parser type for block type
+   * @return Block iff block is not NIL
+   * @throws IOException Unable to read structure from file
+   * @see #resolveNonCached
+   */
   public <P extends FromBytesInput<T>> Optional<T> resolve(P resolver, ByteInput input)
       throws IOException {
     if (link != 0) {
@@ -60,6 +105,15 @@ public final class Link<T> {
     }
   }
 
+  /**
+   * Resolve link without cache.
+   *
+   * @param resolver Parser for block type
+   * @param input    Input file
+   * @param <P>      Parser type for block type
+   * @return Block iff block is not NIL
+   * @throws IOException Unable to read structure from file
+   */
   public <P extends FromBytesInput<T>> Optional<T> resolveNonCached(P resolver, ByteInput input)
       throws IOException {
     if (link != 0) {

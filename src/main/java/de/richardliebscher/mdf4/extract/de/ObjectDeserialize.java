@@ -10,6 +10,20 @@ import java.io.IOException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Deserialize into an object.
+ *
+ * <p>
+ * Unsigned values have own unsigned classes and invalid values are return {@link Invalid}
+ * instances.
+ * </p>
+ *
+ * @see Invalid
+ * @see UnsignedByte
+ * @see UnsignedShort
+ * @see UnsignedInteger
+ * @see UnsignedLong
+ */
 public class ObjectDeserialize implements Deserialize<Object> {
 
   @Override
@@ -72,6 +86,9 @@ public class ObjectDeserialize implements Deserialize<Object> {
     });
   }
 
+  /**
+   * Boxed object for unsigned byte.
+   */
   @RequiredArgsConstructor
   @Getter
   public static final class UnsignedByte extends Number {
@@ -103,6 +120,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
       return String.valueOf(intValue());
     }
 
+    @Override
     public boolean equals(final Object o) {
       if (o instanceof UnsignedByte) {
         return this.value == ((UnsignedByte) o).value;
@@ -111,11 +129,15 @@ public class ObjectDeserialize implements Deserialize<Object> {
       }
     }
 
+    @Override
     public int hashCode() {
       return Byte.hashCode(this.value);
     }
   }
 
+  /**
+   * Boxed object for unsigned short.
+   */
   @RequiredArgsConstructor
   @Getter
   public static final class UnsignedShort extends Number {
@@ -147,6 +169,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
       return String.valueOf(intValue());
     }
 
+    @Override
     public boolean equals(final Object o) {
       if (o instanceof UnsignedShort) {
         return this.value == ((UnsignedShort) o).value;
@@ -155,11 +178,15 @@ public class ObjectDeserialize implements Deserialize<Object> {
       }
     }
 
+    @Override
     public int hashCode() {
       return Short.hashCode(this.value);
     }
   }
 
+  /**
+   * Boxed object for unsigned integer.
+   */
   @RequiredArgsConstructor
   @Getter
   public static class UnsignedInteger extends Number {
@@ -191,6 +218,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
       return String.valueOf(longValue());
     }
 
+    @Override
     public boolean equals(final Object o) {
       if (o instanceof UnsignedInteger) {
         return this.value == ((UnsignedInteger) o).value;
@@ -199,11 +227,15 @@ public class ObjectDeserialize implements Deserialize<Object> {
       }
     }
 
+    @Override
     public int hashCode() {
       return Integer.hashCode(this.value);
     }
   }
 
+  /**
+   * Boxed object for unsigned long.
+   */
   @RequiredArgsConstructor
   @Getter
   public static class UnsignedLong extends Number {
@@ -235,6 +267,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
       return Long.toUnsignedString(value);
     }
 
+    @Override
     public boolean equals(final Object o) {
       if (o instanceof UnsignedLong) {
         return this.value == ((UnsignedLong) o).value;
@@ -243,6 +276,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
       }
     }
 
+    @Override
     public int hashCode() {
       return Long.hashCode(this.value);
     }

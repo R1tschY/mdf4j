@@ -17,6 +17,12 @@
   <suppress checks="MissingJavadocMethod"
     files="de[\\/]richardliebscher[\\/]mdf4[\\/]extract[\\/]read[\\/]"/>
 
+  <!-- Ignore Javadoc in "blocks" package -->
+  <suppress checks="MissingJavadocType"
+            files="de[\\/]richardliebscher[\\/]mdf4[\\/]blocks[\\/]"/>
+  <suppress checks="MissingJavadocMethod"
+            files="de[\\/]richardliebscher[\\/]mdf4[\\/]blocks[\\/]"/>
+
   <!-- Ignore tests -->
   <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
   <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>

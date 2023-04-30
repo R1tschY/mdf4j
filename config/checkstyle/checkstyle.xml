@@ -23,6 +23,10 @@
         <property name="header" value="^/\*$\n^ \* SPDX-License-Identifier: Apache-2\.0$\n^ \* SPDX-FileCopyrightText: Copyright \d{4} Richard Liebscher &lt;r1tschy@posteo.de&gt;$\n^ \*/$"/>
         <property name="fileExtensions" value="java"/>
     </module>
+    <module name="SuppressionFilter">
+        <property name="file" value="${config_loc}/suppressions.xml"/>
+        <property name="optional" value="true"/>
+    </module>
 
     <!-- Google Style -->
     <module name="SuppressWarningsFilter"/>
@@ -38,11 +42,11 @@
         <property name="fileNamePattern" value="module\-info\.java$"/>
     </module>
     <!-- https://checkstyle.org/config_filters.html#SuppressionFilter -->
-    <module name="SuppressionFilter">
-        <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
-                  default="checkstyle-suppressions.xml" />
-        <property name="optional" value="true"/>
-    </module>
+<!--    <module name="SuppressionFilter">-->
+<!--        <property name="file" value="checkstyle-suppressions.xml"-->
+<!--                  default="checkstyle-suppressions.xml" />-->
+<!--        <property name="optional" value="true"/>-->
+<!--    </module>-->
 
     <!-- Checks for whitespace                               -->
     <!-- See http://checkstyle.org/config_whitespace.html -->

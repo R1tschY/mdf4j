@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.extract;
 import static de.richardliebscher.mdf4.internal.Iterators.asIterable;
 import static de.richardliebscher.mdf4.internal.Iterators.streamBlockSeq;
 
-import de.richardliebscher.mdf4.InternalReader;
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlags;
@@ -31,6 +30,7 @@ import de.richardliebscher.mdf4.extract.read.DataSource;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
 import de.richardliebscher.mdf4.extract.read.NoValueRead;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
+import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import de.richardliebscher.mdf4.io.ByteInput;

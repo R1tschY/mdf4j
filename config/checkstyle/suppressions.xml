@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+  "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+  "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+  <!-- Ignore Javadoc in "internal" package -->
+  <suppress checks="MissingJavadocType"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/]internal[\\/]"/>
+  <suppress checks="MissingJavadocMethod"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/]internal[\\/]"/>
+
+  <!-- Ignore Javadoc in "extract.read" package -->
+  <suppress checks="MissingJavadocType"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/]extract[\\/]read[\\/]"/>
+  <suppress checks="MissingJavadocMethod"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/]extract[\\/]read[\\/]"/>
+
+  <!-- Ignore tests -->
+  <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
+  <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
+</suppressions>

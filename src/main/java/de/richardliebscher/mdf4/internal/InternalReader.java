@@ -3,16 +3,15 @@
  * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
  */
 
-package de.richardliebscher.mdf4;
+package de.richardliebscher.mdf4.internal;
 
 import de.richardliebscher.mdf4.blocks.Header;
 import de.richardliebscher.mdf4.blocks.Id;
 import de.richardliebscher.mdf4.io.ByteInput;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+@RequiredArgsConstructor
 public class InternalReader {
 
   @Getter

@@ -29,6 +29,11 @@ dependencies {
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.7")
 }
 
+tasks.withType<Javadoc>().configureEach {
+    exclude("**/internal/**")
+    exclude("**/extract/read/**")
+}
+
 checkstyle {
     toolVersion = "10.10.0"
 }

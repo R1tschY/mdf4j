@@ -5,7 +5,6 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.InternalReader;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataGroup;
 import de.richardliebscher.mdf4.blocks.DataList;
@@ -13,6 +12,7 @@ import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
+import de.richardliebscher.mdf4.internal.InternalReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import lombok.RequiredArgsConstructor;

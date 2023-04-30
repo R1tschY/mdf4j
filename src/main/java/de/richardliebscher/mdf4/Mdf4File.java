@@ -15,28 +15,50 @@ import de.richardliebscher.mdf4.exceptions.VersionException;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
+/**
+ * MDF4 file.
+ */
 @Log
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class Mdf4File {
 
-  public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 2);
+  /**
+   * Supported MDF4 version.
+   *
+   * <p>Versions above are only partly supported</p>
+   */
+  public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 20);
 
   private final InternalReader inner;
 
+  /**
+   * @return HD-Block
+   */
   public Header getHeader() {
     return inner.getHeader();
   }
 
+  /**
+   * @return ID-Block
+   */
   public Id getId() {
     return inner.getId();
   }
 
+  /**
+   * Open MDF4 file.
+   *
+   * @param input Input file
+   * @return Open MDF4 file
+   * @throws IOException Failed to read MDF4 header
+   */
   public static Mdf4File open(ByteInput input) throws IOException {
     final var idBlock = Id.parse(input);
     if (idBlock.isUnfinalized()) {
@@ -55,6 +77,16 @@ public class Mdf4File {
     return new Mdf4File(new InternalReader(input, idBlock, hdBlock));
   }
 
+  /**
+   * Create a record reader to read channels in a channel group.
+   *
+   * @param selector      Selector for channel group and channels to read
+   * @param recordVisitor Deserializer for records with selected channels
+   * @param <R>           Deserialized user-defined record type
+   * @return {@link RecordReader}
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   */
   public <R> RecordReader<R> newRecordReader(ChannelSelector selector,
       RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
     return RecordReader.createFor(inner, selector, recordVisitor);

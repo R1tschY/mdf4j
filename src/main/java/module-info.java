@@ -5,5 +5,7 @@ module mdf4j {
   exports de.richardliebscher.mdf4;
   exports de.richardliebscher.mdf4.blocks;
   exports de.richardliebscher.mdf4.exceptions;
+  exports de.richardliebscher.mdf4.extract;
+  exports de.richardliebscher.mdf4.extract.de;
   exports de.richardliebscher.mdf4.io;
 }

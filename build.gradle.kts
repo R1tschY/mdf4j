@@ -30,9 +30,10 @@ dependencies {
 }
 
 tasks.withType<Javadoc>().configureEach {
-    exclude("**/internal/**")
-    exclude("**/extract/read/**")
     exclude("**/.*PackageGateway\\.java")
+    options {
+        (this as StandardJavadocDocletOptions).addBooleanOption("html5", true)
+    }
 }
 
 checkstyle {

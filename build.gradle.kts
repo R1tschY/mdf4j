@@ -32,6 +32,7 @@ dependencies {
 tasks.withType<Javadoc>().configureEach {
     exclude("**/internal/**")
     exclude("**/extract/read/**")
+    exclude("**/.*PackageGateway\\.java")
 }
 
 checkstyle {

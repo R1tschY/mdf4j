@@ -20,4 +20,8 @@
   <!-- Ignore tests -->
   <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
   <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
+
+  <!-- Ignore PackageGateway -->
+  <suppress checks="MissingJavadocType" files="[\\/].*PackageGateway\.java"/>
+  <suppress checks="MissingJavadocMethod" files="[\\/].*PackageGateway\.java"/>
 </suppressions>

@@ -43,7 +43,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 /**
- * @param <R> RowType
+ * Read records into user-defined type.
+ *
+ * @param <R> User-defined record type
+ * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
  */
 @Log
 public class RecordReader<R> {
@@ -69,6 +72,12 @@ public class RecordReader<R> {
 
   // PUBLIC
 
+  /**
+   * Read next record.
+   *
+   * @return Deserialized record or {@code null} if no record is left
+   * @throws IOException Unable to read record from file
+   */
   public R next() throws IOException {
     if (cycle >= group.getCycleCount()) {
       return null;
@@ -451,7 +460,12 @@ public class RecordReader<R> {
     return valueRead;
   }
 
-  public static <R> RecordReader<R> createFor(InternalReader reader, ChannelSelector selector,
+  /**
+   * Internal API: Use {@link de.richardliebscher.mdf4.Mdf4File#newRecordReader}.
+   *
+   * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
+   */
+  static <R> RecordReader<R> createFor(InternalReader reader, ChannelSelector selector,
       RecordVisitor<R> rowDeserializer)
       throws ChannelGroupNotFoundException, IOException {
     final var input = reader.getInput();

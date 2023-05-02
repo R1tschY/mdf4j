@@ -21,18 +21,18 @@ public class BlockHeader {
   }
 
   public static BlockHeader parse(BlockType id, ByteInput input) throws IOException {
-    final var typeId = input.readI32Le();
+    final var typeId = input.readI32();
     if (id.asInt() != typeId) {
       throw newWrongBlockTypeException(id, typeId);
     }
 
-    input.readI32Le(); // padding
-    final var length = input.readI64Le();
-    final var linkCount = input.readI64Le();
+    input.readI32(); // padding
+    final var length = input.readI64();
+    final var linkCount = input.readI64();
 
     final var links = new long[Math.toIntExact(linkCount)];
     for (int i = 0; i < linkCount; i++) {
-      links[i] = input.readI64Le();
+      links[i] = input.readI64();
     }
     return new BlockHeader(length, links);
   }

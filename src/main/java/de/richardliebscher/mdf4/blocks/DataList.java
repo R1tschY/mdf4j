@@ -36,7 +36,7 @@ public class DataList implements DataRoot {
 
     final var flags = DataListFlags.of(input.readU8());
     input.skip(3);
-    final var count = input.readI32Le();
+    final var count = input.readI32();
     if (count != data.size()) {
       throw new FormatException(
           "Count attribute in DL block is inconsistent: " + count + " vs. " + data.size());

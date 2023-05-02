@@ -29,17 +29,17 @@ import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.DataSource;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
 import de.richardliebscher.mdf4.extract.read.NoValueRead;
+import de.richardliebscher.mdf4.extract.read.RecordBuffer;
+import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.internal.Pair;
-import de.richardliebscher.mdf4.io.ByteBufferInput;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 /**
@@ -56,7 +56,7 @@ public class RecordReader<R> {
   private final DataRead dataSource;
   private final ByteBuffer buffer;
   private final ChannelGroup group;
-  private final ByteBufferInput input;
+  private final RecordBuffer input;
   private long cycle = 0;
 
   private RecordReader(
@@ -66,7 +66,7 @@ public class RecordReader<R> {
     this.factory = factory;
     this.dataSource = dataSource;
     this.buffer = ByteBuffer.allocate(group.getDataBytes() + group.getInvalidationBytes());
-    this.input = new ByteBufferInput(buffer);
+    this.input = new RecordByteBuffer(buffer);
     this.group = group;
   }
 
@@ -173,8 +173,6 @@ public class RecordReader<R> {
       }
     }
 
-    valueRead = new SeekingReader(valueRead, channel.getByteOffset());
-
     if (channel.getFlags().test(ChannelFlags.INVALIDATION_BIT_VALID)) {
       valueRead = createInvalidationReader(dataGroup, group, channel, valueRead);
     }
@@ -198,9 +196,8 @@ public class RecordReader<R> {
     final var invalidationBitMask = 1 << (invalidationBit & 0x07);
     return new ValueRead() {
       @Override
-      public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-        input.seek(invalidationByteIndex);
-        if ((input.readU8() & invalidationBitMask) != 0) {
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        if ((input.readU8(invalidationByteIndex) & invalidationBitMask) != 0) {
           return visitor.visitInvalid();
         } else {
           return valueRead.read(input, visitor);
@@ -242,33 +239,34 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createUintLeRead(Channel channel) throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU8(input.readU8());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU16(input.readI16Le(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU32(input.readI32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU64(input.readI64Le(byteOffset));
           }
         };
       default:
@@ -278,33 +276,34 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createUintBeRead(Channel channel) throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU8(input.readU8());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU16(input.readI16Be(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU32(input.readI32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitU64(input.readI64Be(byteOffset));
           }
         };
       default:
@@ -314,33 +313,34 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createIntLeRead(Channel channel) throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI8(input.readU8());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI16(input.readI16Le(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI32(input.readI32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI64(input.readI64Le(byteOffset));
           }
         };
       default:
@@ -350,33 +350,34 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createIntBeRead(Channel channel) throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI8(input.readU8());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI16(input.readI16Be(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI32(input.readI32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitI64(input.readI64Be(byteOffset));
           }
         };
       default:
@@ -387,19 +388,20 @@ public class RecordReader<R> {
 
   private static ValueRead createFloatLeRead(Channel channel)
       throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF32(input.readF32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64Le());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF64(input.readF64Le(byteOffset));
           }
         };
       default:
@@ -411,19 +413,20 @@ public class RecordReader<R> {
 
   private static ValueRead createFloatBeRead(Channel channel)
       throws NotImplementedFeatureException {
+    final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF32(input.readF32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64Be());
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF64(input.readF64Be(byteOffset));
           }
         };
       default:
@@ -449,7 +452,7 @@ public class RecordReader<R> {
       private int recordIndex = 0;
 
       @Override
-      public <T> T read(ByteInput input, Visitor<T> visitor) {
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) {
         return visitor.visitU32(recordIndex++);
       }
     };
@@ -511,18 +514,4 @@ public class RecordReader<R> {
 
     return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroup);
   }
-
-  @RequiredArgsConstructor
-  private static class SeekingReader implements ValueRead {
-
-    private final ValueRead inner;
-    private final long byteOffset;
-
-    @Override
-    public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
-      input.seek(byteOffset);
-      return inner.read(input, visitor);
-    }
-  }
-
 }

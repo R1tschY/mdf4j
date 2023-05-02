@@ -9,31 +9,21 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * Read input file.
+ * Read MDF4 input file.
  */
 public interface ByteInput {
 
   byte readU8() throws IOException;
 
-  short readI16Le() throws IOException;
+  short readI16() throws IOException;
 
-  int readI32Le() throws IOException;
+  int readI32() throws IOException;
 
-  long readI64Le() throws IOException;
+  long readI64() throws IOException;
 
-  float readF32Le() throws IOException;
+  float readF32() throws IOException;
 
-  double readF64Le() throws IOException;
-
-  short readI16Be() throws IOException;
-
-  int readI32Be() throws IOException;
-
-  long readI64Be() throws IOException;
-
-  float readF32Be() throws IOException;
-
-  double readF64Be() throws IOException;
+  double readF64() throws IOException;
 
   String readString(int bytes, Charset charset) throws IOException;
 

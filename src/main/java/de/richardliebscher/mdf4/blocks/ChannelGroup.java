@@ -46,13 +46,13 @@ public class ChannelGroup {
     final var firstSampleReduction = links[4];
     final Link<TextBased> comment = Link.of(links[5]);
 
-    final var recordId = input.readI64Le();
-    final var cycleCount = input.readI64Le();
-    final var flags = ChannelGroupFlags.of(input.readI16Le());
+    final var recordId = input.readI64();
+    final var cycleCount = input.readI64();
+    final var flags = ChannelGroupFlags.of(input.readI16());
     final var pathSeparator = input.readString(2, StandardCharsets.UTF_16LE).charAt(0);
     input.skip(4);
-    final var dataBytes = input.readI32Le();
-    final var invalidationBits = input.readI32Le();
+    final var dataBytes = input.readI32();
+    final var invalidationBits = input.readI32();
 
     return new ChannelGroup(
         nextChannelGroup, firstChannel, acquisitionName, acquisitionSource, firstSampleReduction,

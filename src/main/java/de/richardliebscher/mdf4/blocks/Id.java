@@ -37,16 +37,16 @@ public class Id {
       program = program.substring(0, programSize);
     }
 
-    final var defaultByteOrder = input.readI16Le(); // for 3.x
-    final var defaultFloatingPointFormat = input.readI16Le(); // for 3.x
-    final var versionNumber = input.readI16Le();
-    final var codePageNumber = input.readI16Le(); // for 3.x
+    final var defaultByteOrder = input.readI16(); // for 3.x
+    final var defaultFloatingPointFormat = input.readI16(); // for 3.x
+    final var versionNumber = input.readI16();
+    final var codePageNumber = input.readI16(); // for 3.x
     input.skip(28); // fill bytes
     final UnfinalizedFlags unfinalizedFlags;
     final CustomFlags customUnfinalizedFlags;
     if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
-      unfinalizedFlags = UnfinalizedFlags.of(input.readI16Le());
-      customUnfinalizedFlags = CustomFlags.of(input.readI16Le());
+      unfinalizedFlags = UnfinalizedFlags.of(input.readI16());
+      customUnfinalizedFlags = CustomFlags.of(input.readI16());
     } else {
       unfinalizedFlags = null;
       customUnfinalizedFlags = null;

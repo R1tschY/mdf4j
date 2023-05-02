@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.extract.read;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.internal.Unsigned;
-import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 
 public class LinearConversion implements ValueRead {
@@ -24,7 +23,7 @@ public class LinearConversion implements ValueRead {
   }
 
   @Override
-  public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
+  public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
     return inner.read(input, new Visitor<>() {
       @Override
       public T visitU8(byte value) {

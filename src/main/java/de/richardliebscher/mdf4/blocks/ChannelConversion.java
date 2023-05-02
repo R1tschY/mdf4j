@@ -35,16 +35,16 @@ public class ChannelConversion {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.CC, input, 4, 24);
     final var type = ChannelConversionType.parse(input.readU8());
     final var maybePrecision = Byte.toUnsignedInt(input.readU8());
-    final var flags = ChannelConversionFlags.of(input.readI16Le());
+    final var flags = ChannelConversionFlags.of(input.readI16());
     /* final var refCount = Short.toUnsignedInt(*/
-    input.readI16Le();
-    final var valCount = Short.toUnsignedInt(input.readI16Le());
-    final var physicalRangeMin = input.readF64Le();
-    final var physicalRangeMax = input.readF64Le();
+    input.readI16();
+    final var valCount = Short.toUnsignedInt(input.readI16());
+    final var physicalRangeMin = input.readF64();
+    final var physicalRangeMax = input.readF64();
 
     final var vals = new long[valCount];
     for (int i = 0; i < valCount; i++) {
-      vals[i] = input.readI64Le();
+      vals[i] = input.readI64();
     }
 
     final var precision = flags.test(PRECISION_VALID) ? maybePrecision : null;

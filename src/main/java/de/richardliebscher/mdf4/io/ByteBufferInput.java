@@ -32,62 +32,32 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public short readI16Le() {
+  public short readI16() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getShort();
   }
 
   @Override
-  public int readI32Le() {
+  public int readI32() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getInt();
   }
 
   @Override
-  public long readI64Le() {
+  public long readI64() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getLong();
   }
 
   @Override
-  public float readF32Le() {
+  public float readF32() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getFloat();
   }
 
   @Override
-  public double readF64Le() {
+  public double readF64() {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getDouble();
-  }
-
-  @Override
-  public short readI16Be() {
-    buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getShort();
-  }
-
-  @Override
-  public int readI32Be() {
-    buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getInt();
-  }
-
-  @Override
-  public long readI64Be() {
-    buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getLong();
-  }
-
-  @Override
-  public float readF32Be() {
-    buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getFloat();
-  }
-
-  @Override
-  public double readF64Be() {
-    buffer.order(ByteOrder.BIG_ENDIAN);
     return buffer.getDouble();
   }
 

@@ -7,7 +7,6 @@ package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 
@@ -17,7 +16,7 @@ public class NoValueRead implements ValueRead {
   private final Deserializer deserializer;
 
   @Override
-  public <T> T read(ByteInput input, Visitor<T> visitor) throws IOException {
+  public <T> T read(RecordBuffer ignore, Visitor<T> visitor) throws IOException {
     return deserializer.deserialize_value(visitor);
   }
 }

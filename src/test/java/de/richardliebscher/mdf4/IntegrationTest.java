@@ -78,8 +78,8 @@ public class IntegrationTest {
   private static List<Object> collectValues(RecordReader<List<Object>> recordReader)
       throws IOException {
     List<Object> values = new ArrayList<>();
-    List<Object> record;
-    while ((record = recordReader.next()) != null) {
+    while (recordReader.remaining() != 0) {
+      List<Object> record = recordReader.next();
       assertThat(record).hasSize(1);
       values.add(record.get(0));
     }
@@ -99,9 +99,8 @@ public class IntegrationTest {
       final var de = new ObjectDeserialize();
 
       final var result = new ArrayList<>();
-      Object elem;
-      while ((elem = recordAccess.nextElement(de)) != null) {
-        result.add(elem);
+      while (recordAccess.remaining() != 0) {
+        result.add(recordAccess.nextElement(de));
       }
       return result;
     }

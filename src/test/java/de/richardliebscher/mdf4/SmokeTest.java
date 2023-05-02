@@ -49,19 +49,16 @@ public class SmokeTest {
         final var de = new ObjectDeserialize();
 
         List<Object> objects = new ArrayList<>();
-        Object elem;
-        while ((elem = rowAccess.nextElement(de)) != null) {
-          objects.add(elem);
+        while (rowAccess.remaining() != 0) {
+          objects.add(rowAccess.nextElement(de));
         }
         return objects;
       }
     };
 
-    final var newRowReader = mdf4File.newRecordReader(channelSelector, rowDe);
-
-    List<Object> row;
-    while ((row = newRowReader.next()) != null) {
-      System.out.println(row);
+    final var reader = mdf4File.newRecordReader(channelSelector, rowDe);
+    while (reader.remaining() != 0) {
+      System.out.println(reader.next());
     }
   }
 

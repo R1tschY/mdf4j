@@ -95,8 +95,9 @@ public class CsvExample {
           final var de = new CsvColumnDeserialize();
 
           boolean firstColumn = true;
-          String elem;
-          while ((elem = recordAccess.nextElement(de)) != null) {
+          final var iterator = recordAccess.iterator(de);
+          while (iterator.hasNext()) {
+            final String elem = iterator.next();
             if (firstColumn) {
               firstColumn = false;
             } else {
@@ -110,11 +111,9 @@ public class CsvExample {
         }
       };
 
-      final var newRecordReader = mdf4File.newRecordReader(channelSelector, recordDe);
-
-      //noinspection StatementWithEmptyBody
-      while (newRecordReader.next() != null) {
-        // noop
+      final var reader = mdf4File.newRecordReader(channelSelector, recordDe);
+      for (int i = 0; i < reader.size(); i++) {
+        reader.next();
       }
     }
   }

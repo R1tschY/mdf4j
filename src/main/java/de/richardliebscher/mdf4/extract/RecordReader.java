@@ -36,10 +36,12 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import lombok.extern.java.Log;
 
 /**
@@ -73,14 +75,61 @@ public class RecordReader<R> {
   // PUBLIC
 
   /**
+   * Get number of records.
+   *
+   * @return number of records
+   */
+  public long size() {
+    return group.getCycleCount();
+  }
+
+  /**
+   * Get number of remaining records.
+   *
+   * @return number of remaining records
+   */
+  public long remaining() {
+    return group.getCycleCount() - cycle;
+  }
+
+  /**
+   * Create an iterator for deserializing all elements the same way.
+   *
+   * @return Deserialized value
+   */
+  public Iterator<R> iterator() {
+    return new Iterator<>() {
+      private long index = 0;
+      private final long size = size();
+
+      @Override
+      public boolean hasNext() {
+        return index < size;
+      }
+
+      @Override
+      public R next() {
+        try {
+          index += 1;
+          return RecordReader.this.next();
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
+    };
+  }
+
+  /**
    * Read next record.
    *
-   * @return Deserialized record or {@code null} if no record is left
-   * @throws IOException Unable to read record from file
+   * @return Deserialized record
+   * @throws IOException            Unable to read record from file
+   * @throws NoSuchElementException No remaining records
+   * @see #remaining()
    */
-  public R next() throws IOException {
+  public R next() throws IOException, NoSuchElementException {
     if (cycle >= group.getCycleCount()) {
-      return null;
+      throw new NoSuchElementException();
     }
 
     cycle += 1;
@@ -92,28 +141,29 @@ public class RecordReader<R> {
     }
 
     return factory.visitRecord(new RecordAccess() {
-      private final Iterator<ValueRead> iterator = channelReaders.iterator();
+      private int index = 0;
+      private final int size = channelReaders.size();
 
       @Override
       public <S extends DeserializeSeed<T>, T> T nextElementSeed(Deserialize<T> deserialize, S seed)
           throws IOException {
-        if (iterator.hasNext()) {
-          final var valueRead = iterator.next();
-          return seed.deserialize(deserialize, new Deserializer() {
-
-            @Override
-            public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-              return valueRead.read(input, visitor);
-            }
-          });
-        } else {
-          return null;
+        if (index >= size) {
+          throw new NoSuchElementException();
         }
+
+        final var ret = seed.deserialize(deserialize, new Deserializer() {
+          @Override
+          public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
+            return channelReaders.get(index).read(input, visitor);
+          }
+        });
+        index += 1;
+        return ret;
       }
 
       @Override
-      public int size() {
-        return channelReaders.size();
+      public int remaining() {
+        return channelReaders.size() - index;
       }
     });
   }

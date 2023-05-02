@@ -3,6 +3,11 @@
  * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
  */
 
+/**
+ * Read MDF4 files in Java.
+ *
+ * @see de.richardliebscher.mdf4.Mdf4File
+ */
 module mdf4j {
   requires java.logging;
   requires static lombok;
@@ -13,4 +18,5 @@ module mdf4j {
   exports de.richardliebscher.mdf4.extract;
   exports de.richardliebscher.mdf4.extract.de;
   exports de.richardliebscher.mdf4.io;
+  exports de.richardliebscher.mdf4.extract.read;
 }

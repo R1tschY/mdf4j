@@ -31,7 +31,12 @@ public class Id {
   public static Id parse(ByteInput input) throws IOException {
     final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
     final var version = MdfFormatVersion.parse(input);
-    final var program = input.readString(8, StandardCharsets.ISO_8859_1);
+    var program = input.readString(8, StandardCharsets.ISO_8859_1);
+    final var programSize = program.indexOf('\0');
+    if (programSize != -1) {
+      program = program.substring(0, programSize);
+    }
+
     final var defaultByteOrder = input.readI16Le(); // for 3.x
     final var defaultFloatingPointFormat = input.readI16Le(); // for 3.x
     final var versionNumber = input.readI16Le();

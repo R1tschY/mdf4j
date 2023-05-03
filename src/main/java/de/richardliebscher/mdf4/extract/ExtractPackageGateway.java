@@ -27,6 +27,6 @@ public final class ExtractPackageGateway {
   public static <R> RecordReader<R> newRecordReader(FileContext reader,
       Iterator<DataGroup> dataGroups, ChannelSelector selector,
       RecordVisitor<R> rowDeserializer) throws ChannelGroupNotFoundException, IOException {
-    return RecordReader.createFor(reader, dataGroups, selector, rowDeserializer);
+    return RecordReaderFactory.createFor(reader, dataGroups, selector, rowDeserializer);
   }
 }

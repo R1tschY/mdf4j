@@ -89,4 +89,9 @@ public class ByteBufferInput implements ByteInput {
     buffer.get(buf);
     return buf;
   }
+
+  @Override
+  public ByteInput dup() {
+    return new ByteBufferInput(buffer.duplicate());
+  }
 }

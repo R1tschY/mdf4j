@@ -5,8 +5,6 @@
 
 package de.richardliebscher.mdf4.examples;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
@@ -34,15 +32,11 @@ public class CsvExample {
   private static final String LINE_SEP = "\n";
 
   public static void main(String[] args) throws Exception {
-    final var path = Path.of("/home/richard/Downloads/perftest.csv");
+    final var source = Path.of(args[0]);
+    final var target = Path.of(args[1]);
 
     // Open file
-    final ByteBuffer buffer;
-    try (var resourceAsStream = CsvExample.class.getResourceAsStream("/perftest.z.mf4")) {
-      assumeTrue(resourceAsStream != null);
-      buffer = ByteBuffer.wrap(resourceAsStream.readAllBytes());
-    }
-    final var input = new ByteBufferInput(buffer);
+    final var input = new ByteBufferInput(ByteBuffer.wrap(Files.readAllBytes(source)));
     final var mdf4File = Mdf4File.open(input);
 
     // Select channel group and channels
@@ -60,7 +54,31 @@ public class CsvExample {
       }
     };
 
-    try (var writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
+    try (var writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
+      final var recordDe = new RecordVisitor<Void>() {
+        @Override
+        public Void visitRecord(RecordAccess recordAccess) throws IOException {
+          final var de = new CsvColumnDeserialize();
+
+          boolean firstColumn = true;
+          final var iterator = recordAccess.iterator(de);
+          while (iterator.hasNext()) {
+            final String elem = iterator.next();
+            if (firstColumn) {
+              firstColumn = false;
+            } else {
+              writer.write(SEP);
+            }
+            writer.write(elem);
+          }
+
+          writer.write(LINE_SEP);
+          return null;
+        }
+      };
+
+      final var reader = mdf4File.newRecordReader(channelSelector, recordDe);
+
       // Write header
       boolean firstColumn = true;
       for (Channel channel : channels) {
@@ -88,36 +106,11 @@ public class CsvExample {
       writer.write(LINE_SEP);
 
       // Write values
-      final var nothing = new Object();
-      final var recordDe = new RecordVisitor<>() {
-        @Override
-        public Object visitRecord(RecordAccess recordAccess) throws IOException {
-          final var de = new CsvColumnDeserialize();
-
-          boolean firstColumn = true;
-          final var iterator = recordAccess.iterator(de);
-          while (iterator.hasNext()) {
-            final String elem = iterator.next();
-            if (firstColumn) {
-              firstColumn = false;
-            } else {
-              writer.write(SEP);
-            }
-            writer.write(elem);
-          }
-
-          writer.write(LINE_SEP);
-          return nothing;
-        }
-      };
-
-      final var reader = mdf4File.newRecordReader(channelSelector, recordDe);
       for (int i = 0; i < reader.size(); i++) {
         reader.next();
       }
     }
   }
-
 }
 
 

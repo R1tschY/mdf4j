@@ -68,6 +68,7 @@ public class DataListRead implements DataRead {
 
     int bytesToRead = Math.min(currentBlock.remaining(), dst.remaining());
     dst.put(currentBlock.slice().limit(bytesToRead));
+    dst.position(0);
     currentBlock.position(currentBlock.position() + bytesToRead);
     return bytesToRead;
   }

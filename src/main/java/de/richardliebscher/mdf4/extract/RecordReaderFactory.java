@@ -1,30 +1,60 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.extract;
 
-import de.richardliebscher.mdf4.blocks.*;
+import static de.richardliebscher.mdf4.internal.Iterators.asIterable;
+
+import de.richardliebscher.mdf4.ChannelGroup;
+import de.richardliebscher.mdf4.DataGroup;
+import de.richardliebscher.mdf4.Link;
+import de.richardliebscher.mdf4.blocks.Channel;
+import de.richardliebscher.mdf4.blocks.ChannelConversion;
+import de.richardliebscher.mdf4.blocks.ChannelFlags;
+import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.ChannelGroupFlags;
+import de.richardliebscher.mdf4.blocks.Data;
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
+import de.richardliebscher.mdf4.blocks.DataList;
+import de.richardliebscher.mdf4.blocks.DataRoot;
+import de.richardliebscher.mdf4.blocks.HeaderList;
+import de.richardliebscher.mdf4.blocks.Text;
+import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.de.InvalidDeserializer;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.extract.read.*;
-import de.richardliebscher.mdf4.internal.InternalReader;
+import de.richardliebscher.mdf4.extract.read.ByteBufferRead;
+import de.richardliebscher.mdf4.extract.read.DataListRead;
+import de.richardliebscher.mdf4.extract.read.DataRead;
+import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
+import de.richardliebscher.mdf4.extract.read.LinearConversion;
+import de.richardliebscher.mdf4.extract.read.NoValueRead;
+import de.richardliebscher.mdf4.extract.read.RecordBuffer;
+import de.richardliebscher.mdf4.extract.read.ValueRead;
+import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
 
-import static de.richardliebscher.mdf4.internal.Iterators.asIterable;
-import static de.richardliebscher.mdf4.internal.Iterators.streamBlockSeq;
-
 @Log
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class RecordReaderFactory {
-  private static ValueRead createChannelReader(DataGroup dataGroup, ChannelGroup group,
-                                               Channel channel, ByteInput input) throws IOException {
+
+  private static ValueRead createChannelReader(
+          DataGroupBlock dataGroup, ChannelGroupBlock group,
+          Channel channel, ByteInput input) throws IOException {
     if (channel.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
     }
@@ -84,7 +114,7 @@ final class RecordReaderFactory {
   }
 
   private static ValueRead createInvalidationReader(
-          DataGroup dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead)
+          DataGroupBlock dataGroup, ChannelGroupBlock group, Channel channel, ValueRead valueRead)
           throws FormatException {
     final var groupBits = group.getInvalidationBytes() * 8;
     final var invalidationBit = channel.getInvalidationBit();
@@ -367,55 +397,162 @@ final class RecordReaderFactory {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  static <R> RecordReader<R> createFor(InternalReader reader, ChannelSelector selector,
-                                       RecordVisitor<R> rowDeserializer)
+  static <R> RecordReader<R> createFor(FileContext ctx, Iterator<DataGroup> dataGroups,
+                                       ChannelSelector selector, RecordVisitor<R> rowDeserializer)
           throws ChannelGroupNotFoundException, IOException {
-    final var input = reader.getInput();
+    final var input = ctx.getInput();
 
     // select
-    final var group = streamBlockSeq(reader.getHeader().iterDataGroups(input))
-            .flatMap(dg -> streamBlockSeq(dg.iterChannelGroups(input)).map(cg -> Pair.of(dg, cg)))
-            .filter(g -> selector.selectGroup(g.getLeft(), g.getRight()))
-            .findFirst()
-            .orElseThrow(() ->
-                    new ChannelGroupNotFoundException("No matching channel group found"));
-
+    final var group = selectChannels(dataGroups, selector);
     final var dataGroup = group.getLeft();
-    if (dataGroup.getRecordIdSize() != 0) {
-      throw new NotImplementedFeatureException("Unsorted data groups not implemented");
-    }
-
     final var channelGroup = group.getRight();
-    if (!channelGroup.getFlags().equals(ChannelGroupFlags.of(0))) {
-      throw new NotImplementedFeatureException("Any channel group flags not implemented");
-    }
 
     // data source
-    final var source = DataSource.create(reader, dataGroup);
+    final var source = createSource(ctx, dataGroup.getBlock());
 
     // build extractor
-    //noinspection ConstantValue
-    log.finest(() ->
-            "Record size: " + (dataGroup.getRecordIdSize() + channelGroup.getDataBytes()
-                    + channelGroup.getInvalidationBytes())
-                    + " (RecordId: " + dataGroup.getRecordIdSize() + ", Data: "
-                    + channelGroup.getDataBytes()
-                    + ", InvalidationBytes: " + channelGroup.getInvalidationBytes() + ")");
+    final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
 
-    final var channelReaders = new ArrayList<ValueRead>();
-    for (var ch : asIterable(() -> channelGroup.iterChannels(input))) {
-      try {
-        final var channelReader = createChannelReader(dataGroup, channelGroup, ch, input);
-        if (selector.selectChannel(dataGroup, channelGroup, ch)) {
-          log.finest(() -> "Channel read offset: " + ch.getByteOffset());
-          channelReaders.add(channelReader);
+    return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroup.getBlock());
+  }
+
+  static <R> ParallelRecordReader<R> createParallelFor(
+          FileContext ctx, Iterator<DataGroup> dataGroups, ChannelSelector selector,
+          SerializableRecordVisitor<R> rowDeserializer)
+          throws ChannelGroupNotFoundException, IOException {
+    final var input = ctx.getInput();
+
+    // select
+    final var group = selectChannels(dataGroups, selector);
+    final var dataGroup = group.getLeft();
+    final var channelGroup = group.getRight();
+
+    // data source
+    final var dataList = collectDataList(ctx.getInput(), dataGroup.getBlock());
+
+    // build extractor
+    final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
+
+    return new ParallelRecordReaderImpl<>(
+            ctx, channelReaders, rowDeserializer, dataList, channelGroup.getBlock());
+  }
+
+  private static Pair<DataGroup, ChannelGroup> selectChannels(
+          Iterator<DataGroup> dataGroups, ChannelSelector selector)
+          throws ChannelGroupNotFoundException, NotImplementedFeatureException {
+    while (dataGroups.hasNext()) {
+      final var dataGroup = dataGroups.next();
+
+      final var channelGroups = dataGroup.iterChannelGroups();
+      while (channelGroups.hasNext()) {
+        final var channelGroup = channelGroups.next();
+
+        if (selector.selectGroup(dataGroup, channelGroup)) {
+          if (dataGroup.getBlock().getRecordIdSize() != 0) {
+            throw new NotImplementedFeatureException("Unsorted data groups not implemented");
+          }
+
+          if (!channelGroup.getBlock().getFlags().equals(ChannelGroupFlags.of(0))) {
+            throw new NotImplementedFeatureException("Any channel group flags not implemented");
+          }
+
+          return Pair.of(dataGroup, channelGroup);
         }
-      } catch (NotImplementedFeatureException exception) {
-        log.warning("Ignoring channel '" + ch.getChannelName().resolve(Text.META, input) + "': "
-                + exception.getMessage());
       }
     }
 
-    return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroup);
+    throw new ChannelGroupNotFoundException("No matching channel group found");
+  }
+
+  public static DataRead createSource(
+          FileContext ctx, DataGroupBlock dataGroup) throws IOException {
+    final var input = ctx.getInput();
+
+    final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
+    if (dataRoot == null) {
+      return new EmptyDataRead();
+    } else if (dataRoot instanceof Data) {
+      return new ByteBufferRead(ByteBuffer.wrap(((Data) dataRoot).getData()));
+    } else if (dataRoot instanceof DataList) {
+      return new DataListRead(input, (DataList) dataRoot);
+    } else if (dataRoot instanceof HeaderList) {
+      final var headerList = (HeaderList) dataRoot;
+
+      if (headerList.getZipType() != ZipType.DEFLATE) {
+        throw new NotImplementedFeatureException(
+                "ZIP type not implemented: " + headerList.getZipType());
+      }
+
+      return headerList.getFirstDataList().resolve(DataList.META, input)
+              .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
+              .orElseGet(EmptyDataRead::new);
+    } else {
+      throw new IllegalStateException("Should not happen");
+    }
+  }
+
+  public static long[] collectDataList(
+          ByteInput input, DataGroupBlock dataGroup) throws IOException {
+
+    final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
+    if (dataRoot == null) {
+      return new long[0];
+    } else if (dataRoot instanceof Data) {
+      return new long[]{dataGroup.getData().asLong()};
+    } else if (dataRoot instanceof DataList) {
+      return collectDataList(input, (DataList) dataRoot);
+    } else if (dataRoot instanceof HeaderList) {
+      final var headerList = (HeaderList) dataRoot;
+
+      if (headerList.getZipType() != ZipType.DEFLATE) {
+        throw new NotImplementedFeatureException(
+                "ZIP type not implemented: " + headerList.getZipType());
+      }
+
+      final var firstDataList = headerList.getFirstDataList().resolve(DataList.META, input);
+      return firstDataList.isPresent() ? collectDataList(input, firstDataList.get()) : new long[0];
+    } else {
+      throw new IllegalStateException("Should not happen");
+    }
+  }
+
+  private static long[] collectDataList(
+          ByteInput input, DataList dataList) throws IOException {
+    final var res = new ArrayList<>(dataList.getData());
+    while (!dataList.getNextDataList().isNil()) {
+      dataList = dataList.getNextDataList().resolve(DataList.META, input).orElseThrow();
+      res.addAll(dataList.getData());
+    }
+    return res.stream().mapToLong(Link::asLong).toArray();
+  }
+
+  private static ArrayList<ValueRead> buildExtractors(
+          ChannelSelector selector, ByteInput input, DataGroup dataGroup,
+          ChannelGroup channelGroup) throws IOException {
+    final var dataGroupBlock = dataGroup.getBlock();
+    final var channelGroupBlock = channelGroup.getBlock();
+    log.finest(() ->
+            "Record size: " + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
+                    + channelGroupBlock.getInvalidationBytes())
+                    + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
+                    + channelGroupBlock.getDataBytes()
+                    + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
+
+    final var channelReaders = new ArrayList<ValueRead>();
+    for (var ch : asIterable(channelGroup::iterChannels)) {
+      try {
+        final var channelReader = createChannelReader(
+                dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
+        if (selector.selectChannel(dataGroup, channelGroup, ch)) {
+          log.finest(() -> "Channel read offset: " + ch.getBlock().getByteOffset());
+          channelReaders.add(channelReader);
+        }
+      } catch (NotImplementedFeatureException exception) {
+        log.warning("Ignoring channel '" + ch.getBlock().getChannelName().resolve(Text.META, input)
+                + "': " + exception.getMessage());
+      }
+    }
+
+    return channelReaders;
   }
 }

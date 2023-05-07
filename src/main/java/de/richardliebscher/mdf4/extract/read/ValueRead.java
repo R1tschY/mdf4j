@@ -7,8 +7,9 @@ package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
+import java.io.Serializable;
 
-public interface ValueRead {
+public interface ValueRead extends Serializable {
 
   <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException;
 }

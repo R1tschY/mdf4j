@@ -34,4 +34,6 @@ public interface ByteInput {
   long pos();
 
   byte[] readBytes(long dataLength) throws IOException;
+
+  ByteInput dup();
 }

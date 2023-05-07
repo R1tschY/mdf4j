@@ -28,6 +28,7 @@ public class ByteBufferRead implements DataRead {
 
     int bytesToRead = Math.min(data.remaining(), dst.remaining());
     dst.put(data.slice().limit(bytesToRead));
+    dst.position(0);
     data.position(data.position() + bytesToRead);
     return bytesToRead;
   }

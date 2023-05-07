@@ -16,78 +16,78 @@ public class RecordByteBuffer implements RecordBuffer {
 
   @Override
   public byte readU8(int pos) {
-    return buffer.get(pos);
+    return buffer.get(buffer.position() + pos);
   }
 
   @Override
   public short readI16Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getShort(pos);
+    return buffer.getShort(buffer.position() + pos);
   }
 
   @Override
   public int readI32Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getInt(pos);
+    return buffer.getInt(buffer.position() + pos);
   }
 
   @Override
   public long readI64Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getLong(pos);
+    return buffer.getLong(buffer.position() + pos);
   }
 
   @Override
   public float readF32Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getFloat(pos);
+    return buffer.getFloat(buffer.position() + pos);
   }
 
   @Override
   public double readF64Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getDouble(pos);
+    return buffer.getDouble(buffer.position() + pos);
   }
 
   @Override
   public short readI16Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getShort(pos);
+    return buffer.getShort(buffer.position() + pos);
   }
 
   @Override
   public int readI32Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getInt(pos);
+    return buffer.getInt(buffer.position() + pos);
   }
 
   @Override
   public long readI64Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getLong(pos);
+    return buffer.getLong(buffer.position() + pos);
   }
 
   @Override
   public float readF32Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getFloat(pos);
+    return buffer.getFloat(buffer.position() + pos);
   }
 
   @Override
   public double readF64Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getDouble(pos);
+    return buffer.getDouble(buffer.position() + pos);
   }
 
   @Override
   public String readString(int pos, int bytes, Charset charset) {
     final var buf = new byte[bytes];
-    buffer.get(buf);
+    buffer.slice().position(pos).slice().get(buf); // TODO: PERF
     return new String(buf, charset);
   }
 
   @Override
   public void readBytes(int pos, byte[] bytes) {
-    buffer.get(bytes);
+    buffer.slice().position(pos).slice().get(bytes); // TODO: PERF
   }
 }

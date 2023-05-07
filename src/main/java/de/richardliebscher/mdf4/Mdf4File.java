@@ -16,11 +16,12 @@ import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.ExtractPackageGateway;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.internal.FileContext;
-import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
 import lombok.extern.java.Log;
 
@@ -29,7 +30,6 @@ import lombok.extern.java.Log;
  */
 @Log
 public class Mdf4File {
-
   /**
    * Supported MDF4 version.
    *
@@ -37,12 +37,14 @@ public class Mdf4File {
    */
   public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 20);
 
-  private final InternalReader inner;
+  private final Id id;
+  private final Header header;
   private final FileContext ctx;
 
-  Mdf4File(InternalReader inner) {
-    this.inner = inner;
-    this.ctx = new FileContext(inner.getInput(), null, XMLInputFactory.newDefaultFactory());
+  Mdf4File(Id id, Header header, ByteInput input) {
+    this.id = id;
+    this.header = header;
+    this.ctx = new FileContext(input, null, XMLInputFactory.newDefaultFactory());
   }
 
   /**
@@ -51,7 +53,7 @@ public class Mdf4File {
    * @return HD-Block
    */
   public Header getHeader() {
-    return inner.getHeader();
+    return header;
   }
 
   /**
@@ -60,7 +62,7 @@ public class Mdf4File {
    * @return ID-Block
    */
   public Id getId() {
-    return inner.getId();
+    return id;
   }
 
   /**
@@ -84,8 +86,8 @@ public class Mdf4File {
     input.seek(HD_BLOCK_OFFSET);
     final var hdBlock = Header.parse(input);
 
-    log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
-    return new Mdf4File(new InternalReader(input, idBlock, hdBlock));
+    //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
+    return new Mdf4File(idBlock, hdBlock, input);
   }
 
   /**
@@ -98,8 +100,9 @@ public class Mdf4File {
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <R> RecordReader<R> newRecordReader(ChannelSelector selector,
-      RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
+  public <R> RecordReader<R> newRecordReader(
+          ChannelSelector selector,
+          RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
     return ExtractPackageGateway.newRecordReader(ctx, iterDataGroups(), selector, recordVisitor);
   }
 
@@ -107,9 +110,26 @@ public class Mdf4File {
    * Create iterator for all data groups.
    *
    * @return Newly created iterator
-   * @throws IOException Failed to read name from file.
    */
   public Iterator<DataGroup> iterDataGroups() {
     return new DataGroup.Iterator(getHeader().getFirstDataGroup(), ctx);
+  }
+
+  /**
+   * Read channels from a channel group using {@link Stream}.
+   *
+   * @param selector      Selector for channel group and channels to read
+   * @param recordVisitor Deserializer for records with selected channels
+   * @param <R>           Deserialized user-defined record type
+   * @return Stream of deserialized records
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   */
+  public <R> Stream<R> streamRecords(
+          ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
+          throws ChannelGroupNotFoundException, IOException {
+    return ExtractPackageGateway.newParallelRecordReader(
+                    ctx, iterDataGroups(), selector, recordVisitor)
+            .stream();
   }
 }

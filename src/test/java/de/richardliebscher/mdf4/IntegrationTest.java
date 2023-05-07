@@ -12,7 +12,7 @@ import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,6 +76,24 @@ public class IntegrationTest {
     assertThat(lists).containsExactlyElementsOf(expected);
   }
 
+
+  @ParameterizedTest
+  @MethodSource("primitive")
+  void checkStreamedPrimitive(String channel, List<?> expected) throws Exception {
+    // ARRANGE
+    final ByteBufferInput input = openMdf();
+    final var mdf4File = Mdf4File.open(input);
+
+    // ACT
+    final List<Object> lists = mdf4File.streamRecords(
+            new SingleChannelSelector(channel), new ObjectListDeserialize())
+            .map(rec -> rec.get(0))
+            .collect(Collectors.toList());
+
+    // ASSERT
+    assertThat(lists).containsExactlyElementsOf(expected);
+  }
+
   private static List<Object> collectValues(RecordReader<List<Object>> recordReader)
       throws IOException {
     List<Object> values = new ArrayList<>();
@@ -92,7 +111,7 @@ public class IntegrationTest {
     return new ByteBufferInput(ByteBuffer.wrap(bytes));
   }
 
-  private static class ObjectListDeserialize implements RecordVisitor<List<Object>> {
+  private static class ObjectListDeserialize implements SerializableRecordVisitor<List<Object>> {
 
     @Override
     public List<Object> visitRecord(RecordAccess recordAccess) throws IOException {

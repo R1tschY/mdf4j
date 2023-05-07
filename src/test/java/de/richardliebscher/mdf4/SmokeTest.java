@@ -11,9 +11,11 @@ import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,14 +24,8 @@ public class SmokeTest {
 
   @Test
   void test() throws Exception {
-    final ByteBuffer buffer;
-    try (var resourceAsStream = SmokeTest.class.getResourceAsStream(
-        "/KonvektionKalt1-20140123-143636.mf4")) {
-      assumeTrue(resourceAsStream != null);
-      buffer = ByteBuffer.wrap(resourceAsStream.readAllBytes());
-    }
-    final var input = new ByteBufferInput(buffer);
-    final var mdf4File = Mdf4File.open(input);
+    final var mdf4File = Mdf4File.open(Path.of(
+        SmokeTest.class.getResource("/KonvektionKalt1-20140123-143636.mf4").toURI()));
 
     final var channelSelector = new ChannelSelector() {
       @Override
@@ -90,6 +86,47 @@ public class SmokeTest {
         }
       }
     }
+  }
+
+  @Test
+  void testParallel() throws Exception {
+    final ByteBuffer buffer;
+    try (var resourceAsStream = SmokeTest.class.getResourceAsStream(
+            "/KonvektionKalt1-20140123-143636.mf4")) {
+      assumeTrue(resourceAsStream != null);
+      buffer = ByteBuffer.wrap(resourceAsStream.readAllBytes());
+    }
+    final var input = new ByteBufferInput(buffer);
+    final var mdf4File = Mdf4File.open(input);
+
+    final var channelSelector = new ChannelSelector() {
+      @Override
+      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
+        return true;
+      }
+
+      @Override
+      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+        return true;
+      }
+    };
+
+    final var rowDe = new SerializableRecordVisitor<List<Object>>() {
+      @Override
+      public List<Object> visitRecord(RecordAccess rowAccess) throws IOException {
+        final var de = new ObjectDeserialize();
+
+        List<Object> objects = new ArrayList<>();
+        while (rowAccess.remaining() != 0) {
+          objects.add(rowAccess.nextElement(de));
+        }
+        return objects;
+      }
+    };
+
+    mdf4File.streamRecords(channelSelector, rowDe)
+            .parallel()
+            .forEachOrdered(System.out::println);
   }
 
 }

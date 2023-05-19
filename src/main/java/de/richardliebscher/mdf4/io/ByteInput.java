@@ -31,9 +31,9 @@ public interface ByteInput {
 
   void seek(long pos) throws IOException;
 
-  long pos();
+  long pos() throws IOException;
 
-  byte[] readBytes(long dataLength) throws IOException;
+  byte[] readBytes(int dataLength) throws IOException;
 
-  ByteInput dup();
+  ByteInput dup() throws IOException;
 }

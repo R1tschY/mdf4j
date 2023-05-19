@@ -93,7 +93,11 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
       this.recordSize = origin.recordSize;
       this.estimatedCyclesPerBlock = origin.estimatedCyclesPerBlock;
 
-      this.input = origin.input.dup();
+      try {
+        this.input = origin.input.dup();
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
       this.index = origin.index;
       origin.index = splitPos;
       this.end = splitPos;

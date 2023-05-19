@@ -84,8 +84,8 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public byte[] readBytes(long dataLength) {
-    final var buf = new byte[Math.toIntExact(dataLength)];
+  public byte[] readBytes(int dataLength) {
+    final var buf = new byte[dataLength];
     buffer.get(buf);
     return buf;
   }

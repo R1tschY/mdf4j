@@ -19,7 +19,9 @@ import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
+import de.richardliebscher.mdf4.io.FileInput;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
@@ -88,6 +90,17 @@ public class Mdf4File {
 
     //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
     return new Mdf4File(idBlock, hdBlock, input);
+  }
+
+  /**
+   * Open MDF4 file.
+   *
+   * @param input Input file
+   * @return Open MDF4 file
+   * @throws IOException Failed to read MDF4 header
+   */
+  public static Mdf4File open(Path input) throws IOException {
+    return Mdf4File.open(new FileInput(input));
   }
 
   /**

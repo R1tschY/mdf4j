@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroup;
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
@@ -119,7 +119,7 @@ public class IntegrationTest {
     private final String signalName;
 
     @Override
-    public boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel) {
+    public boolean selectChannel(DataGroupBlock dataGroup, ChannelGroup group, Channel channel) {
       try {
         return Optional.of(signalName).equals(channel.getChannelName().resolve(Text.META, input)
             .map(Text::getData));
@@ -129,7 +129,7 @@ public class IntegrationTest {
     }
 
     @Override
-    public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
+    public boolean selectGroup(DataGroupBlock dataGroup, ChannelGroup group) {
       return true;
     }
   }

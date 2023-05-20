@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import de.richardliebscher.mdf4.Mdf4File;
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroup;
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.TextBased;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
@@ -51,13 +51,13 @@ public class CsvExample {
     final var channels = new ArrayList<Channel>();
     final var channelSelector = new ChannelSelector() {
       @Override
-      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
+      public boolean selectChannel(DataGroupBlock dg, ChannelGroup group, Channel channel) {
         channels.add(channel);
         return true;
       }
 
       @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+      public boolean selectGroup(DataGroupBlock dg, ChannelGroup group) {
         return true;
       }
     };

@@ -13,7 +13,7 @@ import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlags;
 import de.richardliebscher.mdf4.blocks.ChannelGroup;
 import de.richardliebscher.mdf4.blocks.ChannelGroupFlags;
-import de.richardliebscher.mdf4.blocks.DataGroup;
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
@@ -120,7 +120,8 @@ public class RecordReader<R> {
 
   // STATIC
 
-  private static ValueRead createChannelReader(DataGroup dataGroup, ChannelGroup group,
+  private static ValueRead createChannelReader(
+      DataGroupBlock dataGroup, ChannelGroup group,
       Channel channel, ByteInput input) throws IOException {
     if (channel.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
@@ -181,7 +182,7 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createInvalidationReader(
-      DataGroup dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead)
+      DataGroupBlock dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead)
       throws FormatException {
     final var groupBits = group.getInvalidationBytes() * 8;
     final var invalidationBit = channel.getInvalidationBit();

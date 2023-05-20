@@ -10,6 +10,7 @@
  */
 module mdf4j {
   requires java.logging;
+  requires java.xml;
   requires static lombok;
 
   exports de.richardliebscher.mdf4;

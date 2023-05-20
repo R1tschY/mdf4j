@@ -1,0 +1,68 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
+package de.richardliebscher.mdf4;
+
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Data group.
+ */
+@RequiredArgsConstructor
+public class DataGroup {
+
+  private final DataGroupBlock block;
+  private final FileContext ctx;
+
+  /**
+   * Get data group display name if existing.
+   *
+   * @return Data group name
+   * @throws IOException Failed to read name from file.
+   */
+  public Optional<String> getName() throws IOException {
+    return ctx.readName(block.getComment(), "DGcomment");
+  }
+
+  /**
+   * Create iterator for channel groups.
+   *
+   * @return Newly created iterator
+   */
+  public java.util.Iterator<ChannelGroup> iterChannelGroups() {
+    return new ChannelGroup.Iterator(block.getFirstChannelGroup(), ctx);
+  }
+
+  static class Iterator implements java.util.Iterator<DataGroup> {
+
+    private final FileContext ctx;
+    private Link<DataGroupBlock> next;
+
+    Iterator(Link<DataGroupBlock> start, FileContext ctx) {
+      this.ctx = ctx;
+      this.next = start;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return !next.isNil();
+    }
+
+    @Override
+    public DataGroup next() {
+      try {
+        final var dataGroup = next.resolve(DataGroupBlock.META, ctx.getInput()).orElseThrow();
+        next = dataGroup.getNextDataGroup();
+        return new DataGroup(dataGroup, ctx);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+  }
+}

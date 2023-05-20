@@ -6,7 +6,7 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.blocks.Data;
-import de.richardliebscher.mdf4.blocks.DataGroup;
+import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
 import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
@@ -21,7 +21,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DataSource {
 
-  public static DataRead create(InternalReader reader, DataGroup dataGroup) throws IOException {
+  public static DataRead create(InternalReader reader, DataGroupBlock dataGroup)
+      throws IOException {
     final var input = reader.getInput();
 
     final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);

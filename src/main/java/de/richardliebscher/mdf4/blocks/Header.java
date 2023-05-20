@@ -29,7 +29,7 @@ public class Header {
   // Time quality class
   private static final byte TIME_SRC_PC = 0;
 
-  Link<DataGroup> firstDataGroup;
+  Link<DataGroupBlock> firstDataGroup;
   long firstFileHistory;
   long firstChannelHierarchy;
   long firstAttachment;
@@ -57,8 +57,8 @@ public class Header {
 
   float startDistanceM;
 
-  public java.util.Iterator<DataGroup> iterDataGroups(ByteInput input) {
-    return new DataGroup.Iterator(firstDataGroup, input);
+  public java.util.Iterator<DataGroupBlock> iterDataGroups(ByteInput input) {
+    return new DataGroupBlock.Iterator(firstDataGroup, input);
   }
 
   public Optional<TextBased> readComment(ByteInput input) throws IOException {

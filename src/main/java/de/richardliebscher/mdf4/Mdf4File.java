@@ -19,15 +19,14 @@ import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+import java.util.Iterator;
+import javax.xml.stream.XMLInputFactory;
 import lombok.extern.java.Log;
 
 /**
  * MDF4 file.
  */
 @Log
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class Mdf4File {
 
   /**
@@ -38,6 +37,12 @@ public class Mdf4File {
   public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 20);
 
   private final InternalReader inner;
+  private final FileContext ctx;
+
+  Mdf4File(InternalReader inner) {
+    this.inner = inner;
+    this.ctx = new FileContext(inner.getInput(), null, XMLInputFactory.newDefaultFactory());
+  }
 
   /**
    * Get HD-Block.
@@ -95,5 +100,15 @@ public class Mdf4File {
   public <R> RecordReader<R> newRecordReader(ChannelSelector selector,
       RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
     return ExtractPackageGateway.newRecordReader(inner, selector, recordVisitor);
+  }
+
+  /**
+   * Create iterator for all data groups.
+   *
+   * @return Newly created iterator
+   * @throws IOException Failed to read name from file.
+   */
+  public Iterator<DataGroup> iterDataGroups() {
+    return new DataGroup.Iterator(getHeader().getFirstDataGroup(), ctx);
   }
 }

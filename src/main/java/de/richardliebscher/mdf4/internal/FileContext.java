@@ -3,8 +3,9 @@
  * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
  */
 
-package de.richardliebscher.mdf4;
+package de.richardliebscher.mdf4.internal;
 
+import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.Metadata;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.TextBased;
@@ -23,7 +24,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-class FileContext {
+public class FileContext {
 
   @Getter
   private final ByteInput input;
@@ -59,7 +60,7 @@ class FileContext {
       try {
         try {
           if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
-              && !reader.getLocalName().equals("DGcomment")) {
+              && !reader.getLocalName().equals(xmlElement)) {
             throw new UncheckedIOException(new FormatException(
                 "Expected DGcomment XML element, but got " + reader.getLocalName()));
           }

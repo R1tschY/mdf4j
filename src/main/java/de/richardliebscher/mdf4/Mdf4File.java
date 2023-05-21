@@ -16,6 +16,7 @@ import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.ExtractPackageGateway;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.InternalReader;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -99,7 +100,7 @@ public class Mdf4File {
    */
   public <R> RecordReader<R> newRecordReader(ChannelSelector selector,
       RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
-    return ExtractPackageGateway.newRecordReader(inner, selector, recordVisitor);
+    return ExtractPackageGateway.newRecordReader(ctx, iterDataGroups(), selector, recordVisitor);
   }
 
   /**

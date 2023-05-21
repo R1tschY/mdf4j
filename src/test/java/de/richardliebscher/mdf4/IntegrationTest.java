@@ -8,10 +8,6 @@ package de.richardliebscher.mdf4;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.richardliebscher.mdf4.blocks.Channel;
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroupBlock;
-import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
@@ -26,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +67,7 @@ public class IntegrationTest {
 
     // ACT
     final var recordReader = mdf4File.newRecordReader(
-        new SingleChannelSelector(input, channel), new ObjectListDeserialize());
+        new SingleChannelSelector(channel), new ObjectListDeserialize());
 
     final var lists = collectValues(recordReader);
 
@@ -115,21 +110,19 @@ public class IntegrationTest {
   @RequiredArgsConstructor
   private static class SingleChannelSelector implements ChannelSelector {
 
-    private final ByteBufferInput input;
     private final String signalName;
 
     @Override
-    public boolean selectChannel(DataGroupBlock dataGroup, ChannelGroup group, Channel channel) {
+    public boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel) {
       try {
-        return Optional.of(signalName).equals(channel.getChannelName().resolve(Text.META, input)
-            .map(Text::getData));
+        return signalName.equals(channel.getName());
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
     }
 
     @Override
-    public boolean selectGroup(DataGroupBlock dataGroup, ChannelGroup group) {
+    public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
       return true;
     }
   }

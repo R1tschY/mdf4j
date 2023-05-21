@@ -7,12 +7,10 @@ package de.richardliebscher.mdf4.examples;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import de.richardliebscher.mdf4.Channel;
+import de.richardliebscher.mdf4.ChannelGroup;
+import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.Mdf4File;
-import de.richardliebscher.mdf4.blocks.Channel;
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroupBlock;
-import de.richardliebscher.mdf4.blocks.Text;
-import de.richardliebscher.mdf4.blocks.TextBased;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
@@ -51,13 +49,13 @@ public class CsvExample {
     final var channels = new ArrayList<Channel>();
     final var channelSelector = new ChannelSelector() {
       @Override
-      public boolean selectChannel(DataGroupBlock dg, ChannelGroup group, Channel channel) {
+      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
         channels.add(channel);
         return true;
       }
 
       @Override
-      public boolean selectGroup(DataGroupBlock dg, ChannelGroup group) {
+      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
         return true;
       }
     };
@@ -72,8 +70,7 @@ public class CsvExample {
           writer.write(SEP);
         }
 
-        writer.write(channel.getChannelName().resolve(Text.META, input)
-            .map(Text::getData).orElse(""));
+        writer.write(channel.getName());
       }
       writer.write(LINE_SEP);
 
@@ -86,8 +83,7 @@ public class CsvExample {
           writer.write(SEP);
         }
 
-        writer.write(channel.getPhysicalUnit().resolve(TextBased.META, input)
-            .map(text -> ((Text) text).getData()).orElse(""));
+        writer.write(channel.getPhysicalUnit().orElse(""));
       }
       writer.write(LINE_SEP);
 

@@ -5,10 +5,12 @@
 
 package de.richardliebscher.mdf4.extract;
 
+import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
-import de.richardliebscher.mdf4.internal.InternalReader;
+import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
+import java.util.Iterator;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -22,8 +24,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ExtractPackageGateway {
 
-  public static <R> RecordReader<R> newRecordReader(InternalReader reader, ChannelSelector selector,
+  public static <R> RecordReader<R> newRecordReader(FileContext reader,
+      Iterator<DataGroup> dataGroups, ChannelSelector selector,
       RecordVisitor<R> rowDeserializer) throws ChannelGroupNotFoundException, IOException {
-    return RecordReader.createFor(reader, selector, rowDeserializer);
+    return RecordReader.createFor(reader, dataGroups, selector, rowDeserializer);
   }
 }

@@ -18,14 +18,14 @@ import lombok.Value;
 public class DataGroupBlock {
 
   Link<DataGroupBlock> nextDataGroup; // DG
-  Link<ChannelGroup> firstChannelGroup; // CG
+  Link<ChannelGroupBlock> firstChannelGroup; // CG
   Link<DataRoot> data; // DT,DV,DZ,DL,LD,HL
   Link<TextBased> comment; // TX,MD
 
   int recordIdSize;
 
-  public java.util.Iterator<ChannelGroup> iterChannelGroups(ByteInput input) {
-    return new ChannelGroup.Iterator(firstChannelGroup, input);
+  public java.util.Iterator<ChannelGroupBlock> iterChannelGroups(ByteInput input) {
+    return new ChannelGroupBlock.Iterator(firstChannelGroup, input);
   }
 
   public static DataGroupBlock parse(ByteInput input) throws IOException {

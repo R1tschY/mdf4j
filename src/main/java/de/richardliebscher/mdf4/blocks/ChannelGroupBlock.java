@@ -16,9 +16,9 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class ChannelGroup {
+public class ChannelGroupBlock {
 
-  Link<ChannelGroup> nextChannelGroup;
+  Link<ChannelGroupBlock> nextChannelGroup;
   Link<Channel> firstChannel;
   Link<Text> acquisitionName;
   Link<SourceInformation> acquisitionSource;
@@ -36,10 +36,10 @@ public class ChannelGroup {
     return new Channel.Iterator(firstChannel, input);
   }
 
-  public static ChannelGroup parse(ByteInput input) throws IOException {
+  public static ChannelGroupBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(BlockType.CG, input);
     final var links = blockHeader.getLinks();
-    final Link<ChannelGroup> nextChannelGroup = Link.of(links[0]);
+    final Link<ChannelGroupBlock> nextChannelGroup = Link.of(links[0]);
     final Link<Channel> firstChannel = Link.of(links[1]);
     final Link<Text> acquisitionName = Link.of(links[2]);
     final Link<SourceInformation> acquisitionSource = Link.of(links[3]);
@@ -54,18 +54,18 @@ public class ChannelGroup {
     final var dataBytes = input.readI32();
     final var invalidationBits = input.readI32();
 
-    return new ChannelGroup(
+    return new ChannelGroupBlock(
         nextChannelGroup, firstChannel, acquisitionName, acquisitionSource, firstSampleReduction,
         comment,
         recordId, cycleCount, flags, pathSeparator, dataBytes, invalidationBits);
   }
 
-  public static class Iterator implements java.util.Iterator<ChannelGroup> {
+  public static class Iterator implements java.util.Iterator<ChannelGroupBlock> {
 
     private final ByteInput input;
-    private Link<ChannelGroup> next;
+    private Link<ChannelGroupBlock> next;
 
-    public Iterator(Link<ChannelGroup> start, ByteInput input) {
+    public Iterator(Link<ChannelGroupBlock> start, ByteInput input) {
       this.input = input;
       this.next = start;
     }
@@ -76,9 +76,9 @@ public class ChannelGroup {
     }
 
     @Override
-    public ChannelGroup next() {
+    public ChannelGroupBlock next() {
       try {
-        final var channelGroup = next.resolve(ChannelGroup.META, input)
+        final var channelGroup = next.resolve(ChannelGroupBlock.META, input)
             .orElseThrow();
         next = channelGroup.getNextChannelGroup();
         return channelGroup;
@@ -91,11 +91,11 @@ public class ChannelGroup {
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelGroup> {
+  public static class Meta implements FromBytesInput<ChannelGroupBlock> {
 
     @Override
-    public ChannelGroup parse(ByteInput input) throws IOException {
-      return ChannelGroup.parse(input);
+    public ChannelGroupBlock parse(ByteInput input) throws IOException {
+      return ChannelGroupBlock.parse(input);
     }
   }
 }

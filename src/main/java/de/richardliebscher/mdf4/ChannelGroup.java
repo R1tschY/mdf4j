@@ -5,6 +5,8 @@
 
 package de.richardliebscher.mdf4;
 
+import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
@@ -16,8 +18,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChannelGroup {
 
-  private final de.richardliebscher.mdf4.blocks.ChannelGroup block;
+  private final ChannelGroupBlock block;
   private final FileContext ctx;
+
+  /**
+   * Get low-level block structure.
+   *
+   * @return Corresponding MDF4 block
+   */
+  public ChannelGroupBlock getBlock() {
+    return block;
+  }
 
   /**
    * Get channel group display name if existing.
@@ -41,9 +52,9 @@ public class ChannelGroup {
   static class Iterator implements java.util.Iterator<ChannelGroup> {
 
     private final FileContext ctx;
-    private Link<de.richardliebscher.mdf4.blocks.ChannelGroup> next;
+    private Link<ChannelGroupBlock> next;
 
-    Iterator(Link<de.richardliebscher.mdf4.blocks.ChannelGroup> start, FileContext ctx) {
+    Iterator(Link<ChannelGroupBlock> start, FileContext ctx) {
       this.ctx = ctx;
       this.next = start;
     }
@@ -56,7 +67,7 @@ public class ChannelGroup {
     @Override
     public ChannelGroup next() {
       try {
-        final var dataGroup = next.resolve(de.richardliebscher.mdf4.blocks.ChannelGroup.META,
+        final var dataGroup = next.resolve(ChannelGroupBlock.META,
             ctx.getInput()).orElseThrow();
         next = dataGroup.getNextChannelGroup();
         return new ChannelGroup(dataGroup, ctx);

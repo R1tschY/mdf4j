@@ -6,15 +6,15 @@
 package de.richardliebscher.mdf4.extract;
 
 import static de.richardliebscher.mdf4.internal.Iterators.asIterable;
-import static de.richardliebscher.mdf4.internal.Iterators.streamBlockSeq;
 
+import de.richardliebscher.mdf4.ChannelGroup;
+import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlags;
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
+import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.ChannelGroupFlags;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
-import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
@@ -32,7 +32,7 @@ import de.richardliebscher.mdf4.extract.read.NoValueRead;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
-import de.richardliebscher.mdf4.internal.InternalReader;
+import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -55,13 +55,13 @@ public class RecordReader<R> {
   private final RecordVisitor<R> factory;
   private final DataRead dataSource;
   private final ByteBuffer buffer;
-  private final ChannelGroup group;
+  private final ChannelGroupBlock group;
   private final RecordBuffer input;
   private long cycle = 0;
 
   private RecordReader(
       List<ValueRead> channelReaders, RecordVisitor<R> factory, DataRead dataSource,
-      ChannelGroup group) {
+      ChannelGroupBlock group) {
     this.channelReaders = channelReaders;
     this.factory = factory;
     this.dataSource = dataSource;
@@ -121,7 +121,7 @@ public class RecordReader<R> {
   // STATIC
 
   private static ValueRead createChannelReader(
-      DataGroupBlock dataGroup, ChannelGroup group,
+      DataGroupBlock dataGroup, ChannelGroupBlock group,
       Channel channel, ByteInput input) throws IOException {
     if (channel.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
@@ -182,7 +182,7 @@ public class RecordReader<R> {
   }
 
   private static ValueRead createInvalidationReader(
-      DataGroupBlock dataGroup, ChannelGroup group, Channel channel, ValueRead valueRead)
+      DataGroupBlock dataGroup, ChannelGroupBlock group, Channel channel, ValueRead valueRead)
       throws FormatException {
     final var groupBits = group.getInvalidationBytes() * 8;
     final var invalidationBit = channel.getInvalidationBit();
@@ -465,54 +465,73 @@ public class RecordReader<R> {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  static <R> RecordReader<R> createFor(InternalReader reader, ChannelSelector selector,
+  static <R> RecordReader<R> createFor(FileContext ctx, Iterator<DataGroup> dataGroups,
+      ChannelSelector selector,
       RecordVisitor<R> rowDeserializer)
       throws ChannelGroupNotFoundException, IOException {
-    final var input = reader.getInput();
+    final var input = ctx.getInput();
 
     // select
-    final var group = streamBlockSeq(reader.getHeader().iterDataGroups(input))
-        .flatMap(dg -> streamBlockSeq(dg.iterChannelGroups(input)).map(cg -> Pair.of(dg, cg)))
-        .filter(g -> selector.selectGroup(g.getLeft(), g.getRight()))
-        .findFirst()
-        .orElseThrow(() -> new ChannelGroupNotFoundException("No matching channel group found"));
+    final var group = select(dataGroups, selector);
 
     final var dataGroup = group.getLeft();
-    if (dataGroup.getRecordIdSize() != 0) {
+    final var dataGroupBlock = dataGroup.getBlock();
+    if (dataGroupBlock.getRecordIdSize() != 0) {
       throw new NotImplementedFeatureException("Unsorted data groups not implemented");
     }
 
     final var channelGroup = group.getRight();
-    if (!channelGroup.getFlags().equals(ChannelGroupFlags.of(0))) {
+    final var channelGroupBlock = channelGroup.getBlock();
+    if (!channelGroupBlock.getFlags().equals(ChannelGroupFlags.of(0))) {
       throw new NotImplementedFeatureException("Any channel group flags not implemented");
     }
 
     // data source
-    final var source = DataSource.create(reader, dataGroup);
+    final var source = DataSource.create(ctx, dataGroupBlock);
 
     // build extractor
     //noinspection ConstantValue
     log.finest(() ->
-        "Record size: " + (dataGroup.getRecordIdSize() + channelGroup.getDataBytes()
-            + channelGroup.getInvalidationBytes())
-            + " (RecordId: " + dataGroup.getRecordIdSize() + ", Data: "
-            + channelGroup.getDataBytes()
-            + ", InvalidationBytes: " + channelGroup.getInvalidationBytes() + ")");
+        "Record size: "
+            + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
+            + channelGroupBlock.getInvalidationBytes())
+            + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
+            + channelGroupBlock.getDataBytes()
+            + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
     final var channelReaders = new ArrayList<ValueRead>();
-    for (var ch : asIterable(() -> channelGroup.iterChannels(input))) {
+    for (var ch : asIterable(channelGroup::iterChannels)) {
       try {
-        final var channelReader = createChannelReader(dataGroup, channelGroup, ch, input);
+        final var channelReader = createChannelReader(
+            dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         if (selector.selectChannel(dataGroup, channelGroup, ch)) {
-          log.finest(() -> "Channel read offset: " + ch.getByteOffset());
+          log.finest(() -> "Channel read offset: " + ch.getBlock().getByteOffset());
           channelReaders.add(channelReader);
         }
       } catch (NotImplementedFeatureException exception) {
-        log.warning("Ignoring channel '" + ch.getChannelName().resolve(Text.META, input) + "': "
-            + exception.getMessage());
+        log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
       }
     }
 
-    return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroup);
+    return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroupBlock);
+  }
+
+  private static Pair<DataGroup, ChannelGroup> select(
+      Iterator<DataGroup> dataGroups, ChannelSelector selector)
+      throws ChannelGroupNotFoundException {
+    while (dataGroups.hasNext()) {
+      final var dataGroup = dataGroups.next();
+
+      final var channelGroups = dataGroup.iterChannelGroups();
+      while (channelGroups.hasNext()) {
+        final var channelGroup = channelGroups.next();
+
+        if (selector.selectGroup(dataGroup, channelGroup)) {
+          return Pair.of(dataGroup, channelGroup);
+        }
+      }
+    }
+
+    throw new ChannelGroupNotFoundException("No matching channel group found");
   }
 }

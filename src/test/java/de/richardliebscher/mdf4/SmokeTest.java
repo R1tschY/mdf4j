@@ -7,9 +7,6 @@ package de.richardliebscher.mdf4;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import de.richardliebscher.mdf4.blocks.Channel;
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
@@ -18,7 +15,6 @@ import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -37,12 +33,12 @@ public class SmokeTest {
 
     final var channelSelector = new ChannelSelector() {
       @Override
-      public boolean selectChannel(DataGroupBlock dg, ChannelGroup group, Channel channel) {
+      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
         return true;
       }
 
       @Override
-      public boolean selectGroup(DataGroupBlock dg, ChannelGroup group) {
+      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
         return true;
       }
     };

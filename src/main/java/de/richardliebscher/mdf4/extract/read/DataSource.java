@@ -12,7 +12,7 @@ import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
-import de.richardliebscher.mdf4.internal.InternalReader;
+import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +21,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DataSource {
 
-  public static DataRead create(InternalReader reader, DataGroupBlock dataGroup)
+  public static DataRead create(FileContext ctx, DataGroupBlock dataGroup)
       throws IOException {
-    final var input = reader.getInput();
+    final var input = ctx.getInput();
 
     final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
     if (dataRoot == null) {

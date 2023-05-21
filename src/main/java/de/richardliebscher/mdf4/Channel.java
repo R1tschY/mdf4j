@@ -7,8 +7,10 @@ package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -21,6 +23,15 @@ public class Channel {
   private final FileContext ctx;
 
   /**
+   * Get low-level block structure.
+   *
+   * @return Corresponding MDF4 block
+   */
+  public de.richardliebscher.mdf4.blocks.Channel getBlock() {
+    return block;
+  }
+
+  /**
    * Get channel name.
    *
    * @return Channel name
@@ -30,6 +41,11 @@ public class Channel {
     return block.getChannelName().resolve(Text.META, ctx.getInput())
         .orElseThrow(() -> new FormatException("Channel name link is required"))
         .getData();
+  }
+
+  public Optional<String> getPhysicalUnit() {
+    // TODO: Consider unit of conversion?
+    return ctx.readName(block.getPhysicalUnit(), "TODO");
   }
 
   static class Iterator implements java.util.Iterator<Channel> {

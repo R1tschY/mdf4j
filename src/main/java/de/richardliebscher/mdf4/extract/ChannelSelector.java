@@ -5,9 +5,9 @@
 
 package de.richardliebscher.mdf4.extract;
 
-import de.richardliebscher.mdf4.blocks.Channel;
-import de.richardliebscher.mdf4.blocks.ChannelGroup;
-import de.richardliebscher.mdf4.blocks.DataGroupBlock;
+import de.richardliebscher.mdf4.Channel;
+import de.richardliebscher.mdf4.ChannelGroup;
+import de.richardliebscher.mdf4.DataGroup;
 
 /**
  * Select channel group and channels.
@@ -25,7 +25,7 @@ public interface ChannelSelector {
    * @param group     Channel group
    * @return {@code true}, when channel group should be used
    */
-  boolean selectGroup(DataGroupBlock dataGroup, ChannelGroup group);
+  boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
 
   /**
    * Select channel.
@@ -35,6 +35,6 @@ public interface ChannelSelector {
    * @param channel   Channel
    * @return {@code true}, when channel should be used
    */
-  boolean selectChannel(DataGroupBlock dataGroup, ChannelGroup group, Channel channel);
+  boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel);
 
 }

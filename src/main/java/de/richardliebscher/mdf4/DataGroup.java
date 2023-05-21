@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
+import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
@@ -19,6 +20,15 @@ public class DataGroup {
 
   private final DataGroupBlock block;
   private final FileContext ctx;
+
+  /**
+   * Get low-level block structure.
+   *
+   * @return Corresponding MDF4 block
+   */
+  public DataGroupBlock getBlock() {
+    return block;
+  }
 
   /**
    * Get data group display name if existing.

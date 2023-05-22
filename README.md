@@ -1,9 +1,10 @@
 # mdf4j
-*MDF4 Reader for Java*
+*[ASAM MDF4](https://www.asam.net/standards/detail/mdf/) Reader for Java*
 
-## Goal
+## Goals
 
 * Reading channel data using Java
+* Do lazy loading as much as possible to reduce initial loading time
 
 ## Supported
 

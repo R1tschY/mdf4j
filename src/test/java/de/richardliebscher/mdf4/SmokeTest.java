@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import de.richardliebscher.mdf4.extract.ChannelSelector;
@@ -24,8 +25,8 @@ public class SmokeTest {
 
   @Test
   void test() throws Exception {
-    final var mdf4File = Mdf4File.open(Path.of(
-        SmokeTest.class.getResource("/KonvektionKalt1-20140123-143636.mf4").toURI()));
+    final var mdf4File = Mdf4File.open(Path.of(requireNonNull(
+        SmokeTest.class.getResource("/KonvektionKalt1-20140123-143636.mf4")).toURI()));
 
     final var channelSelector = new ChannelSelector() {
       @Override

@@ -7,6 +7,7 @@ plugins {
     id("io.freefair.lombok") version "8.0.1"
     id("io.github.gradle-nexus.publish-plugin") version "1.0.0"
     checkstyle
+    //id("net.ltgt.errorprone") version "3.1.0"
 }
 
 group = "de.richardliebscher.mdf4j"
@@ -15,6 +16,13 @@ version = "0.1.0-SNAPSHOT"
 java {
     withSourcesJar()
     withJavadocJar()
+}
+
+sourceSets.create("jmh") {
+    // Add access to test traces
+    runtimeClasspath += sourceSets.test.get().output
+
+    java.setSrcDirs(listOf("src/jmh/java"))
 }
 
 repositories {
@@ -27,6 +35,11 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.4.1")
     testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.7")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.7")
+    "jmhImplementation"(project)
+    "jmhImplementation"("org.openjdk.jmh:jmh-core:1.36")
+    "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.36")
+
+    //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }
 
 tasks.withType<Javadoc>().configureEach {

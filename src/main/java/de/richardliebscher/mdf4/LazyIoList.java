@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -24,7 +25,7 @@ import java.util.stream.StreamSupport;
 public interface LazyIoList<T> extends Iterable<Result<T, IOException>> {
 
   /**
-   * Fast iterator that throws wile iterating.
+   * Fastest iterator that throws while iterating.
    *
    * <pre>{@code
    *   final var iter = list.iter();
@@ -55,28 +56,40 @@ public interface LazyIoList<T> extends Iterable<Result<T, IOException>> {
   default Iterator<Result<T, IOException>> iterator() {
     final var iter = iter();
     return new Iterator<>() {
+      private boolean failed = false;
+
       @Override
       public boolean hasNext() {
-        return iter.hasNext();
+        return !failed && iter.hasNext();
       }
 
       @Override
       public Result<T, IOException> next() {
         try {
-          return new Ok<>(iter.next());
+          final var item = iter.next();
+          if (item == null) {
+            throw new NoSuchElementException();
+          }
+          return new Ok<>(item);
         } catch (IOException e) {
+          failed = true;
           return new Err<>(e);
         }
       }
 
       @Override
       public void forEachRemaining(Consumer<? super Result<T, IOException>> action) {
+        if (failed) {
+          return;
+        }
+
         T elem;
         try {
           while ((elem = iter.next()) != null) {
             action.accept(new Ok<>(elem));
           }
         } catch (IOException e) {
+          failed = true;
           action.accept(new Err<>(e));
         }
       }
@@ -106,8 +119,14 @@ public interface LazyIoList<T> extends Iterable<Result<T, IOException>> {
   default Spliterator<Result<T, IOException>> spliterator() {
     final var iter = iter();
     return new Spliterator<>() {
+      private boolean failed = false;
+
       @Override
       public boolean tryAdvance(Consumer<? super Result<T, IOException>> action) {
+        if (failed) {
+          return false;
+        }
+
         try {
           final var elem = iter.next();
           if (elem == null) {
@@ -115,6 +134,7 @@ public interface LazyIoList<T> extends Iterable<Result<T, IOException>> {
           }
           action.accept(new Ok<>(elem));
         } catch (IOException e) {
+          failed = true;
           action.accept(new Err<>(e));
         }
         return true;
@@ -122,12 +142,17 @@ public interface LazyIoList<T> extends Iterable<Result<T, IOException>> {
 
       @Override
       public void forEachRemaining(Consumer<? super Result<T, IOException>> action) {
+        if (failed) {
+          return;
+        }
+
         T elem;
         try {
           while ((elem = iter.next()) != null) {
             action.accept(new Ok<>(elem));
           }
         } catch (IOException e) {
+          failed = true;
           action.accept(new Err<>(e));
         }
       }

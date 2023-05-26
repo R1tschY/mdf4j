@@ -8,6 +8,7 @@ package de.richardliebscher.mdf4.extract;
 import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
+import java.io.IOException;
 
 /**
  * Select channel group and channels.
@@ -25,7 +26,7 @@ public interface ChannelSelector {
    * @param group     Channel group
    * @return {@code true}, when channel group should be used
    */
-  boolean selectGroup(DataGroup dataGroup, ChannelGroup group);
+  boolean selectGroup(DataGroup dataGroup, ChannelGroup group) throws IOException;
 
   /**
    * Select channel.
@@ -35,6 +36,7 @@ public interface ChannelSelector {
    * @param channel   Channel
    * @return {@code true}, when channel should be used
    */
-  boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel);
+  boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel)
+      throws IOException;
 
 }

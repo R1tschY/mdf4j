@@ -14,7 +14,6 @@ import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -40,17 +39,13 @@ public class FileContext {
     }
   }
 
-  public Optional<String> readName(Link<TextBased> link, String xmlElement) {
+  public Optional<String> readName(Link<TextBased> link, String xmlElement) throws IOException {
     TextBased comment;
-    try {
-      final var maybeComment = link.resolve(TextBased.META, input);
-      if (maybeComment.isEmpty()) {
-        return Optional.empty();
-      }
-      comment = maybeComment.get();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+    final var maybeComment = link.resolve(TextBased.META, input);
+    if (maybeComment.isEmpty()) {
+      return Optional.empty();
     }
+    comment = maybeComment.get();
 
     if (comment instanceof Text) {
       return Optional.of(((Text) comment).getData());
@@ -61,13 +56,13 @@ public class FileContext {
         try {
           if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
               && !reader.getLocalName().equals(xmlElement)) {
-            throw new UncheckedIOException(new FormatException(
+            throw new IOException(new FormatException(
                 "Expected DGcomment XML element, but got " + reader.getLocalName()));
           }
 
           if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
               && !reader.getLocalName().equals("TX")) {
-            throw new UncheckedIOException(new FormatException(
+            throw new IOException(new FormatException(
                 "Expected TX XML element, but got " + reader.getLocalName()));
           }
           return Optional.of(reader.getElementText());
@@ -75,7 +70,7 @@ public class FileContext {
           reader.close();
         }
       } catch (XMLStreamException e) {
-        throw new RuntimeException(e);
+        throw new IOException(e);
       }
     } else {
       throw new IllegalStateException("Should not be reached");

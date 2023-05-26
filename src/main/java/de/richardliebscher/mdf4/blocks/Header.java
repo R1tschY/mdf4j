@@ -7,6 +7,7 @@ package de.richardliebscher.mdf4.blocks;
 
 import static de.richardliebscher.mdf4.blocks.ParseUtils.flagsSet;
 
+import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
@@ -57,8 +58,8 @@ public class Header {
 
   float startDistanceM;
 
-  public java.util.Iterator<DataGroupBlock> iterDataGroups(ByteInput input) {
-    return new DataGroupBlock.Iterator(firstDataGroup, input);
+  public LazyIoList<DataGroupBlock> getDataGroups(ByteInput input) {
+    return () -> new DataGroupBlock.Iterator(firstDataGroup, input);
   }
 
   public Optional<TextBased> readComment(ByteInput input) throws IOException {

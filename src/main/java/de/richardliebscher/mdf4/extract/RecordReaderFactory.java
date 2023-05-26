@@ -5,10 +5,9 @@
 
 package de.richardliebscher.mdf4.extract;
 
-import static de.richardliebscher.mdf4.internal.Iterators.asIterable;
-
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
+import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
@@ -43,7 +42,6 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
@@ -397,7 +395,7 @@ final class RecordReaderFactory {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  static <R> RecordReader<R> createFor(FileContext ctx, Iterator<DataGroup> dataGroups,
+  static <R> RecordReader<R> createFor(FileContext ctx, LazyIoList<DataGroup> dataGroups,
                                        ChannelSelector selector, RecordVisitor<R> rowDeserializer)
           throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
@@ -417,7 +415,7 @@ final class RecordReaderFactory {
   }
 
   static <R> ParallelRecordReader<R> createParallelFor(
-          FileContext ctx, Iterator<DataGroup> dataGroups, ChannelSelector selector,
+          FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
           SerializableRecordVisitor<R> rowDeserializer)
           throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
@@ -438,15 +436,15 @@ final class RecordReaderFactory {
   }
 
   private static Pair<DataGroup, ChannelGroup> selectChannels(
-          Iterator<DataGroup> dataGroups, ChannelSelector selector)
-          throws ChannelGroupNotFoundException, NotImplementedFeatureException {
-    while (dataGroups.hasNext()) {
-      final var dataGroup = dataGroups.next();
+          LazyIoList<DataGroup> dataGroups, ChannelSelector selector)
+          throws ChannelGroupNotFoundException, IOException {
+    DataGroup dataGroup;
+    ChannelGroup channelGroup;
 
-      final var channelGroups = dataGroup.iterChannelGroups();
-      while (channelGroups.hasNext()) {
-        final var channelGroup = channelGroups.next();
-
+    final var dataGroupsIter = dataGroups.iter();
+    while ((dataGroup = dataGroupsIter.next()) != null) {
+      final var channelGroupsIter = dataGroup.getChannelGroups().iter();
+      while ((channelGroup = channelGroupsIter.next()) != null) {
         if (selector.selectGroup(dataGroup, channelGroup)) {
           if (dataGroup.getBlock().getRecordIdSize() != 0) {
             throw new NotImplementedFeatureException("Unsorted data groups not implemented");
@@ -539,12 +537,13 @@ final class RecordReaderFactory {
                     + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
     final var channelReaders = new ArrayList<ValueRead>();
-    for (var ch : asIterable(channelGroup::iterChannels)) {
+    final var iter = channelGroup.getChannels().iter();
+    de.richardliebscher.mdf4.Channel ch;
+    while ((ch = iter.next()) != null) {
       try {
         final var channelReader = createChannelReader(
                 dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         if (selector.selectChannel(dataGroup, channelGroup, ch)) {
-          log.finest(() -> "Channel read offset: " + ch.getBlock().getByteOffset());
           channelReaders.add(channelReader);
         }
       } catch (NotImplementedFeatureException exception) {

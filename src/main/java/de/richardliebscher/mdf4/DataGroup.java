@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
@@ -45,11 +44,11 @@ public class DataGroup {
    *
    * @return Newly created iterator
    */
-  public java.util.Iterator<ChannelGroup> iterChannelGroups() {
-    return new ChannelGroup.Iterator(block.getFirstChannelGroup(), ctx);
+  public LazyIoList<ChannelGroup> getChannelGroups() {
+    return () -> new ChannelGroup.Iterator(block.getFirstChannelGroup(), ctx);
   }
 
-  static class Iterator implements java.util.Iterator<DataGroup> {
+  static class Iterator implements LazyIoIterator<DataGroup> {
 
     private final FileContext ctx;
     private Link<DataGroupBlock> next;
@@ -65,14 +64,13 @@ public class DataGroup {
     }
 
     @Override
-    public DataGroup next() {
-      try {
-        final var dataGroup = next.resolve(DataGroupBlock.META, ctx.getInput()).orElseThrow();
-        next = dataGroup.getNextDataGroup();
-        return new DataGroup(dataGroup, ctx);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+    public DataGroup next() throws IOException {
+      final var dataGroup = next.resolve(DataGroupBlock.META, ctx.getInput()).orElse(null);
+      if (dataGroup == null) {
+        return null;
       }
+      next = dataGroup.getNextDataGroup();
+      return new DataGroup(dataGroup, ctx);
     }
   }
 }

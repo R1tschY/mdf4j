@@ -5,11 +5,12 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import de.richardliebscher.mdf4.LazyIoIterator;
+import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -32,8 +33,8 @@ public class ChannelGroupBlock {
   int dataBytes;
   int invalidationBytes;
 
-  public java.util.Iterator<Channel> iterChannels(ByteInput input) {
-    return new Channel.Iterator(firstChannel, input);
+  public LazyIoList<Channel> getChannels(ByteInput input) {
+    return () -> new Channel.Iterator(firstChannel, input);
   }
 
   public static ChannelGroupBlock parse(ByteInput input) throws IOException {
@@ -60,7 +61,7 @@ public class ChannelGroupBlock {
         recordId, cycleCount, flags, pathSeparator, dataBytes, invalidationBits);
   }
 
-  public static class Iterator implements java.util.Iterator<ChannelGroupBlock> {
+  public static class Iterator implements LazyIoIterator<ChannelGroupBlock> {
 
     private final ByteInput input;
     private Link<ChannelGroupBlock> next;
@@ -76,15 +77,11 @@ public class ChannelGroupBlock {
     }
 
     @Override
-    public ChannelGroupBlock next() {
-      try {
-        final var channelGroup = next.resolve(ChannelGroupBlock.META, input)
-            .orElseThrow();
-        next = channelGroup.getNextChannelGroup();
-        return channelGroup;
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public ChannelGroupBlock next() throws IOException {
+      final var channelGroup = next.resolve(ChannelGroupBlock.META, input)
+          .orElseThrow();
+      next = channelGroup.getNextChannelGroup();
+      return channelGroup;
     }
   }
 

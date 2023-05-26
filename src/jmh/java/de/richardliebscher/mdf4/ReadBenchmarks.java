@@ -53,6 +53,7 @@ public class ReadBenchmarks {
 
 
 class SimpleCsvConverter {
+
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
@@ -78,26 +79,20 @@ class SimpleCsvConverter {
 
     final var target = new StringWriter();
     try (var writer = new BufferedWriter(target)) {
-      final var nothing = new Object();
       final var recordDe = new RecordVisitor<>() {
         @Override
         public Object visitRecord(RecordAccess recordAccess) throws IOException {
           final var de = new CsvColumnDeserialize();
 
-          boolean firstColumn = true;
-          final var iterator = recordAccess.iterator(de);
-          while (iterator.hasNext()) {
-            final String elem = iterator.next();
-            if (firstColumn) {
-              firstColumn = false;
-            } else {
+          while (recordAccess.remaining() > 0) {
+            writer.write(recordAccess.nextElement(de));
+            if (recordAccess.remaining() > 1) {
               writer.write(SEP);
             }
-            writer.write(elem);
           }
 
           writer.write(LINE_SEP);
-          return nothing;
+          return null;
         }
       };
 
@@ -139,6 +134,7 @@ class SimpleCsvConverter {
 }
 
 class SimpleStreamCsvConverter {
+
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
@@ -171,16 +167,11 @@ class SimpleStreamCsvConverter {
 
           final var builder = new StringBuilder();
 
-          boolean firstColumn = true;
-          final var iterator = recordAccess.iterator(de);
-          while (iterator.hasNext()) {
-            final String elem = iterator.next();
-            if (firstColumn) {
-              firstColumn = false;
-            } else {
-              builder.append(SEP);
+          while (recordAccess.remaining() > 0) {
+            writer.write(recordAccess.nextElement(de));
+            if (recordAccess.remaining() > 1) {
+              writer.write(SEP);
             }
-            builder.append(elem);
           }
 
           builder.append(LINE_SEP);
@@ -219,7 +210,7 @@ class SimpleStreamCsvConverter {
       // Write values
       reader.forEachOrdered(line -> {
         try {
-          writer.write(line);
+          writer.write(line.get());
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
@@ -230,6 +221,7 @@ class SimpleStreamCsvConverter {
 }
 
 class ParallelStreamCsvConverter {
+
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
@@ -262,16 +254,11 @@ class ParallelStreamCsvConverter {
 
           final var builder = new StringBuilder();
 
-          boolean firstColumn = true;
-          final var iterator = recordAccess.iterator(de);
-          while (iterator.hasNext()) {
-            final String elem = iterator.next();
-            if (firstColumn) {
-              firstColumn = false;
-            } else {
-              builder.append(SEP);
+          while (recordAccess.remaining() > 0) {
+            writer.write(recordAccess.nextElement(de));
+            if (recordAccess.remaining() > 1) {
+              writer.write(SEP);
             }
-            builder.append(elem);
           }
 
           builder.append(LINE_SEP);
@@ -310,7 +297,7 @@ class ParallelStreamCsvConverter {
       // Write values
       reader.parallel().forEachOrdered(line -> {
         try {
-          writer.write(line);
+          writer.write(line.get());
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }

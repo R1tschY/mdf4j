@@ -6,6 +6,9 @@
 package de.richardliebscher.mdf4.extract;
 
 import de.richardliebscher.mdf4.Link;
+import de.richardliebscher.mdf4.Result;
+import de.richardliebscher.mdf4.Result.Err;
+import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataBlock;
@@ -23,7 +26,6 @@ import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -43,7 +45,7 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
   private final ChannelGroupBlock channelGroup;
 
   @Override
-  public Stream<R> stream() {
+  public Stream<Result<R, IOException>> stream() {
     final var input = ctx.getInput();
 
     return StreamSupport.stream(new RecordSpliterator<>(
@@ -53,7 +55,7 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
   }
 
   @AllArgsConstructor
-  private static final class RecordSpliterator<R> implements Spliterator<R> {
+  private static final class RecordSpliterator<R> implements Spliterator<Result<R, IOException>> {
     private final ByteInput input;
     private final List<ValueRead> channelReaders;
     private final SerializableRecordVisitor<R> rowDeserializer;
@@ -86,18 +88,14 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
               | Spliterator.SIZED; // TODO: SUBSIZED possible when EQUAL_LENGTH flag is set
     }
 
-    public RecordSpliterator(RecordSpliterator<R> origin, int splitPos) {
+    public RecordSpliterator(RecordSpliterator<R> origin, int splitPos) throws IOException {
       this.channelReaders = origin.channelReaders;
       this.rowDeserializer = origin.rowDeserializer;
       this.dataList = origin.dataList;
       this.recordSize = origin.recordSize;
       this.estimatedCyclesPerBlock = origin.estimatedCyclesPerBlock;
 
-      try {
-        this.input = origin.input.dup();
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+      this.input = origin.input.dup();
       this.index = origin.index;
       origin.index = splitPos;
       this.end = splitPos;
@@ -113,7 +111,7 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
       origin.characteristics = Spliterator.ORDERED | Spliterator.IMMUTABLE;
     }
 
-    public boolean read(Consumer<? super R> action) throws IOException {
+    public boolean read(Consumer<? super Result<R, IOException>> action) throws IOException {
       if (index == end) {
         return false;
       }
@@ -150,7 +148,7 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
         recordInput = new RecordByteBuffer(currentBlock);
       }
 
-      action.accept(rowDeserializer.visitRecord(new RecordAccess() {
+      action.accept(new Ok<>(rowDeserializer.visitRecord(new RecordAccess() {
         private int index = 0;
         private final int size = channelReaders.size();
 
@@ -175,7 +173,7 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
         public int remaining() {
           return channelReaders.size() - index;
         }
-      }));
+      })));
 
       readCycles += 1;
       currentBlock.position(currentBlock.position() + recordSize);
@@ -191,16 +189,22 @@ class ParallelRecordReaderImpl<R> implements ParallelRecordReader<R> {
       if (start >= middle) {
         return null;
       } else {
-        return new RecordSpliterator<>(this, middle);
+        try {
+          return new RecordSpliterator<>(this, middle);
+        } catch (IOException e) {
+          return null;
+        }
       }
     }
 
     @Override
-    public boolean tryAdvance(Consumer<? super R> action) {
+    public boolean tryAdvance(Consumer<? super Result<R, IOException>> action) {
       try {
         return read(action);
       } catch (IOException e) {
-        throw new UncheckedIOException(e);
+        action.accept(new Err<>(e));
+        index = end;
+        return true;
       }
     }
 

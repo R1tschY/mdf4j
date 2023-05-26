@@ -9,7 +9,6 @@ import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
@@ -43,12 +42,12 @@ public class Channel {
         .getData();
   }
 
-  public Optional<String> getPhysicalUnit() {
+  public Optional<String> getPhysicalUnit() throws IOException {
     // TODO: Consider unit of conversion?
     return ctx.readName(block.getPhysicalUnit(), "TODO");
   }
 
-  static class Iterator implements java.util.Iterator<Channel> {
+  static class Iterator implements LazyIoIterator<Channel> {
 
     private final FileContext ctx;
     private Link<de.richardliebscher.mdf4.blocks.Channel> next;
@@ -64,15 +63,15 @@ public class Channel {
     }
 
     @Override
-    public Channel next() {
-      try {
-        final var dataGroup = next.resolve(de.richardliebscher.mdf4.blocks.Channel.META,
-            ctx.getInput()).orElseThrow();
-        next = dataGroup.getNextChannel();
-        return new Channel(dataGroup, ctx);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+    public Channel next() throws IOException {
+      final var dataGroup = next
+          .resolve(de.richardliebscher.mdf4.blocks.Channel.META, ctx.getInput())
+          .orElse(null);
+      if (dataGroup == null) {
+        return null;
       }
+      next = dataGroup.getNextChannel();
+      return new Channel(dataGroup, ctx);
     }
   }
 }

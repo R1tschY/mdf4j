@@ -5,11 +5,11 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import de.richardliebscher.mdf4.LazyIoIterator;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -70,7 +70,7 @@ public class Channel {
         limitExtended);
   }
 
-  public static class Iterator implements java.util.Iterator<Channel> {
+  public static class Iterator implements LazyIoIterator<Channel> {
 
     private final ByteInput input;
     private Link<Channel> next;
@@ -86,15 +86,11 @@ public class Channel {
     }
 
     @Override
-    public Channel next() {
-      try {
-        final var channel = next.resolve(Channel.META, input)
-            .orElseThrow();
-        next = channel.getNextChannel();
-        return channel;
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public Channel next() throws IOException {
+      final var channel = next.resolve(Channel.META, input)
+          .orElseThrow();
+      next = channel.getNextChannel();
+      return channel;
     }
   }
 

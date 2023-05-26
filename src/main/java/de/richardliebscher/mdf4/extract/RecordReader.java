@@ -5,6 +5,9 @@
 
 package de.richardliebscher.mdf4.extract;
 
+import de.richardliebscher.mdf4.Result;
+import de.richardliebscher.mdf4.Result.Err;
+import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
@@ -18,7 +21,6 @@ import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
@@ -78,7 +80,7 @@ public class RecordReader<R> {
    *
    * @return Deserialized value
    */
-  public Iterator<R> iterator() {
+  public Iterator<Result<R, IOException>> iterator() {
     return new Iterator<>() {
       private long index = 0;
       private final long size = size();
@@ -89,12 +91,12 @@ public class RecordReader<R> {
       }
 
       @Override
-      public R next() {
+      public Result<R, IOException> next() {
         try {
           index += 1;
-          return RecordReader.this.next();
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
+          return new Ok<>(RecordReader.this.next());
+        } catch (IOException exp) {
+          return new Err<>(exp);
         }
       }
     };

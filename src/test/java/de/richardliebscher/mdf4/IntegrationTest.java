@@ -15,7 +15,6 @@ import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -87,7 +86,7 @@ public class IntegrationTest {
     // ACT
     final List<Object> lists = mdf4File.streamRecords(
             new SingleChannelSelector(channel), new ObjectListDeserialize())
-            .map(rec -> rec.get(0))
+            .map(rec -> rec.unwrap().get(0))
             .collect(Collectors.toList());
 
     // ASSERT
@@ -131,12 +130,9 @@ public class IntegrationTest {
     private final String signalName;
 
     @Override
-    public boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel) {
-      try {
-        return signalName.equals(channel.getName());
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel)
+        throws IOException {
+      return signalName.equals(channel.getName());
     }
 
     @Override

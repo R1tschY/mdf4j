@@ -5,11 +5,12 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import de.richardliebscher.mdf4.LazyIoIterator;
+import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -24,8 +25,8 @@ public class DataGroupBlock {
 
   int recordIdSize;
 
-  public java.util.Iterator<ChannelGroupBlock> iterChannelGroups(ByteInput input) {
-    return new ChannelGroupBlock.Iterator(firstChannelGroup, input);
+  public LazyIoList<ChannelGroupBlock> getChannelGroups(ByteInput input) {
+    return () -> new ChannelGroupBlock.Iterator(firstChannelGroup, input);
   }
 
   public static DataGroupBlock parse(ByteInput input) throws IOException {
@@ -38,7 +39,7 @@ public class DataGroupBlock {
         recordIdSize);
   }
 
-  public static class Iterator implements java.util.Iterator<DataGroupBlock> {
+  public static class Iterator implements LazyIoIterator<DataGroupBlock> {
 
     private final ByteInput input;
     private Link<DataGroupBlock> next;
@@ -54,14 +55,10 @@ public class DataGroupBlock {
     }
 
     @Override
-    public DataGroupBlock next() {
-      try {
-        final var dataGroup = next.resolve(DataGroupBlock.META, input).orElseThrow();
-        next = dataGroup.getNextDataGroup();
-        return dataGroup;
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    public DataGroupBlock next() throws IOException {
+      final var dataGroup = next.resolve(DataGroupBlock.META, input).orElseThrow();
+      next = dataGroup.getNextDataGroup();
+      return dataGroup;
     }
   }
 

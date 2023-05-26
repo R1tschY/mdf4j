@@ -60,16 +60,11 @@ public class CsvExample {
         public Void visitRecord(RecordAccess recordAccess) throws IOException {
           final var de = new CsvColumnDeserialize();
 
-          boolean firstColumn = true;
-          final var iterator = recordAccess.iterator(de);
-          while (iterator.hasNext()) {
-            final String elem = iterator.next();
-            if (firstColumn) {
-              firstColumn = false;
-            } else {
+          while (recordAccess.remaining() != 0) {
+            writer.write(recordAccess.nextElement(de));
+            if (recordAccess.remaining() > 1) {
               writer.write(SEP);
             }
-            writer.write(elem);
           }
 
           writer.write(LINE_SEP);

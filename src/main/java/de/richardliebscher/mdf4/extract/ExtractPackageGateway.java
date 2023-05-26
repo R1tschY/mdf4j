@@ -6,12 +6,12 @@
 package de.richardliebscher.mdf4.extract;
 
 import de.richardliebscher.mdf4.DataGroup;
+import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
-import java.util.Iterator;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -26,13 +26,13 @@ import lombok.NoArgsConstructor;
 public final class ExtractPackageGateway {
 
   public static <R> RecordReader<R> newRecordReader(
-      FileContext ctx, Iterator<DataGroup> dataGroups, ChannelSelector selector,
+      FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
       RecordVisitor<R> rowDeserializer) throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createFor(ctx, dataGroups, selector, rowDeserializer);
   }
 
   public static <R> ParallelRecordReader<R> newParallelRecordReader(
-      FileContext ctx, Iterator<DataGroup> dataGroups, ChannelSelector selector,
+      FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
       SerializableRecordVisitor<R> rowDeserializer)
       throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createParallelFor(ctx, dataGroups, selector, rowDeserializer);

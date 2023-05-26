@@ -5,8 +5,10 @@
 
 package de.richardliebscher.mdf4.extract.de;
 
+import de.richardliebscher.mdf4.Result;
+import de.richardliebscher.mdf4.Result.Err;
+import de.richardliebscher.mdf4.Result.Ok;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -56,7 +58,7 @@ public interface RecordAccess {
    * @param <T>         Value type
    * @return Deserialized value
    */
-  default <T> Iterator<T> iterator(Deserialize<T> deserialize) {
+  default <T> Iterator<Result<T, IOException>> iterator(Deserialize<T> deserialize) {
     return new Iterator<>() {
       private long index = 0;
       private final long size = remaining();
@@ -67,12 +69,12 @@ public interface RecordAccess {
       }
 
       @Override
-      public T next() {
+      public Result<T, IOException> next() {
         try {
           index += 1;
-          return nextElement(deserialize);
+          return new Ok<>(nextElement(deserialize));
         } catch (IOException e) {
-          throw new UncheckedIOException(e);
+          return new Err<>(e);
         }
       }
     };

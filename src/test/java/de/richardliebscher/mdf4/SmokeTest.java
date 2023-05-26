@@ -70,19 +70,19 @@ public class SmokeTest {
     final var input = new ByteBufferInput(buffer);
     final var mdf4File = Mdf4File.open(input);
 
-    final var iterator = mdf4File.iterDataGroups();
-    while (iterator.hasNext()) {
-      final var dataGroup = iterator.next();
+    final var iterator = mdf4File.getDataGroups().iter();
+    DataGroup dataGroup;
+    while ((dataGroup = iterator.next()) != null) {
       System.out.printf("DG: %s%n", dataGroup.getName());
 
-      final var cgIterator = dataGroup.iterChannelGroups();
-      while (cgIterator.hasNext()) {
-        final var channelGroup = cgIterator.next();
+      final var cgIterator = dataGroup.getChannelGroups().iter();
+      ChannelGroup channelGroup;
+      while ((channelGroup = cgIterator.next()) != null) {
         System.out.printf("  CG: %s%n", channelGroup.getName());
 
-        final var cnIterator = channelGroup.iterChannels();
-        while (cnIterator.hasNext()) {
-          final var channel = cnIterator.next();
+        final var cnIterator = channelGroup.getChannels().iter();
+        Channel channel;
+        while ((channel = cnIterator.next()) != null) {
           System.out.printf("    CN: %s%n", channel.getName());
         }
       }

@@ -22,7 +22,6 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FileInput;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
 import lombok.extern.java.Log;
@@ -116,7 +115,7 @@ public class Mdf4File {
   public <R> RecordReader<R> newRecordReader(
           ChannelSelector selector,
           RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
-    return ExtractPackageGateway.newRecordReader(ctx, iterDataGroups(), selector, recordVisitor);
+    return ExtractPackageGateway.newRecordReader(ctx, getDataGroups(), selector, recordVisitor);
   }
 
   /**
@@ -124,8 +123,8 @@ public class Mdf4File {
    *
    * @return Newly created iterator
    */
-  public Iterator<DataGroup> iterDataGroups() {
-    return new DataGroup.Iterator(getHeader().getFirstDataGroup(), ctx);
+  public LazyIoList<DataGroup> getDataGroups() {
+    return () -> new DataGroup.Iterator(getHeader().getFirstDataGroup(), ctx);
   }
 
   /**
@@ -138,11 +137,11 @@ public class Mdf4File {
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <R> Stream<R> streamRecords(
+  public <R> Stream<Result<R, IOException>> streamRecords(
           ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
           throws ChannelGroupNotFoundException, IOException {
     return ExtractPackageGateway.newParallelRecordReader(
-                    ctx, iterDataGroups(), selector, recordVisitor)
+                    ctx, getDataGroups(), selector, recordVisitor)
             .stream();
   }
 }

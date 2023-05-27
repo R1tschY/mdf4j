@@ -130,7 +130,7 @@ release {
 
     preTagCommitMessage.set("Prepare release ")
     tagCommitMessage.set("Release ")
-    newVersionCommitMessage.set("Set next version after release ")
+    newVersionCommitMessage.set("Set next version ")
 
     git {
         requireBranch.set("main")

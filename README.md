@@ -40,13 +40,13 @@
 
 ## Usage
 
-Soon available at Maven Central:
+Available at Maven Central:
 
 ### Gradle
 ```groovy
 dependencies {
     // ...
-    implementation('de.richardliebscher.mdf4j:mdf4j:0.1.0-SNAPSHOT')
+    implementation('de.richardliebscher.mdf4j:mdf4j:0.1.0')
 }
 ```
 
@@ -55,7 +55,7 @@ dependencies {
 <dependency>
   <groupId>de.richardliebscher.mdf4j</groupId>
   <artifactId>mdf4j</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 

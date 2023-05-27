@@ -6,12 +6,13 @@ plugins {
     `maven-publish`
     id("io.freefair.lombok") version "8.0.1"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("net.researchgate.release") version "3.0.2"
     checkstyle
     //id("net.ltgt.errorprone") version "3.1.0"
 }
 
 group = "de.richardliebscher.mdf4j"
-version = "0.1.0-SNAPSHOT"
+version = project.property("version")!!
 
 java {
     withSourcesJar()
@@ -120,5 +121,18 @@ nexusPublishing {
             username.set(System.getenv("OSSRH_USERNAME"))
             password.set(System.getenv("OSSRH_TOKEN"))
         }
+    }
+}
+
+release {
+    tagTemplate.set("v\$version")
+    failOnCommitNeeded.set(false)
+
+    preTagCommitMessage.set("Prepare release ")
+    tagCommitMessage.set("Release ")
+    newVersionCommitMessage.set("Set next version after release ")
+
+    git {
+        requireBranch.set("main")
     }
 }

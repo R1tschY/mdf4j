@@ -7,8 +7,8 @@ package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.extract.de.Half;
+import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.internal.Unsigned;
 import java.io.IOException;
 
 public class LinearConversion implements ValueRead {
@@ -44,7 +44,7 @@ public class LinearConversion implements ValueRead {
 
       @Override
       public T visitU64(long value) {
-        return visitor.visitF64(Unsigned.doubleValue(value) * p2 + p1);
+        return visitor.visitF64(UnsignedLong.toDoubleValue(value) * p2 + p1);
       }
 
       @Override

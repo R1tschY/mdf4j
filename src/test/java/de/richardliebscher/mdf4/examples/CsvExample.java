@@ -15,6 +15,10 @@ import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Half;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
+import de.richardliebscher.mdf4.extract.de.UnsignedByte;
+import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
+import de.richardliebscher.mdf4.extract.de.UnsignedLong;
+import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
@@ -117,42 +121,42 @@ class CsvColumnDeserialize implements Deserialize<String> {
     return deserializer.deserialize_value(new Visitor<>() {
       @Override
       public String visitU8(byte value) {
-        return String.valueOf(Byte.toUnsignedInt(value));
+        return UnsignedByte.toString(value);
       }
 
       @Override
       public String visitU16(short value) {
-        return String.valueOf(Short.toUnsignedInt(value));
+        return UnsignedShort.toString(value);
       }
 
       @Override
       public String visitU32(int value) {
-        return String.valueOf(Integer.toUnsignedLong(value));
+        return UnsignedInteger.toString(value);
       }
 
       @Override
       public String visitU64(long value) {
-        return Long.toUnsignedString(value);
+        return UnsignedLong.toString(value);
       }
 
       @Override
       public String visitI8(byte value) {
-        return String.valueOf(value);
+        return Byte.toString(value);
       }
 
       @Override
       public String visitI16(short value) {
-        return String.valueOf(value);
+        return Short.toString(value);
       }
 
       @Override
       public String visitI32(int value) {
-        return String.valueOf(value);
+        return Integer.toString(value);
       }
 
       @Override
       public String visitI64(long value) {
-        return String.valueOf(value);
+        return Long.toString(value);
       }
 
       @Override
@@ -162,12 +166,12 @@ class CsvColumnDeserialize implements Deserialize<String> {
 
       @Override
       public String visitF32(float value) {
-        return String.valueOf(value);
+        return Float.toString(value);
       }
 
       @Override
       public String visitF64(double value) {
-        return String.valueOf(value);
+        return Double.toString(value);
       }
 
       @Override

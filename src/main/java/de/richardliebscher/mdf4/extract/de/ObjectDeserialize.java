@@ -70,6 +70,11 @@ public class ObjectDeserialize implements Deserialize<Object> {
       }
 
       @Override
+      public Object visitF16(short value) {
+        return Half.fromShortBits(value);
+      }
+
+      @Override
       public Object visitF32(float value) {
         return value;
       }
@@ -122,11 +127,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
 
     @Override
     public boolean equals(final Object o) {
-      if (o instanceof UnsignedByte) {
-        return this.value == ((UnsignedByte) o).value;
-      } else {
-        return false;
-      }
+      return o instanceof UnsignedByte && this.value == ((UnsignedByte) o).value;
     }
 
     @Override
@@ -171,11 +172,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
 
     @Override
     public boolean equals(final Object o) {
-      if (o instanceof UnsignedShort) {
-        return this.value == ((UnsignedShort) o).value;
-      } else {
-        return false;
-      }
+      return o instanceof UnsignedShort && this.value == ((UnsignedShort) o).value;
     }
 
     @Override
@@ -220,11 +217,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
 
     @Override
     public boolean equals(final Object o) {
-      if (o instanceof UnsignedInteger) {
-        return this.value == ((UnsignedInteger) o).value;
-      } else {
-        return false;
-      }
+      return o instanceof UnsignedInteger && this.value == ((UnsignedInteger) o).value;
     }
 
     @Override
@@ -269,11 +262,7 @@ public class ObjectDeserialize implements Deserialize<Object> {
 
     @Override
     public boolean equals(final Object o) {
-      if (o instanceof UnsignedLong) {
-        return this.value == ((UnsignedLong) o).value;
-      } else {
-        return false;
-      }
+      return o instanceof UnsignedLong && this.value == ((UnsignedLong) o).value;
     }
 
     @Override

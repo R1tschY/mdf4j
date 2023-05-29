@@ -321,6 +321,13 @@ final class RecordReaderFactory {
           throws NotImplementedFeatureException {
     final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
+      case 16:
+        return new ValueRead() {
+          @Override
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF16(input.readI16Le(byteOffset));
+          }
+        };
       case 32:
         return new ValueRead() {
           @Override
@@ -346,6 +353,13 @@ final class RecordReaderFactory {
           throws NotImplementedFeatureException {
     final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
+      case 16:
+        return new ValueRead() {
+          @Override
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+            return visitor.visitF16(input.readI16Be(byteOffset));
+          }
+        };
       case 32:
         return new ValueRead() {
           @Override

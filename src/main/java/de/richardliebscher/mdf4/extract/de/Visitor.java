@@ -77,6 +77,15 @@ public interface Visitor<T> {
   T visitI64(long value);
 
   /**
+   * Visit 16-bit floating point.
+   *
+   * @param value Value
+   * @return Deserialized value
+   * @see Half
+   */
+  T visitF16(short value);
+
+  /**
    * Visit 32-bit floating point.
    *
    * @param value Value

@@ -12,6 +12,7 @@ import de.richardliebscher.mdf4.Mdf4File;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
+import de.richardliebscher.mdf4.extract.de.Half;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.Visitor;
@@ -152,6 +153,11 @@ class CsvColumnDeserialize implements Deserialize<String> {
       @Override
       public String visitI64(long value) {
         return String.valueOf(value);
+      }
+
+      @Override
+      public String visitF16(short value) {
+        return Half.toString(value);
       }
 
       @Override

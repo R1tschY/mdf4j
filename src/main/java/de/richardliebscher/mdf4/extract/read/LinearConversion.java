@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
+import de.richardliebscher.mdf4.extract.de.Half;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.internal.Unsigned;
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class LinearConversion implements ValueRead {
 
   @Override
   public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+    // TODO: add shortcut for p1 == 0.0 and p2 == 1.0
     return inner.read(input, new Visitor<>() {
       @Override
       public T visitU8(byte value) {
@@ -63,6 +65,11 @@ public class LinearConversion implements ValueRead {
       @Override
       public T visitI64(long value) {
         return visitor.visitF64(value * p2 + p1);
+      }
+
+      @Override
+      public T visitF16(short value) {
+        return visitor.visitF64(Half.shortBitsToFloat(value) * p2 + p1);
       }
 
       @Override

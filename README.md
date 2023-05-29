@@ -30,7 +30,6 @@
 * Synchronization channel
 * Non-byte-aligned integer
 * Integer bit sizes apart from 8, 16, 32, 64
-* 16-bit/half floating point value
 * Conversion apart from Identity and Linear
 * Unsorted channel data
 * Unfinished files

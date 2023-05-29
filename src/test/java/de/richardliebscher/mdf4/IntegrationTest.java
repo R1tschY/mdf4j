@@ -13,6 +13,10 @@ import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
+import de.richardliebscher.mdf4.extract.de.UnsignedByte;
+import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
+import de.richardliebscher.mdf4.extract.de.UnsignedLong;
+import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -37,22 +41,22 @@ public class IntegrationTest {
         Arguments.of("i16", List.<Short>of((short) 0, Short.MAX_VALUE, Short.MIN_VALUE)),
         Arguments.of("i32", List.<Integer>of(0, Integer.MAX_VALUE, Integer.MIN_VALUE)),
         Arguments.of("i64", List.<Long>of((long) 0, Long.MAX_VALUE, Long.MIN_VALUE)),
-        Arguments.of("u8", List.<ObjectDeserialize.UnsignedByte>of(
-            new ObjectDeserialize.UnsignedByte((byte) 0),
-            new ObjectDeserialize.UnsignedByte((byte) 1),
-            new ObjectDeserialize.UnsignedByte((byte) -1))),
-        Arguments.of("u16", List.<ObjectDeserialize.UnsignedShort>of(
-            new ObjectDeserialize.UnsignedShort((short) 0),
-            new ObjectDeserialize.UnsignedShort((short) 1),
-            new ObjectDeserialize.UnsignedShort((short) -1))),
-        Arguments.of("u32", List.<ObjectDeserialize.UnsignedInteger>of(
-            new ObjectDeserialize.UnsignedInteger(0),
-            new ObjectDeserialize.UnsignedInteger(1),
-            new ObjectDeserialize.UnsignedInteger(-1))),
-        Arguments.of("u64", List.<ObjectDeserialize.UnsignedLong>of(
-            new ObjectDeserialize.UnsignedLong(0L),
-            new ObjectDeserialize.UnsignedLong(1L),
-            new ObjectDeserialize.UnsignedLong(-1L))),
+        Arguments.of("u8", List.<UnsignedByte>of(
+            new UnsignedByte((byte) 0),
+            new UnsignedByte((byte) 1),
+            new UnsignedByte((byte) -1))),
+        Arguments.of("u16", List.<UnsignedShort>of(
+            new UnsignedShort((short) 0),
+            new UnsignedShort((short) 1),
+            new UnsignedShort((short) -1))),
+        Arguments.of("u32", List.<UnsignedInteger>of(
+            new UnsignedInteger(0),
+            new UnsignedInteger(1),
+            new UnsignedInteger(-1))),
+        Arguments.of("u64", List.<UnsignedLong>of(
+            new UnsignedLong(0L),
+            new UnsignedLong(1L),
+            new UnsignedLong(-1L))),
         Arguments.of("f32", List.<Float>of(0.f, Float.MAX_VALUE, Float.POSITIVE_INFINITY)),
         Arguments.of("f64", List.<Double>of(0.d, Double.MAX_VALUE, Double.POSITIVE_INFINITY))
     );

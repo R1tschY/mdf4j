@@ -120,6 +120,11 @@ class CsvColumnDeserialize implements Deserialize<String> {
   public String deserialize(Deserializer deserializer) throws IOException {
     return deserializer.deserialize_value(new Visitor<>() {
       @Override
+      public String expecting() {
+        return "CSV value";
+      }
+
+      @Override
       public String visitU8(byte value) {
         return UnsignedByte.toString(value);
       }

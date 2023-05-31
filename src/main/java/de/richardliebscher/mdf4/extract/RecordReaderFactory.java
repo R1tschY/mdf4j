@@ -175,28 +175,28 @@ final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU16(input.readI16Le(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU32(input.readI32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU64(input.readI64Le(byteOffset));
           }
         };
@@ -212,28 +212,28 @@ final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU16(input.readI16Be(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU32(input.readI32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitU64(input.readI64Be(byteOffset));
           }
         };
@@ -249,28 +249,28 @@ final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI16(input.readI16Le(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI32(input.readI32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI64(input.readI64Le(byteOffset));
           }
         };
@@ -286,28 +286,28 @@ final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI8(input.readU8(byteOffset));
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI16(input.readI16Be(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI32(input.readI32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitI64(input.readI64Be(byteOffset));
           }
         };
@@ -324,21 +324,21 @@ final class RecordReaderFactory {
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF16(input.readI16Le(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF32(input.readF32Le(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF64(input.readF64Le(byteOffset));
           }
         };
@@ -356,21 +356,21 @@ final class RecordReaderFactory {
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF16(input.readI16Be(byteOffset));
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF32(input.readF32Be(byteOffset));
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
             return visitor.visitF64(input.readF64Be(byteOffset));
           }
         };
@@ -397,7 +397,7 @@ final class RecordReaderFactory {
       private int recordIndex = 0;
 
       @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) {
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
         return visitor.visitU32(recordIndex++);
       }
     };

@@ -35,7 +35,7 @@ public class HalfBenchmark {
   public float[] own(F16State values) {
     float[] res = new float[values.values.length];
     for (int i = 0; i < values.values.length; i++) {
-      res[i] = Half.shortBitsToFloat((short) values.values[i]);
+      res[i] = Half.toFloat((short) values.values[i]);
     }
     return res;
   }

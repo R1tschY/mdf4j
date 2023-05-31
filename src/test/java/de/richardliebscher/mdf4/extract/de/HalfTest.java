@@ -33,13 +33,13 @@ class HalfTest {
   @ParameterizedTest
   @MethodSource("values")
   void testSomeValues(int bits, float expected) {
-    assertEquals(expected, Half.shortBitsToFloat((short) bits));
+    assertEquals(expected, Half.toFloat((short) bits));
   }
 
   @Test
   void testAgainstReference() {
     for (int i = Short.MIN_VALUE; i <= Short.MAX_VALUE; i++) {
-      assertEquals(reference((short) i), Half.shortBitsToFloat((short) i));
+      assertEquals(reference((short) i), Half.toFloat((short) i));
     }
   }
 

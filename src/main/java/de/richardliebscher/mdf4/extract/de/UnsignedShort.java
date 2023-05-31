@@ -17,26 +17,12 @@ public final class UnsignedShort extends Number {
 
   private final short value;
 
-
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @return String representation
-   */
-  public static String toString(short value) {
-    return Integer.toString(Short.toUnsignedInt(value));
+  public static int toInt(short value) {
+    return Short.toUnsignedInt(value);
   }
 
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @param radix Radix
-   * @return String representation
-   */
-  public static String toString(short value, int radix) {
-    return Integer.toString(Short.toUnsignedInt(value), radix);
+  public static long toLong(short value) {
+    return Short.toUnsignedLong(value);
   }
 
   @Override
@@ -62,6 +48,27 @@ public final class UnsignedShort extends Number {
   @Override
   public String toString() {
     return toString(value);
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @return String representation
+   */
+  public static String toString(short value) {
+    return Integer.toString(Short.toUnsignedInt(value));
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @param radix Radix
+   * @return String representation
+   */
+  public static String toString(short value, int radix) {
+    return Integer.toString(Short.toUnsignedInt(value), radix);
   }
 
   @Override

@@ -6,7 +6,6 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
-import de.richardliebscher.mdf4.extract.de.Half;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
@@ -28,62 +27,27 @@ public class LinearConversion implements ValueRead {
     // TODO: add shortcut for p1 == 0.0 and p2 == 1.0
     return inner.read(input, new Visitor<>() {
       @Override
-      public T visitU8(byte value) {
-        return visitor.visitF64(Byte.toUnsignedInt(value) * p2 + p1);
+      public String expecting() {
+        return "numeric value";
       }
 
       @Override
-      public T visitU16(short value) {
-        return visitor.visitF64(Short.toUnsignedInt(value) * p2 + p1);
+      public T visitU64(long value) throws IOException {
+        return visitF64(UnsignedLong.toDoubleValue(value));
       }
 
       @Override
-      public T visitU32(int value) {
-        return visitor.visitF64(Integer.toUnsignedLong(value) * p2 + p1);
+      public T visitI64(long value) throws IOException {
+        return visitF64(value);
       }
 
       @Override
-      public T visitU64(long value) {
-        return visitor.visitF64(UnsignedLong.toDoubleValue(value) * p2 + p1);
-      }
-
-      @Override
-      public T visitI8(byte value) {
+      public T visitF64(double value) throws IOException {
         return visitor.visitF64(value * p2 + p1);
       }
 
       @Override
-      public T visitI16(short value) {
-        return visitor.visitF64(value * p2 + p1);
-      }
-
-      @Override
-      public T visitI32(int value) {
-        return visitor.visitF64(value * p2 + p1);
-      }
-
-      @Override
-      public T visitI64(long value) {
-        return visitor.visitF64(value * p2 + p1);
-      }
-
-      @Override
-      public T visitF16(short value) {
-        return visitor.visitF64(Half.shortBitsToFloat(value) * p2 + p1);
-      }
-
-      @Override
-      public T visitF32(float value) {
-        return visitor.visitF64(value * p2 + p1);
-      }
-
-      @Override
-      public T visitF64(double value) {
-        return visitor.visitF64(value * p2 + p1);
-      }
-
-      @Override
-      public T visitInvalid() {
+      public T visitInvalid() throws IOException {
         return visitor.visitInvalid();
       }
     });

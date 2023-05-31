@@ -17,26 +17,12 @@ public final class UnsignedByte extends Number {
 
   private final byte value;
 
-
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @return String representation
-   */
-  public static String toString(byte value) {
-    return Integer.toString(Byte.toUnsignedInt(value));
+  public static int toInt(byte value) {
+    return Byte.toUnsignedInt(value);
   }
 
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @param radix Radix
-   * @return String representation
-   */
-  public static String toString(byte value, int radix) {
-    return Integer.toString(Byte.toUnsignedInt(value), radix);
+  public static long toLong(byte value) {
+    return Byte.toUnsignedLong(value);
   }
 
   @Override
@@ -62,6 +48,27 @@ public final class UnsignedByte extends Number {
   @Override
   public String toString() {
     return toString(value);
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @return String representation
+   */
+  public static String toString(byte value) {
+    return Integer.toString(Byte.toUnsignedInt(value));
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @param radix Radix
+   * @return String representation
+   */
+  public static String toString(byte value, int radix) {
+    return Integer.toString(Byte.toUnsignedInt(value), radix);
   }
 
   @Override

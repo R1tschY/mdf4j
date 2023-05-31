@@ -17,25 +17,8 @@ public class UnsignedInteger extends Number {
 
   private final int value;
 
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @return String representation
-   */
-  public static String toString(int value) {
-    return Long.toString(Integer.toUnsignedLong(value));
-  }
-
-  /**
-   * Return string representation.
-   *
-   * @param value Unsigned value
-   * @param radix Radix
-   * @return String representation
-   */
-  public static String toString(int value, int radix) {
-    return Long.toString(Integer.toUnsignedLong(value), radix);
+  public static long toLong(int value) {
+    return Integer.toUnsignedLong(value);
   }
 
   @Override
@@ -61,6 +44,27 @@ public class UnsignedInteger extends Number {
   @Override
   public String toString() {
     return String.valueOf(longValue());
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @return String representation
+   */
+  public static String toString(int value) {
+    return Long.toString(Integer.toUnsignedLong(value));
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Unsigned value
+   * @param radix Radix
+   * @return String representation
+   */
+  public static String toString(int value, int radix) {
+    return Long.toString(Integer.toUnsignedLong(value), radix);
   }
 
   @Override

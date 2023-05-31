@@ -27,6 +27,11 @@ public class ObjectDeserialize implements Deserialize<Object> {
   public Object deserialize(Deserializer deserializer) throws IOException {
     return deserializer.deserialize_value(new Visitor<>() {
       @Override
+      public String expecting() {
+        return "any value";
+      }
+
+      @Override
       public Object visitU8(byte value) {
         return new UnsignedByte(value);
       }

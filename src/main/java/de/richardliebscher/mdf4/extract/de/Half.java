@@ -76,7 +76,7 @@ public class Half extends Number {
    * @param bits Bits
    * @return {@code float} value for {@code bits}
    */
-  public static float shortBitsToFloat(short bits) {
+  public static float toFloat(short bits) {
     final var sign = bits & 0x8000;
     var significant = bits & 0x03ff;
     var exponent = bits & 0x7c00;
@@ -96,6 +96,11 @@ public class Half extends Number {
       exponent += 0x1c000;
     }
     return Float.intBitsToFloat(sign << 16 | (exponent | significant) << 13);
+  }
+
+  public static double toDouble(short bits) {
+    // TODO: improve performance
+    return toFloat(bits);
   }
 
   /**
@@ -150,34 +155,24 @@ public class Half extends Number {
     return (bits & 0x7c00) != 0x7c00;
   }
 
-  /**
-   * Return string representation.
-   *
-   * @param value Half-precision floating-point value
-   * @return String representation
-   */
-  public static String toString(short value) {
-    return Float.toString(shortBitsToFloat(value));
-  }
-
   @Override
   public int intValue() {
-    return (int) shortBitsToFloat(value);
+    return (int) toFloat(value);
   }
 
   @Override
   public long longValue() {
-    return (long) shortBitsToFloat(value);
+    return (long) toFloat(value);
   }
 
   @Override
   public float floatValue() {
-    return shortBitsToFloat(value);
+    return toFloat(value);
   }
 
   @Override
   public double doubleValue() {
-    return shortBitsToFloat(value);
+    return toFloat(value);
   }
 
   @Override
@@ -193,5 +188,15 @@ public class Half extends Number {
   @Override
   public String toString() {
     return toString(value);
+  }
+
+  /**
+   * Return string representation.
+   *
+   * @param value Half-precision floating-point value
+   * @return String representation
+   */
+  public static String toString(short value) {
+    return Float.toString(toFloat(value));
   }
 }

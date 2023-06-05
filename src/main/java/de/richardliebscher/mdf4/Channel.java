@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
+import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlags;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.datatypes.DataType;
@@ -44,7 +45,7 @@ public class Channel {
   public String getName() throws IOException {
     return block.getChannelName().resolve(Text.META, ctx.getInput())
         .orElseThrow(() -> new FormatException("Channel name link is required"))
-        .getData();
+        .getText();
   }
 
   /**
@@ -54,8 +55,17 @@ public class Channel {
    * @throws IOException Failed to read from MDF file
    */
   public Optional<String> getPhysicalUnit() throws IOException {
-    // TODO: Consider unit of conversion?
-    return ctx.readName(block.getPhysicalUnit(), "TODO");
+    final var channelUnit = ctx.readText(block.getPhysicalUnit(), ChannelConversion.UNIT_ELEMENT);
+    if (channelUnit.isPresent()) {
+      return channelUnit;
+    }
+
+    final var cc = block.getConversionRule().resolve(ChannelConversion.META, ctx.getInput());
+    if (cc.isPresent()) {
+      return ctx.readText(cc.get().getUnit(), ChannelConversion.UNIT_ELEMENT);
+    }
+
+    return Optional.empty();
   }
 
   /**

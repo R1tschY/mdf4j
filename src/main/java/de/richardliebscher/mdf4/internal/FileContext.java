@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.Metadata;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.TextBased;
+import de.richardliebscher.mdf4.blocks.TextBased.Visitor;
 import de.richardliebscher.mdf4.cache.Cache;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -39,41 +40,41 @@ public class FileContext {
     }
   }
 
-  public Optional<String> readName(Link<TextBased> link, String xmlElement) throws IOException {
-    TextBased comment;
+  public Optional<String> readText(Link<TextBased> link, String xmlElement) throws IOException {
     final var maybeComment = link.resolve(TextBased.META, input);
     if (maybeComment.isEmpty()) {
       return Optional.empty();
     }
-    comment = maybeComment.get();
-
-    if (comment instanceof Text) {
-      return Optional.of(((Text) comment).getData());
-    } else if (comment instanceof Metadata) {
-      String data = ((Metadata) comment).getData();
-      final var reader = newXmlParser(data);
-      try {
-        try {
-          if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
-              && !reader.getLocalName().equals(xmlElement)) {
-            throw new IOException(new FormatException(
-                "Expected DGcomment XML element, but got " + reader.getLocalName()));
-          }
-
-          if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
-              && !reader.getLocalName().equals("TX")) {
-            throw new IOException(new FormatException(
-                "Expected TX XML element, but got " + reader.getLocalName()));
-          }
-          return Optional.of(reader.getElementText());
-        } finally {
-          reader.close();
-        }
-      } catch (XMLStreamException e) {
-        throw new IOException(e);
+    return maybeComment.get().accept(new Visitor<Optional<String>, IOException>() {
+      @Override
+      public Optional<String> visit(Text value) {
+        return Optional.of(value.getText());
       }
-    } else {
-      throw new IllegalStateException("Should not be reached");
-    }
+
+      @Override
+      public Optional<String> visit(Metadata value) throws IOException {
+        final var reader = newXmlParser(value.getXml());
+        try {
+          try {
+            if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
+                && !reader.getLocalName().equals(xmlElement)) {
+              throw new IOException(new FormatException(
+                  "Expected " + xmlElement + " XML element, but got " + reader.getLocalName()));
+            }
+
+            if (reader.nextTag() != XMLStreamConstants.START_ELEMENT
+                && !reader.getLocalName().equals("TX")) {
+              throw new IOException(new FormatException(
+                  "Expected TX XML element, but got " + reader.getLocalName()));
+            }
+            return Optional.of(reader.getElementText());
+          } finally {
+            reader.close();
+          }
+        } catch (XMLStreamException e) {
+          throw new IOException(e);
+        }
+      }
+    });
   }
 }

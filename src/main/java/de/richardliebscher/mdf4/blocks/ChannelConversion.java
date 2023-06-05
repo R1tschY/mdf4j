@@ -19,6 +19,8 @@ import lombok.Value;
 @Value
 public class ChannelConversion {
 
+  public static final String UNIT_ELEMENT = "CCunit";
+
   Link<Text> name;
   Link<TextBased> unit;
   Link<TextBased> comment;

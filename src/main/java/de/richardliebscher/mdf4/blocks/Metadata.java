@@ -17,7 +17,7 @@ import lombok.Value;
 @Value
 public class Metadata implements TextBased {
 
-  String data;
+  String xml;
 
   public static final Meta META = new Meta();
 
@@ -33,5 +33,10 @@ public class Metadata implements TextBased {
   public static Metadata parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(BlockType.MD, input);
     return new Metadata(parseText(input, blockHeader.getDataLength()));
+  }
+
+  @Override
+  public <R, E extends Throwable> R accept(Visitor<R, E> visitor) throws E {
+    return visitor.visit(this);
   }
 }

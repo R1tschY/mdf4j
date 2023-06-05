@@ -36,7 +36,7 @@ public class ChannelGroup {
    * @throws IOException Failed to read name from file.
    */
   public Optional<String> getName() throws IOException {
-    return ctx.readName(block.getComment(), "CGcomment");
+    return ctx.readText(block.getComment(), "CGcomment");
   }
 
   /**

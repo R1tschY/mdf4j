@@ -25,6 +25,14 @@ public interface TextBased {
     }
   }
 
+  <R, E extends Throwable> R accept(Visitor<R, E> visitor) throws E;
+
+  interface Visitor<R, E extends Throwable> {
+    R visit(Text value) throws E;
+
+    R visit(Metadata value) throws E;
+  }
+
   Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)

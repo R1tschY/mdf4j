@@ -14,6 +14,7 @@ module mdf4j {
   requires static lombok;
 
   exports de.richardliebscher.mdf4;
+  exports de.richardliebscher.mdf4.datatypes;
   exports de.richardliebscher.mdf4.blocks;
   exports de.richardliebscher.mdf4.exceptions;
   exports de.richardliebscher.mdf4.extract;

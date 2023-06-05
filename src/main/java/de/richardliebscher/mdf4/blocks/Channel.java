@@ -10,6 +10,7 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -68,6 +69,17 @@ public class Channel {
         type, syncType, dataType, bitOffset, byteOffset, bitCount, flags,
         invalidationBit, precision, attachmentCount, valueRange, limit,
         limitExtended);
+  }
+
+  public Optional<Integer> getPrecision() {
+    if (flags.test(ChannelFlags.PRECISION_VALID)) {
+      if (precision == (byte) 0xFF) {
+        return Optional.of(Integer.MAX_VALUE);
+      } else {
+        return Optional.of(Byte.toUnsignedInt(precision));
+      }
+    }
+    return Optional.empty();
   }
 
   public static class Iterator implements LazyIoIterator<Channel> {

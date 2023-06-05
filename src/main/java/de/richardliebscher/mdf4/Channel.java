@@ -5,7 +5,12 @@
 
 package de.richardliebscher.mdf4;
 
+import de.richardliebscher.mdf4.blocks.ChannelFlags;
 import de.richardliebscher.mdf4.blocks.Text;
+import de.richardliebscher.mdf4.datatypes.DataType;
+import de.richardliebscher.mdf4.datatypes.FloatType;
+import de.richardliebscher.mdf4.datatypes.IntegerType;
+import de.richardliebscher.mdf4.datatypes.UnsignedIntegerType;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
@@ -34,7 +39,7 @@ public class Channel {
    * Get channel name.
    *
    * @return Channel name
-   * @throws IOException Failed to read name from file.
+   * @throws IOException Failed to read from MDF file
    */
   public String getName() throws IOException {
     return block.getChannelName().resolve(Text.META, ctx.getInput())
@@ -42,9 +47,56 @@ public class Channel {
         .getData();
   }
 
+  /**
+   * Return Physical unit (after conversion).
+   *
+   * @return Physical unit (after conversion)
+   * @throws IOException Failed to read from MDF file
+   */
   public Optional<String> getPhysicalUnit() throws IOException {
     // TODO: Consider unit of conversion?
     return ctx.readName(block.getPhysicalUnit(), "TODO");
+  }
+
+  /**
+   * Return whether invalid values are possible.
+   */
+  public boolean isInvalidable() {
+    return block.getFlags().anyOf(
+        ChannelFlags.INVALIDATION_BIT_VALID.merge(ChannelFlags.ALL_VALUES_INVALID));
+  }
+
+  /**
+   * Return data type of channel values.
+   *
+   * @return Channel value data type
+   */
+  public DataType getDataType() {
+    switch (block.getDataType()) {
+      case UINT_LE:
+      case UINT_BE:
+        return new UnsignedIntegerType(block.getBitCount());
+      case INT_LE:
+      case INT_BE:
+        return new IntegerType(block.getBitCount());
+      case FLOAT_LE:
+      case FLOAT_BE:
+        return new FloatType(
+            block.getBitCount(), block.getPrecision().orElse(null));
+      case STRING_LATIN1:
+      case STRING_UTF8:
+      case STRING_UTF16LE:
+      case STRING_UTF16BE:
+      case BYTE_ARRAY:
+      case MIME_SAMPLE:
+      case MIME_STREAM:
+      case CANOPEN_DATE:
+      case CANOPEN_TIME:
+      case COMPLEX_LE:
+      case COMPLEX_BE:
+      default:
+        throw new IllegalStateException("Data type " + block.getDataType() + " not implemented");
+    }
   }
 
   static class Iterator implements LazyIoIterator<Channel> {

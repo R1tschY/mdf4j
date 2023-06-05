@@ -24,6 +24,10 @@ public abstract class FlagsBase<Self extends FlagsBase<Self>> {
     return (value & test.value) == test.value;
   }
 
+  public boolean anyOf(Self test) {
+    return (value & test.value) != 0;
+  }
+
   public boolean isEmpty() {
     return value == 0;
   }

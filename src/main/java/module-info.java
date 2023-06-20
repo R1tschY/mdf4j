@@ -20,5 +20,4 @@ module mdf4j {
   exports de.richardliebscher.mdf4.extract;
   exports de.richardliebscher.mdf4.extract.de;
   exports de.richardliebscher.mdf4.io;
-  exports de.richardliebscher.mdf4.extract.read;
 }

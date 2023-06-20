@@ -7,6 +7,7 @@ package de.richardliebscher.mdf4.extract;
 
 import de.richardliebscher.mdf4.Result;
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -21,4 +22,6 @@ public interface ParallelRecordReader<R> {
    * @return Splittable stream
    */
   Stream<Result<R, IOException>> stream();
+
+  List<DetachedRecordReader<R>> splitIntoDetached(int parts);
 }

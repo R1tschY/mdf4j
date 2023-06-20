@@ -23,11 +23,13 @@
   <suppress checks="MissingJavadocMethod"
             files="de[\\/]richardliebscher[\\/]mdf4[\\/]blocks[\\/]"/>
 
+  <!-- Ignore Javadoc in "impl" packages -->
+  <suppress checks="MissingJavadocType"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/].*[\\/]impl[\\/]"/>
+  <suppress checks="MissingJavadocMethod"
+    files="de[\\/]richardliebscher[\\/]mdf4[\\/].*[\\/]impl[\\/]"/>
+
   <!-- Ignore tests -->
   <suppress checks=".*" files="[/\\]src[/\\]test[/\\]"/>
   <suppress checks=".*" files="[/\\]src[/\\]jmh[/\\]"/>
-
-  <!-- Ignore PackageGateway -->
-  <suppress checks="MissingJavadocType" files="[\\/].*PackageGateway\.java"/>
-  <suppress checks="MissingJavadocMethod" files="[\\/].*PackageGateway\.java"/>
 </suppressions>

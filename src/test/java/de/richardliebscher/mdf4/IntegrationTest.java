@@ -9,7 +9,7 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import de.richardliebscher.mdf4.extract.ChannelSelector;
-import de.richardliebscher.mdf4.extract.RecordReader;
+import de.richardliebscher.mdf4.extract.SizedRecordReader;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
 import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
@@ -97,7 +97,7 @@ public class IntegrationTest {
     assertThat(lists).containsExactlyElementsOf(expected);
   }
 
-  private static List<Object> collectValues(RecordReader<List<Object>> recordReader)
+  private static List<Object> collectValues(SizedRecordReader<List<Object>> recordReader)
       throws IOException {
     List<Object> values = new ArrayList<>();
     while (recordReader.remaining() != 0) {

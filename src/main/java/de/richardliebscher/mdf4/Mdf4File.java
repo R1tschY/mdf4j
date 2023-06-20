@@ -13,15 +13,18 @@ import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
 import de.richardliebscher.mdf4.extract.ChannelSelector;
-import de.richardliebscher.mdf4.extract.ExtractPackageGateway;
+import de.richardliebscher.mdf4.extract.DetachedRecordReader;
 import de.richardliebscher.mdf4.extract.RecordReader;
+import de.richardliebscher.mdf4.extract.SizedRecordReader;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
+import de.richardliebscher.mdf4.extract.impl.RecordReaderFactory;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FileInput;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
 import lombok.extern.java.Log;
@@ -31,6 +34,7 @@ import lombok.extern.java.Log;
  */
 @Log
 public class Mdf4File {
+
   /**
    * Supported MDF4 version.
    *
@@ -108,14 +112,14 @@ public class Mdf4File {
    * @param selector      Selector for channel group and channels to read
    * @param recordVisitor Deserializer for records with selected channels
    * @param <R>           Deserialized user-defined record type
-   * @return {@link RecordReader}
+   * @return Reader for deserialized records
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <R> RecordReader<R> newRecordReader(
-          ChannelSelector selector,
-          RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
-    return ExtractPackageGateway.newRecordReader(ctx, getDataGroups(), selector, recordVisitor);
+  public <R> SizedRecordReader<R> newRecordReader(
+      ChannelSelector selector,
+      RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory.createFor(ctx, getDataGroups(), selector, recordVisitor);
   }
 
   /**
@@ -128,7 +132,7 @@ public class Mdf4File {
   }
 
   /**
-   * Read channels from a channel group using {@link Stream}.
+   * Stream channel values from a channel group.
    *
    * @param selector      Selector for channel group and channels to read
    * @param recordVisitor Deserializer for records with selected channels
@@ -138,10 +142,47 @@ public class Mdf4File {
    * @throws IOException                   Unable to create record reader
    */
   public <R> Stream<Result<R, IOException>> streamRecords(
-          ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
-          throws ChannelGroupNotFoundException, IOException {
-    return ExtractPackageGateway.newParallelRecordReader(
-                    ctx, getDataGroups(), selector, recordVisitor)
-            .stream();
+      ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
+      throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory.createParallelFor(
+            ctx, getDataGroups(), selector, recordVisitor)
+        .stream();
+  }
+
+  /**
+   * Create detached record readers for distributed reading.
+   *
+   * <p>Useful for use in distributed compute engines like Apache Spark. The returned record
+   * readers are serializable and can be sent to compute nodes to attach them to the file again and
+   * start reading records.
+   *
+   * @param parts         number of parts to split to
+   * @param selector      Selector for channel group and channels to read
+   * @param recordVisitor Deserializer for records with selected channels
+   * @param <R>           Deserialized user-defined record type
+   * @return Detached
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   * @see #attachRecordReader
+   */
+  public <R> List<DetachedRecordReader<R>> splitRecordReaders(int parts,
+      ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
+      throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory.createParallelFor(
+        ctx, getDataGroups(), selector, recordVisitor).splitIntoDetached(parts);
+  }
+
+  /**
+   * Attach a detached record reader from {@link #splitRecordReaders}.
+   *
+   * <p>The attached file must have the exact same content as the file on which
+   * {@link #splitRecordReaders} was called.
+   *
+   * @param reader Reader from {@link #splitRecordReaders} call
+   * @param <R>    Deserialized user-defined record type
+   * @return Reader for deserialized records
+   */
+  public <R> RecordReader<R> attachRecordReader(DetachedRecordReader<R> reader) {
+    return reader.attach(ctx);
   }
 }

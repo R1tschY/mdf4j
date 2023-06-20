@@ -4,7 +4,3 @@ build
 .venv
 
 .idea
-
-*.csv
-*.mdf
-*.dat

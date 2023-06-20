@@ -3,7 +3,7 @@
  * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
  */
 
-package de.richardliebscher.mdf4.extract;
+package de.richardliebscher.mdf4.extract.impl;
 
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
@@ -24,6 +24,9 @@ import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
+import de.richardliebscher.mdf4.extract.ChannelSelector;
+import de.richardliebscher.mdf4.extract.ParallelRecordReader;
+import de.richardliebscher.mdf4.extract.SizedRecordReader;
 import de.richardliebscher.mdf4.extract.de.InvalidDeserializer;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
@@ -48,11 +51,11 @@ import lombok.extern.java.Log;
 
 @Log
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class RecordReaderFactory {
+public final class RecordReaderFactory {
 
   private static ValueRead createChannelReader(
-          DataGroupBlock dataGroup, ChannelGroupBlock group,
-          Channel channel, ByteInput input) throws IOException {
+      DataGroupBlock dataGroup, ChannelGroupBlock group,
+      Channel channel, ByteInput input) throws IOException {
     if (channel.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
     }
@@ -75,11 +78,11 @@ final class RecordReaderFactory {
       case MAXIMUM_LENGTH_CHANNEL:
       default:
         throw new NotImplementedFeatureException(
-                "Channel type not implemented: " + channel.getType());
+            "Channel type not implemented: " + channel.getType());
     }
 
     final var channelConversion = channel.getConversionRule()
-            .resolve(ChannelConversion.META, input);
+        .resolve(ChannelConversion.META, input);
     if (channelConversion.isPresent()) {
       final var cc = channelConversion.get();
       switch (cc.getType()) {
@@ -100,7 +103,7 @@ final class RecordReaderFactory {
         case BITFIELD_TEXT_TABLE:
         default:
           throw new NotImplementedFeatureException(
-                  "Channel conversion not implemented: " + cc.getType());
+              "Channel conversion not implemented: " + cc.getType());
       }
     }
 
@@ -112,18 +115,18 @@ final class RecordReaderFactory {
   }
 
   private static ValueRead createInvalidationReader(
-          DataGroupBlock dataGroup, ChannelGroupBlock group, Channel channel, ValueRead valueRead)
-          throws FormatException {
+      DataGroupBlock dataGroup, ChannelGroupBlock group, Channel channel, ValueRead valueRead)
+      throws FormatException {
     final var groupBits = group.getInvalidationBytes() * 8;
     final var invalidationBit = channel.getInvalidationBit();
     if (invalidationBit >= groupBits) {
       throw new FormatException("Invalid invalidation bit position "
-              + invalidationBit + " in " + groupBits + " invalidation bits");
+          + invalidationBit + " in " + groupBits + " invalidation bits");
     }
 
     // PERF: Read invalidation byte(s) only once per record
     final var invalidationByteIndex =
-            dataGroup.getRecordIdSize() + group.getDataBytes() + (invalidationBit >>> 3);
+        dataGroup.getRecordIdSize() + group.getDataBytes() + (invalidationBit >>> 3);
     final var invalidationBitMask = 1 << (invalidationBit & 0x07);
     return new ValueRead() {
       @Override
@@ -138,7 +141,7 @@ final class RecordReaderFactory {
   }
 
   private static ValueRead createFixedLengthDataReader(Channel channel)
-          throws NotImplementedFeatureException {
+      throws NotImplementedFeatureException {
     switch (channel.getDataType()) {
       case UINT_LE:
         return createUintLeRead(channel);
@@ -165,7 +168,7 @@ final class RecordReaderFactory {
       case COMPLEX_BE:
       default:
         throw new NotImplementedFeatureException(
-                "Reading data type " + channel.getDataType() + " not implemented");
+            "Reading data type " + channel.getDataType() + " not implemented");
     }
   }
 
@@ -202,7 +205,7 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only integer with 1, 2, 4 or 8 bytes are implemented");
+            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
   }
 
@@ -239,7 +242,7 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only integer with 1, 2, 4 or 8 bytes are implemented");
+            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
   }
 
@@ -276,7 +279,7 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only integer with 1, 2, 4 or 8 bytes are implemented");
+            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
   }
 
@@ -313,12 +316,12 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only integer with 1, 2, 4 or 8 bytes are implemented");
+            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
   }
 
   private static ValueRead createFloatLeRead(Channel channel)
-          throws NotImplementedFeatureException {
+      throws NotImplementedFeatureException {
     final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 16:
@@ -344,13 +347,13 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only floating point numbers with 32 or 64 bits are implemented, got "
-                        + channel.getBitCount() + " bits");
+            "Only floating point numbers with 32 or 64 bits are implemented, got "
+                + channel.getBitCount() + " bits");
     }
   }
 
   private static ValueRead createFloatBeRead(Channel channel)
-          throws NotImplementedFeatureException {
+      throws NotImplementedFeatureException {
     final var byteOffset = channel.getByteOffset();
     switch (channel.getBitCount()) {
       case 16:
@@ -376,7 +379,7 @@ final class RecordReaderFactory {
         };
       default:
         throw new NotImplementedFeatureException(
-                "Only floating point numbers with 4 or 8 bytes are implemented");
+            "Only floating point numbers with 4 or 8 bytes are implemented");
     }
   }
 
@@ -384,7 +387,7 @@ final class RecordReaderFactory {
     final ValueRead valueRead;
     if (channel.getBitCount() != 0) {
       throw new FormatException("Bit count of virtual master channel must be zero, but got "
-              + channel.getBitCount());
+          + channel.getBitCount());
     }
     // TODO
     // if (channel.getDataType() != ChannelDataType.UINT_LE) {
@@ -409,9 +412,9 @@ final class RecordReaderFactory {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  static <R> RecordReader<R> createFor(FileContext ctx, LazyIoList<DataGroup> dataGroups,
-                                       ChannelSelector selector, RecordVisitor<R> rowDeserializer)
-          throws ChannelGroupNotFoundException, IOException {
+  public static <R> SizedRecordReader<R> createFor(FileContext ctx,
+      LazyIoList<DataGroup> dataGroups, ChannelSelector selector, RecordVisitor<R> rowDeserializer)
+      throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
 
     // select
@@ -425,13 +428,14 @@ final class RecordReaderFactory {
     // build extractor
     final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
 
-    return new RecordReader<>(channelReaders, rowDeserializer, source, channelGroup.getBlock());
+    return new DefaultRecordReader<>(channelReaders, rowDeserializer, source,
+        channelGroup.getBlock());
   }
 
-  static <R> ParallelRecordReader<R> createParallelFor(
-          FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
-          SerializableRecordVisitor<R> rowDeserializer)
-          throws ChannelGroupNotFoundException, IOException {
+  public static <R> ParallelRecordReader<R> createParallelFor(
+      FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
+      SerializableRecordVisitor<R> rowDeserializer)
+      throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
 
     // select
@@ -445,13 +449,13 @@ final class RecordReaderFactory {
     // build extractor
     final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
 
-    return new ParallelRecordReaderImpl<>(
-            ctx, channelReaders, rowDeserializer, dataList, channelGroup.getBlock());
+    return new DefaultParallelRecordReader<>(
+        ctx, channelReaders, rowDeserializer, dataList, channelGroup.getBlock());
   }
 
   private static Pair<DataGroup, ChannelGroup> selectChannels(
-          LazyIoList<DataGroup> dataGroups, ChannelSelector selector)
-          throws ChannelGroupNotFoundException, IOException {
+      LazyIoList<DataGroup> dataGroups, ChannelSelector selector)
+      throws ChannelGroupNotFoundException, IOException {
     DataGroup dataGroup;
     ChannelGroup channelGroup;
 
@@ -477,7 +481,7 @@ final class RecordReaderFactory {
   }
 
   public static DataRead createSource(
-          FileContext ctx, DataGroupBlock dataGroup) throws IOException {
+      FileContext ctx, DataGroupBlock dataGroup) throws IOException {
     final var input = ctx.getInput();
 
     final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
@@ -492,19 +496,19 @@ final class RecordReaderFactory {
 
       if (headerList.getZipType() != ZipType.DEFLATE) {
         throw new NotImplementedFeatureException(
-                "ZIP type not implemented: " + headerList.getZipType());
+            "ZIP type not implemented: " + headerList.getZipType());
       }
 
       return headerList.getFirstDataList().resolve(DataList.META, input)
-              .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
-              .orElseGet(EmptyDataRead::new);
+          .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
+          .orElseGet(EmptyDataRead::new);
     } else {
       throw new IllegalStateException("Should not happen");
     }
   }
 
   public static long[] collectDataList(
-          ByteInput input, DataGroupBlock dataGroup) throws IOException {
+      ByteInput input, DataGroupBlock dataGroup) throws IOException {
 
     final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
     if (dataRoot == null) {
@@ -518,7 +522,7 @@ final class RecordReaderFactory {
 
       if (headerList.getZipType() != ZipType.DEFLATE) {
         throw new NotImplementedFeatureException(
-                "ZIP type not implemented: " + headerList.getZipType());
+            "ZIP type not implemented: " + headerList.getZipType());
       }
 
       final var firstDataList = headerList.getFirstDataList().resolve(DataList.META, input);
@@ -529,7 +533,7 @@ final class RecordReaderFactory {
   }
 
   private static long[] collectDataList(
-          ByteInput input, DataList dataList) throws IOException {
+      ByteInput input, DataList dataList) throws IOException {
     final var res = new ArrayList<>(dataList.getData());
     while (!dataList.getNextDataList().isNil()) {
       dataList = dataList.getNextDataList().resolve(DataList.META, input).orElseThrow();
@@ -539,16 +543,16 @@ final class RecordReaderFactory {
   }
 
   private static ArrayList<ValueRead> buildExtractors(
-          ChannelSelector selector, ByteInput input, DataGroup dataGroup,
-          ChannelGroup channelGroup) throws IOException {
+      ChannelSelector selector, ByteInput input, DataGroup dataGroup,
+      ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();
     final var channelGroupBlock = channelGroup.getBlock();
     log.finest(() ->
-            "Record size: " + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
-                    + channelGroupBlock.getInvalidationBytes())
-                    + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
-                    + channelGroupBlock.getDataBytes()
-                    + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
+        "Record size: " + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
+            + channelGroupBlock.getInvalidationBytes())
+            + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
+            + channelGroupBlock.getDataBytes()
+            + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
     final var channelReaders = new ArrayList<ValueRead>();
     final var iter = channelGroup.getChannels().iter();
@@ -556,13 +560,13 @@ final class RecordReaderFactory {
     while ((ch = iter.next()) != null) {
       try {
         final var channelReader = createChannelReader(
-                dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
+            dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         if (selector.selectChannel(dataGroup, channelGroup, ch)) {
           channelReaders.add(channelReader);
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getBlock().getChannelName().resolve(Text.META, input)
-                + "': " + exception.getMessage());
+            + "': " + exception.getMessage());
       }
     }
 

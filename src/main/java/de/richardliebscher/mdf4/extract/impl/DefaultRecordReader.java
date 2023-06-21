@@ -11,12 +11,7 @@ import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
-import de.richardliebscher.mdf4.extract.de.Deserialize;
-import de.richardliebscher.mdf4.extract.de.DeserializeSeed;
-import de.richardliebscher.mdf4.extract.de.Deserializer;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
-import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
@@ -110,32 +105,7 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
           "Early end of data at cycle " + cycle + " of " + group.getCycleCount());
     }
 
-    final var record = factory.visitRecord(new RecordAccess() {
-      private int index = 0;
-      private final int size = channelReaders.size();
-
-      @Override
-      public <S extends DeserializeSeed<T>, T> T nextElementSeed(Deserialize<T> deserialize, S seed)
-          throws IOException {
-        if (index >= size) {
-          throw new NoSuchElementException();
-        }
-
-        final var ret = seed.deserialize(deserialize, new Deserializer() {
-          @Override
-          public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-            return channelReaders.get(index).read(input, visitor);
-          }
-        });
-        index += 1;
-        return ret;
-      }
-
-      @Override
-      public int remaining() {
-        return channelReaders.size() - index;
-      }
-    });
+    final var record = factory.visitRecord(new RecordAccessImpl(channelReaders, input));
 
     input.incRecordIndex();
     return record;

@@ -18,12 +18,7 @@ import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
 import de.richardliebscher.mdf4.extract.ParallelRecordReader;
 import de.richardliebscher.mdf4.extract.RecordReader;
-import de.richardliebscher.mdf4.extract.de.Deserialize;
-import de.richardliebscher.mdf4.extract.de.DeserializeSeed;
-import de.richardliebscher.mdf4.extract.de.Deserializer;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
-import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
@@ -161,32 +156,8 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         recordInput = new RecordByteBuffer(currentBlock, offsets[index] / recordSize);
       }
 
-      action.accept(new Ok<>(rowDeserializer.visitRecord(new RecordAccess() {
-        private int index = 0;
-        private final int size = channelReaders.size();
-
-        @Override
-        public <S extends DeserializeSeed<T>, T> T nextElementSeed(
-            Deserialize<T> deserialize, S seed) throws IOException {
-          if (index >= size) {
-            throw new NoSuchElementException();
-          }
-
-          final var ret = seed.deserialize(deserialize, new Deserializer() {
-            @Override
-            public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-              return channelReaders.get(index).read(recordInput, visitor);
-            }
-          });
-          index += 1;
-          return ret;
-        }
-
-        @Override
-        public int remaining() {
-          return channelReaders.size() - index;
-        }
-      })));
+      action.accept(new Ok<>(rowDeserializer.visitRecord(
+          new RecordAccessImpl(channelReaders, recordInput))));
 
       readCycles += 1;
       recordInput.incRecordIndex();
@@ -305,32 +276,8 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         throw new NoSuchElementException();
       }
 
-      final var record = recordDeserializer.visitRecord(new RecordAccess() {
-        private int index = 0;
-        private final int size = channelReaders.size();
-
-        @Override
-        public <S extends DeserializeSeed<T>, T> T nextElementSeed(
-            Deserialize<T> deserialize, S seed) throws IOException {
-          if (index >= size) {
-            throw new NoSuchElementException();
-          }
-
-          final var ret = seed.deserialize(deserialize, new Deserializer() {
-            @Override
-            public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-              return channelReaders.get(index).read(recordInput, visitor);
-            }
-          });
-          index += 1;
-          return ret;
-        }
-
-        @Override
-        public int remaining() {
-          return channelReaders.size() - index;
-        }
-      });
+      final var record = recordDeserializer.visitRecord(
+          new RecordAccessImpl(channelReaders, recordInput));
 
       recordInput.incRecordIndex();
       currentBlock.position(currentBlock.position() + recordSize);

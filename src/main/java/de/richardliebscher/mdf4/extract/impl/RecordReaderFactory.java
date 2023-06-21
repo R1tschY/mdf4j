@@ -19,7 +19,6 @@ import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
 import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
-import de.richardliebscher.mdf4.blocks.LengthOrOffsets;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;

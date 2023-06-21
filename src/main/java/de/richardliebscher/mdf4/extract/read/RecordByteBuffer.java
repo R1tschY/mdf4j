@@ -8,11 +8,22 @@ package de.richardliebscher.mdf4.extract.read;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class RecordByteBuffer implements RecordBuffer {
   private final ByteBuffer buffer;
+  private long recordIndex = 0;
+
+  @Override
+  public void incRecordIndex() {
+    recordIndex += 1;
+  }
+
+  @Override
+  public long getRecordIndex() {
+    return recordIndex;
+  }
 
   @Override
   public byte readU8(int pos) {

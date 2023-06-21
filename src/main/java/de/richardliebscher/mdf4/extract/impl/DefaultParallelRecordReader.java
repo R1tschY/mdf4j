@@ -50,6 +50,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
   private final List<ValueRead> channelReaders;
   private final SerializableRecordVisitor<R> recordDeserializer;
   private final long[] dataList;
+  private final long[] offsets;
   private final ChannelGroupBlock channelGroup;
 
   @Override
@@ -59,7 +60,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
     return StreamSupport.stream(new RecordSpliterator<>(
         channelReaders, recordDeserializer,
         input, channelGroup.getDataBytes() + channelGroup.getInvalidationBytes(),
-        dataList, channelGroup.getCycleCount()), false);
+        dataList, offsets, channelGroup.getCycleCount()), false);
   }
 
   @AllArgsConstructor
@@ -69,6 +70,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
     private final List<ValueRead> channelReaders;
     private final SerializableRecordVisitor<R> rowDeserializer;
     private final long[] dataList;
+    private final long[] offsets;
     private final int recordSize;
     private final long estimatedCyclesPerBlock;
     private RecordBuffer recordInput;
@@ -81,11 +83,12 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
 
     public RecordSpliterator(List<ValueRead> channelReaders,
         SerializableRecordVisitor<R> rowDeserializer,
-        ByteInput input, int recordSize, long[] dataList, long cycles) {
+        ByteInput input, int recordSize, long[] dataList, long[] offsets, long cycles) {
       this.channelReaders = channelReaders;
       this.rowDeserializer = rowDeserializer;
       this.recordSize = recordSize;
       this.dataList = dataList;
+      this.offsets = offsets;
       this.estimatedCyclesPerBlock =
           Math.max(1, (int) Math.ceil(cycles / (dataList.length - 0.49)));
 
@@ -101,6 +104,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
       this.channelReaders = origin.channelReaders;
       this.rowDeserializer = origin.rowDeserializer;
       this.dataList = origin.dataList;
+      this.offsets = origin.offsets;
       this.recordSize = origin.recordSize;
       this.estimatedCyclesPerBlock = origin.estimatedCyclesPerBlock;
 
@@ -154,7 +158,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         if (currentBlock.remaining() % recordSize != 0) {
           throw new FormatException("Data block size is not a multiple of the record size");
         }
-        recordInput = new RecordByteBuffer(currentBlock);
+        recordInput = new RecordByteBuffer(currentBlock, offsets[index] / recordSize);
       }
 
       action.accept(new Ok<>(rowDeserializer.visitRecord(new RecordAccess() {
@@ -185,6 +189,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
       })));
 
       readCycles += 1;
+      recordInput.incRecordIndex();
       currentBlock.position(currentBlock.position() + recordSize);
       return true;
     }
@@ -240,10 +245,9 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
       throw new IllegalArgumentException("parts should be greater than or equal to 1");
     }
 
-    final List<long[]> splits;
     if (dataList.length <= parts) {
-      return Arrays.stream(dataList)
-          .mapToObj(data -> newDetachedRecordReader(new long[]{data}))
+      return IntStream.range(0, dataList.length)
+          .mapToObj(i -> newDetachedRecordReader(new long[]{dataList[i]}, new long[]{offsets[i]}))
           .collect(Collectors.toList());
     } else {
       final double partLength = dataList.length / (double) parts;
@@ -251,15 +255,17 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
           .mapToObj(partIndex -> {
             final var start = (int) Math.round(partIndex * partLength);
             final var end = (int) Math.round((partIndex + 1) * partLength);
-            return newDetachedRecordReader(Arrays.copyOfRange(dataList, start, end));
+            return newDetachedRecordReader(
+                Arrays.copyOfRange(dataList, start, end),
+                Arrays.copyOfRange(offsets, start, end));
           })
           .collect(Collectors.toList());
     }
   }
 
-  private DetachedRecordReader<R> newDetachedRecordReader(long[] dataListPart) {
+  private DetachedRecordReader<R> newDetachedRecordReader(long[] dataListPart, long[] offsets) {
     return new MyDetachedRecordReader<>(
-        dataListPart, channelReaders, recordDeserializer,
+        dataListPart, offsets, channelReaders, recordDeserializer,
         channelGroup.getDataBytes() + channelGroup.getInvalidationBytes());
   }
 
@@ -269,6 +275,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
     private final List<ValueRead> channelReaders;
     private final SerializableRecordVisitor<R> recordDeserializer;
     private final long[] dataList;
+    private final long[] offsets;
     private final int recordSize;
     private RecordBuffer recordInput;
     private int index;
@@ -276,11 +283,13 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
 
     public MyRecordReader(
         ByteInput input, List<ValueRead> channelReaders,
-        SerializableRecordVisitor<R> recordDeserializer, int recordSize, long[] dataListPart) {
+        SerializableRecordVisitor<R> recordDeserializer, int recordSize, long[] dataListPart,
+        long[] offsets) {
       this.input = input;
       this.channelReaders = channelReaders;
       this.recordDeserializer = recordDeserializer;
       this.dataList = dataListPart;
+      this.offsets = offsets;
       this.recordSize = recordSize;
       this.index = 0;
     }
@@ -323,6 +332,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         }
       });
 
+      recordInput.incRecordIndex();
       currentBlock.position(currentBlock.position() + recordSize);
       return record;
     }
@@ -354,7 +364,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
           throw new NotImplementedFeatureException(
               "Data block size is not a multiple of the record size");
         }
-        recordInput = new RecordByteBuffer(currentBlock);
+        recordInput = new RecordByteBuffer(currentBlock, offsets[index] / recordSize);
         index += 1;
       }
 
@@ -365,13 +375,16 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
   private static class MyDetachedRecordReader<R> implements DetachedRecordReader<R> {
 
     private final long[] dataListPart;
+    private final long[] offsets;
     private final List<ValueRead> channelReaders;
     private final SerializableRecordVisitor<R> recordDeserializer;
     private final int recordSize;
 
-    public MyDetachedRecordReader(long[] dataListPart, List<ValueRead> channelReaders,
-        SerializableRecordVisitor<R> recordDeserializer, int recordSize) {
+    public MyDetachedRecordReader(long[] dataListPart, long[] offsets,
+        List<ValueRead> channelReaders, SerializableRecordVisitor<R> recordDeserializer,
+        int recordSize) {
       this.dataListPart = dataListPart;
+      this.offsets = offsets;
       this.channelReaders = channelReaders;
       this.recordDeserializer = recordDeserializer;
       this.recordSize = recordSize;
@@ -384,7 +397,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
           channelReaders,
           recordDeserializer,
           recordSize,
-          dataListPart);
+          dataListPart, offsets);
     }
   }
 }

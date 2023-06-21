@@ -19,6 +19,7 @@ import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
 import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
+import de.richardliebscher.mdf4.blocks.LengthOrOffsets;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -45,6 +46,7 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
@@ -69,9 +71,9 @@ public final class RecordReaderFactory {
       case MASTER_CHANNEL:
         valueRead = createFixedLengthDataReader(channel);
         break;
-      case VIRTUAL_MASTER_CHANNEL:
       case VIRTUAL_DATA_CHANNEL:
-        valueRead = createVirtualMasterReader(channel);
+      case VIRTUAL_MASTER_CHANNEL:
+        valueRead = createVirtualDataReader(channel);
         break;
       case VARIABLE_LENGTH_DATA_CHANNEL:
       case SYNCHRONIZATION_CHANNEL:
@@ -383,8 +385,7 @@ public final class RecordReaderFactory {
     }
   }
 
-  private static ValueRead createVirtualMasterReader(Channel channel) throws FormatException {
-    final ValueRead valueRead;
+  private static ValueRead createVirtualDataReader(Channel channel) throws FormatException {
     if (channel.getBitCount() != 0) {
       throw new FormatException("Bit count of virtual master channel must be zero, but got "
           + channel.getBitCount());
@@ -396,15 +397,12 @@ public final class RecordReaderFactory {
     //             + channel.getDataType());
     // }
     // TODO: apply offset from HD block
-    valueRead = new ValueRead() {
-      private int recordIndex = 0;
-
+    return new ValueRead() {
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        return visitor.visitU32(recordIndex++);
+        return visitor.visitU64(input.getRecordIndex());
       }
     };
-    return valueRead;
   }
 
   /**
@@ -444,13 +442,15 @@ public final class RecordReaderFactory {
     final var channelGroup = group.getRight();
 
     // data source
-    final var dataList = collectDataList(ctx.getInput(), dataGroup.getBlock());
+    final var dataListAndOffsets = collectDataList(ctx.getInput(), dataGroup.getBlock());
 
     // build extractor
     final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
 
     return new DefaultParallelRecordReader<>(
-        ctx, channelReaders, rowDeserializer, dataList, channelGroup.getBlock());
+        ctx, channelReaders, rowDeserializer,
+        dataListAndOffsets.getLeft(), dataListAndOffsets.getRight(),
+        channelGroup.getBlock());
   }
 
   private static Pair<DataGroup, ChannelGroup> selectChannels(
@@ -507,14 +507,14 @@ public final class RecordReaderFactory {
     }
   }
 
-  public static long[] collectDataList(
+  public static Pair<long[], long[]> collectDataList(
       ByteInput input, DataGroupBlock dataGroup) throws IOException {
 
     final var dataRoot = dataGroup.getData().resolve(DataRoot.META, input).orElse(null);
     if (dataRoot == null) {
-      return new long[0];
+      return Pair.of(new long[0], new long[0]);
     } else if (dataRoot instanceof Data) {
-      return new long[]{dataGroup.getData().asLong()};
+      return Pair.of(new long[]{dataGroup.getData().asLong()}, new long[]{0});
     } else if (dataRoot instanceof DataList) {
       return collectDataList(input, (DataList) dataRoot);
     } else if (dataRoot instanceof HeaderList) {
@@ -526,20 +526,55 @@ public final class RecordReaderFactory {
       }
 
       final var firstDataList = headerList.getFirstDataList().resolve(DataList.META, input);
-      return firstDataList.isPresent() ? collectDataList(input, firstDataList.get()) : new long[0];
+      return firstDataList.isPresent()
+          ? collectDataList(input, firstDataList.get())
+          : Pair.of(new long[0], new long[0]);
     } else {
       throw new IllegalStateException("Should not happen");
     }
   }
 
-  private static long[] collectDataList(
+  private static Pair<long[], long[]> collectDataList(
       ByteInput input, DataList dataList) throws IOException {
-    final var res = new ArrayList<>(dataList.getData());
+    final var dataLinks = new ArrayList<>(dataList.getData());
+    final var offsetsList = new ArrayList<Long>();
+    addOffsets(offsetsList, dataList);
+
     while (!dataList.getNextDataList().isNil()) {
       dataList = dataList.getNextDataList().resolve(DataList.META, input).orElseThrow();
-      res.addAll(dataList.getData());
+      dataLinks.addAll(dataList.getData());
+      addOffsets(offsetsList, dataList);
     }
-    return res.stream().mapToLong(Link::asLong).toArray();
+
+    return Pair.of(
+        dataLinks.stream().mapToLong(Link::asLong).toArray(),
+        offsetsList.stream().mapToLong(Long::longValue).toArray());
+  }
+
+  private static void addOffsets(List<Long> offsetsList, DataList dataList) {
+    dataList.getOffsetInfo().accept(
+        new de.richardliebscher.mdf4.blocks.LengthOrOffsets.Visitor<
+            List<Long>, RuntimeException>() {
+          @Override
+          public List<Long> visitLength(long length) {
+            for (int i = 0; i < dataList.getData().size(); i++) {
+              if (offsetsList.isEmpty()) {
+                offsetsList.add(0L);
+              } else {
+                offsetsList.add(offsetsList.get(offsetsList.size() - 1) + length);
+              }
+            }
+            return null;
+          }
+
+          @Override
+          public List<Long> visitOffsets(long[] offsets) {
+            for (long offset : offsets) {
+              offsetsList.add(offset);
+            }
+            return null;
+          }
+        });
   }
 
   private static ArrayList<ValueRead> buildExtractors(

@@ -52,7 +52,7 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
     this.factory = factory;
     this.dataSource = dataSource;
     this.buffer = ByteBuffer.allocate(group.getDataBytes() + group.getInvalidationBytes());
-    this.input = new RecordByteBuffer(buffer);
+    this.input = new RecordByteBuffer(buffer, 0);
     this.group = group;
   }
 
@@ -110,7 +110,7 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
           "Early end of data at cycle " + cycle + " of " + group.getCycleCount());
     }
 
-    return factory.visitRecord(new RecordAccess() {
+    final var record = factory.visitRecord(new RecordAccess() {
       private int index = 0;
       private final int size = channelReaders.size();
 
@@ -136,5 +136,8 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
         return channelReaders.size() - index;
       }
     });
+
+    input.incRecordIndex();
+    return record;
   }
 }

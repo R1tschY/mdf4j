@@ -12,6 +12,10 @@ import java.nio.charset.Charset;
  */
 public interface RecordBuffer {
 
+  void incRecordIndex();
+
+  long getRecordIndex();
+
   byte readU8(int pos);
 
   short readI16Le(int pos);

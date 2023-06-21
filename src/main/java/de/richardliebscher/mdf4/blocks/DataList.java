@@ -24,9 +24,9 @@ public class DataList implements DataRoot {
   Link<DataList> nextDataList;
   @ToString.Exclude
   List<Link<DataBlock>> data; // DT,SD,RD,DZ
+  LengthOrOffsets offsetInfo;
 
   DataListFlags flags;
-  long count;
 
   public static DataList parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.DL, input, 1, 8);
@@ -42,13 +42,17 @@ public class DataList implements DataRoot {
           "Count attribute in DL block is inconsistent: " + count + " vs. " + data.size());
     }
 
-    //if (flags.test(DataListFlags.EQUAL_LENGTH)) {
-    //  final var equalLength = input.readI64LE();
-    //  for (int i = 0; i < count; i++) {
-    //    final var offset = input.readQword(); // if equalLengthFlag
-    //  }
-    //}
-    //
+    final LengthOrOffsets offsetInfo;
+    if (flags.test(DataListFlags.EQUAL_LENGTH)) {
+      offsetInfo = new LengthOrOffsets.Length(input.readI64());
+    } else {
+      final var offsets = new long[count];
+      for (int i = 0; i < count; i++) {
+        offsets[i] = input.readI64();
+      }
+      offsetInfo = new LengthOrOffsets.Offsets(offsets);
+    }
+
     //if (flags.test(DataListFlags.TIME_VALUES)) {
     //  for (int i = 0; i < count; i++) {
     //    final var time_values = input.readQword();
@@ -67,7 +71,7 @@ public class DataList implements DataRoot {
     //  }
     //}
 
-    return new DataList(nextDataList, data, flags, count);
+    return new DataList(nextDataList, data, offsetInfo, flags);
   }
 
   @SuppressWarnings("unchecked")

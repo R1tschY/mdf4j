@@ -127,6 +127,16 @@ public interface Visitor<T> extends Expected {
   }
 
   /**
+   * Visit string.
+   *
+   * @param value Value
+   * @return Deserialized value
+   */
+  default T visitString(String value) throws IOException {
+    throw new InvalidTypeException("string value '" + value + "'", this);
+  }
+
+  /**
    * Visit invalid value.
    *
    * @return Deserialized value

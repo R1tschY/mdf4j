@@ -19,7 +19,6 @@ import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
 import de.richardliebscher.mdf4.blocks.DataRoot;
 import de.richardliebscher.mdf4.blocks.HeaderList;
-import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
@@ -44,6 +43,8 @@ import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -142,7 +143,7 @@ public final class RecordReaderFactory {
   }
 
   private static ValueRead createFixedLengthDataReader(Channel channel)
-      throws NotImplementedFeatureException {
+      throws IOException {
     switch (channel.getDataType()) {
       case UINT_LE:
         return createUintLeRead(channel);
@@ -157,9 +158,13 @@ public final class RecordReaderFactory {
       case FLOAT_BE:
         return createFloatBeRead(channel);
       case STRING_LATIN1:
+        return createStringRead(channel, StandardCharsets.ISO_8859_1);
       case STRING_UTF8:
+        return createStringRead(channel, StandardCharsets.UTF_8);
       case STRING_UTF16LE:
+        return createStringRead(channel, StandardCharsets.UTF_16LE);
       case STRING_UTF16BE:
+        return createStringRead(channel, StandardCharsets.UTF_16BE);
       case BYTE_ARRAY:
       case MIME_SAMPLE:
       case MIME_STREAM:
@@ -384,6 +389,33 @@ public final class RecordReaderFactory {
     }
   }
 
+  private static ValueRead createStringRead(Channel channel, Charset charset)
+      throws FormatException {
+    final var byteOffset = channel.getByteOffset();
+    final var bitCount = channel.getBitCount();
+    if (bitCount % 8 != 0) {
+      throw new FormatException("Bit count must be a multiple of 8 for string channels");
+    }
+    final var byteCount = bitCount / 8;
+
+    return new ValueRead() {
+      @Override
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        // TODO: PERF: trimString can work on bytes for Latin-1 and UTF-8
+        // TODO: PERF: Use a transient singleton byte buffer to copy string bytes to
+        return visitor.visitString(trimString(input.readString(byteOffset, byteCount, charset)));
+      }
+    };
+  }
+
+  private static String trimString(String data) throws IOException {
+    final var size = data.indexOf('\0');
+    if (size == -1) {
+      throw new FormatException("Missing zero termination of string value");
+    }
+    return data.substring(0, size);
+  }
+
   private static ValueRead createVirtualDataReader(Channel channel) throws FormatException {
     if (channel.getBitCount() != 0) {
       throw new FormatException("Bit count of virtual master channel must be zero, but got "
@@ -599,8 +631,7 @@ public final class RecordReaderFactory {
           channelReaders.add(channelReader);
         }
       } catch (NotImplementedFeatureException exception) {
-        log.warning("Ignoring channel '" + ch.getBlock().getChannelName().resolve(Text.META, input)
-            + "': " + exception.getMessage());
+        log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
       }
     }
 

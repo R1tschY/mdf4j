@@ -36,7 +36,7 @@ public class Channel {
   byte bitOffset;
   int byteOffset;
   int bitCount;
-  ChannelFlags flags;
+  BitFlags<ChannelFlag> flags;
   int invalidationBit;
   byte precision;
   short attachmentCount;
@@ -52,7 +52,7 @@ public class Channel {
     final var bitOffset = input.readU8();
     final var byteOffset = input.readI32();
     final var bitCount = input.readI32();
-    final var flags = ChannelFlags.of(input.readI32());
+    final var flags = BitFlags.of(input.readI32(), ChannelFlag.class);
     final var invalidationBit = input.readI32();
     final var precision = input.readU8();
     input.skip(1);
@@ -72,7 +72,7 @@ public class Channel {
   }
 
   public Optional<Integer> getPrecision() {
-    if (flags.test(ChannelFlags.PRECISION_VALID)) {
+    if (flags.isSet(ChannelFlag.PRECISION_VALID)) {
       if (precision == (byte) 0xFF) {
         return Optional.of(Integer.MAX_VALUE);
       } else {

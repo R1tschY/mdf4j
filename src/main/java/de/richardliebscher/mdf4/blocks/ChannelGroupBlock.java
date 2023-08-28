@@ -28,7 +28,7 @@ public class ChannelGroupBlock {
 
   long recordId;
   long cycleCount;
-  ChannelGroupFlags flags;
+  BitFlags<ChannelGroupFlag> flags;
   char pathSeparator;
   int dataBytes;
   int invalidationBytes;
@@ -49,7 +49,7 @@ public class ChannelGroupBlock {
 
     final var recordId = input.readI64();
     final var cycleCount = input.readI64();
-    final var flags = ChannelGroupFlags.of(input.readI16());
+    final var flags = BitFlags.of(input.readI16(), ChannelGroupFlag.class);
     final var pathSeparator = input.readString(2, StandardCharsets.UTF_16LE).charAt(0);
     input.skip(4);
     final var dataBytes = input.readI32();

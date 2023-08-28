@@ -21,7 +21,7 @@ public class Id {
 
   MdfFormatVersion formatId;
   String programId;
-  UnfinalizedFlags unfinalizedFlags;
+  BitFlags<UnfinalizedFlag> unfinalizedFlags;
   CustomFlags customUnfinalizedFlags;
 
   public boolean isUnfinalized() {
@@ -42,10 +42,10 @@ public class Id {
     final var versionNumber = input.readI16();
     final var codePageNumber = input.readI16(); // for 3.x
     input.skip(28); // fill bytes
-    final UnfinalizedFlags unfinalizedFlags;
+    final BitFlags<UnfinalizedFlag> unfinalizedFlags;
     final CustomFlags customUnfinalizedFlags;
     if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
-      unfinalizedFlags = UnfinalizedFlags.of(input.readI16());
+      unfinalizedFlags = BitFlags.of(input.readI16(), UnfinalizedFlag.class);
       customUnfinalizedFlags = CustomFlags.of(input.readI16());
     } else {
       unfinalizedFlags = null;

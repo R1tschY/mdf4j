@@ -5,8 +5,8 @@
 
 package de.richardliebscher.mdf4.blocks;
 
-import static de.richardliebscher.mdf4.blocks.ChannelConversionFlags.PHYSICAL_VALUE_RANGE_VALID;
-import static de.richardliebscher.mdf4.blocks.ChannelConversionFlags.PRECISION_VALID;
+import static de.richardliebscher.mdf4.blocks.ChannelConversionFlag.PHYSICAL_VALUE_RANGE_VALID;
+import static de.richardliebscher.mdf4.blocks.ChannelConversionFlag.PRECISION_VALID;
 
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -29,7 +29,7 @@ public class ChannelConversion {
 
   ChannelConversionType type;
   Integer precision;
-  ChannelConversionFlags flags;
+  BitFlags<ChannelConversionFlag> flags;
   Range physicalRange;
   long[] vals;
 
@@ -37,7 +37,7 @@ public class ChannelConversion {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.CC, input, 4, 24);
     final var type = ChannelConversionType.parse(input.readU8());
     final var maybePrecision = Byte.toUnsignedInt(input.readU8());
-    final var flags = ChannelConversionFlags.of(input.readI16());
+    final var flags = BitFlags.of(input.readI16(), ChannelConversionFlag.class);
     /* final var refCount = Short.toUnsignedInt(*/
     input.readI16();
     final var valCount = Short.toUnsignedInt(input.readI16());
@@ -49,8 +49,8 @@ public class ChannelConversion {
       vals[i] = input.readI64();
     }
 
-    final var precision = flags.test(PRECISION_VALID) ? maybePrecision : null;
-    final var physicalRange = flags.test(PHYSICAL_VALUE_RANGE_VALID)
+    final var precision = flags.isSet(PRECISION_VALID) ? maybePrecision : null;
+    final var physicalRange = flags.isSet(PHYSICAL_VALUE_RANGE_VALID)
         ? new Range(physicalRangeMin, physicalRangeMax)
         : null;
 

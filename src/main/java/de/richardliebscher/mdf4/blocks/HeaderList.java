@@ -19,7 +19,7 @@ public class HeaderList implements DataRoot {
 
   Link<DataList> firstDataList;
 
-  HeaderListFlags flags;
+  BitFlags<HeaderListFlag> flags;
   ZipType zipType;
 
   public static HeaderList parse(ByteInput input) throws IOException {
@@ -27,7 +27,7 @@ public class HeaderList implements DataRoot {
     final var links = blockHeader.getLinks();
     final Link<DataList> firstDataList = Link.of(links[0]);
 
-    final var flags = HeaderListFlags.of(input.readI16());
+    final var flags = BitFlags.of(input.readI16(), HeaderListFlag.class);
     if (flags.hasUnknown()) {
       throw new UnsupportedVersionException(
           "Future MDF4 could not be read: Unknown flags set in HL block");

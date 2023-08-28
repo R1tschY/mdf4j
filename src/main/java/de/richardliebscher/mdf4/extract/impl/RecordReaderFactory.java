@@ -11,9 +11,8 @@ import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.Channel;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
-import de.richardliebscher.mdf4.blocks.ChannelFlags;
+import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
-import de.richardliebscher.mdf4.blocks.ChannelGroupFlags;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
@@ -61,7 +60,7 @@ public final class RecordReaderFactory {
     if (channel.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
     }
-    if (channel.getFlags().test(ChannelFlags.ALL_VALUES_INVALID)) {
+    if (channel.getFlags().isSet(ChannelFlag.ALL_VALUES_INVALID)) {
       return new NoValueRead(new InvalidDeserializer());
     }
 
@@ -109,7 +108,7 @@ public final class RecordReaderFactory {
       }
     }
 
-    if (channel.getFlags().test(ChannelFlags.INVALIDATION_BIT_VALID)) {
+    if (channel.getFlags().isSet(ChannelFlag.INVALIDATION_BIT_VALID)) {
       valueRead = createInvalidationReader(dataGroup, group, channel, valueRead);
     }
 
@@ -499,8 +498,9 @@ public final class RecordReaderFactory {
             throw new NotImplementedFeatureException("Unsorted data groups not implemented");
           }
 
-          if (!channelGroup.getBlock().getFlags().equals(ChannelGroupFlags.of(0))) {
-            throw new NotImplementedFeatureException("Any channel group flags not implemented");
+          if (!channelGroup.getBlock().getFlags().isEmpty()) {
+            throw new NotImplementedFeatureException(
+                "Some channel group flags not implemented: " + channelGroup.getBlock().getFlags());
           }
 
           return Pair.of(dataGroup, channelGroup);

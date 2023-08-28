@@ -5,22 +5,36 @@
 
 package de.richardliebscher.mdf4.blocks;
 
-public class CustomFlags extends FlagsBase<CustomFlags> {
+public class CustomFlags {
+
+  protected final int value;
 
   public static CustomFlags of(int flags) {
     return new CustomFlags(flags);
   }
 
-  public static CustomFlags ofBit(int bit) {
-    return new CustomFlags(1 << bit);
-  }
-
   private CustomFlags(int value) {
-    super(value);
+    this.value = value;
   }
 
-  @Override
-  protected CustomFlags create(int a) {
-    return new CustomFlags(a);
+  public CustomFlags merge(CustomFlags other) {
+    return of(this.value | other.value);
+  }
+
+  public boolean test(CustomFlags test) {
+    return (value & test.value) == test.value;
+  }
+
+  public boolean testBit(int bitNumber) {
+    final var toTest = 1 << bitNumber;
+    return (value & toTest) != 0;
+  }
+
+  public boolean anyOf(CustomFlags test) {
+    return (value & test.value) != 0;
+  }
+
+  public boolean isEmpty() {
+    return value == 0;
   }
 }

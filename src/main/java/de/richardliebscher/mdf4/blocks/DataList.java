@@ -26,7 +26,7 @@ public class DataList implements DataRoot {
   List<Link<DataBlock>> data; // DT,SD,RD,DZ
   LengthOrOffsets offsetInfo;
 
-  DataListFlags flags;
+  BitFlags<DataListFlag> flags;
 
   public static DataList parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.DL, input, 1, 8);
@@ -34,7 +34,7 @@ public class DataList implements DataRoot {
     final Link<DataList> nextDataList = Link.of(links[0]);
     final var data = getDataLinks(links);
 
-    final var flags = DataListFlags.of(input.readU8());
+    final var flags = BitFlags.of(input.readU8(), DataListFlag.class);
     input.skip(3);
     final var count = input.readI32();
     if (count != data.size()) {
@@ -43,7 +43,7 @@ public class DataList implements DataRoot {
     }
 
     final LengthOrOffsets offsetInfo;
-    if (flags.test(DataListFlags.EQUAL_LENGTH)) {
+    if (flags.isSet(DataListFlag.EQUAL_LENGTH)) {
       offsetInfo = new LengthOrOffsets.Length(input.readI64());
     } else {
       final var offsets = new long[count];

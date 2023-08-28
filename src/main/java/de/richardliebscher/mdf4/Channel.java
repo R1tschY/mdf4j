@@ -5,8 +5,12 @@
 
 package de.richardliebscher.mdf4;
 
+import static de.richardliebscher.mdf4.blocks.ChannelFlag.ALL_VALUES_INVALID;
+import static de.richardliebscher.mdf4.blocks.ChannelFlag.INVALIDATION_BIT_VALID;
+
+import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
-import de.richardliebscher.mdf4.blocks.ChannelFlags;
+import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
@@ -23,6 +27,9 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class Channel {
+
+  private static final BitFlags<ChannelFlag> INVALID_FLAGS = BitFlags.of(
+      ChannelFlag.class, INVALIDATION_BIT_VALID, ALL_VALUES_INVALID);
 
   private final de.richardliebscher.mdf4.blocks.Channel block;
   private final FileContext ctx;
@@ -72,8 +79,7 @@ public class Channel {
    * Return whether invalid values are possible.
    */
   public boolean isInvalidable() {
-    return block.getFlags().anyOf(
-        ChannelFlags.INVALIDATION_BIT_VALID.merge(ChannelFlags.ALL_VALUES_INVALID));
+    return block.getFlags().anyOf(INVALID_FLAGS);
   }
 
   /**

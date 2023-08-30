@@ -11,6 +11,8 @@ import static de.richardliebscher.mdf4.blocks.ChannelFlag.INVALIDATION_BIT_VALID
 import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
+import de.richardliebscher.mdf4.blocks.ChannelType;
+import de.richardliebscher.mdf4.blocks.SyncType;
 import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
@@ -113,6 +115,25 @@ public class Channel {
       default:
         throw new IllegalStateException("Data type " + block.getDataType() + " not implemented");
     }
+  }
+
+  /**
+   * Return whether this channel is a master channel.
+   *
+   * @return {@code true}, iff channel is a master channel
+   */
+  public boolean isMaster() {
+    final var type = block.getType();
+    return type == ChannelType.MASTER_CHANNEL || type == ChannelType.VIRTUAL_MASTER_CHANNEL;
+  }
+
+  /**
+   * Return whether this channel is the time master channel.
+   *
+   * @return {@code true}, iff channel is the time master channel
+   */
+  public boolean isTimeMaster() {
+    return block.getSyncType().equals(SyncType.TIME) && isMaster();
   }
 
   static class Iterator implements LazyIoIterator<Channel> {

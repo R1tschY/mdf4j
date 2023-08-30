@@ -209,8 +209,37 @@ public final class RecordReaderFactory {
           }
         };
       default:
-        throw new NotImplementedFeatureException(
-            "Only integer with 1, 2, 4 or 8 bytes are implemented");
+    }
+
+    if (channel.getBitCount() < 8) {
+      return createSmallUnsignedRead(channel, byteOffset);
+    } else if (channel.getBitCount() < 16) {
+      final var mask = (1 << channel.getBitCount()) - 1;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU16((short) (input.readI16Le(byteOffset) & mask));
+        }
+      };
+    } else if (channel.getBitCount() < 32) {
+      final var mask = (1 << channel.getBitCount()) - 1;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU32(input.readI32Le(byteOffset) & mask);
+        }
+      };
+    } else if (channel.getBitCount() < 64) {
+      final var mask = (1L << channel.getBitCount()) - 1L;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU64(input.readI64Le(byteOffset) & mask);
+        }
+      };
+    } else {
+      throw new NotImplementedFeatureException(
+          "Integer with more than 64 bits are not implemented, got " + channel.getBitCount());
     }
   }
 
@@ -246,9 +275,48 @@ public final class RecordReaderFactory {
           }
         };
       default:
-        throw new NotImplementedFeatureException(
-            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
+
+    if (channel.getBitCount() < 8) {
+      return createSmallUnsignedRead(channel, byteOffset);
+    } else if (channel.getBitCount() < 16) {
+      final var mask = (1 << channel.getBitCount()) - 1;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU16((short) (input.readI16Be(byteOffset) & mask));
+        }
+      };
+    } else if (channel.getBitCount() < 32) {
+      final var mask = (1 << channel.getBitCount()) - 1;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU32(input.readI32Be(byteOffset) & mask);
+        }
+      };
+    } else if (channel.getBitCount() < 64) {
+      final var mask = (1L << channel.getBitCount()) - 1L;
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitU64(input.readI64Be(byteOffset) & mask);
+        }
+      };
+    } else {
+      throw new NotImplementedFeatureException(
+          "Integer with more than 64 bits are not implemented, got " + channel.getBitCount());
+    }
+  }
+
+  private static ValueRead createSmallUnsignedRead(Channel channel, int byteOffset) {
+    final var mask = (1 << channel.getBitCount()) - 1;
+    return new ValueRead() {
+      @Override
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        return visitor.visitU8((byte) (input.readU8(byteOffset) & mask));
+      }
+    };
   }
 
   private static ValueRead createIntLeRead(Channel channel) throws NotImplementedFeatureException {
@@ -283,8 +351,39 @@ public final class RecordReaderFactory {
           }
         };
       default:
-        throw new NotImplementedFeatureException(
-            "Only integer with 1, 2, 4 or 8 bytes are implemented");
+    }
+
+    if (channel.getBitCount() < 8) {
+      return createSmallIntegerRead(channel, byteOffset);
+    } else if (channel.getBitCount() < 16) {
+      final var unusedBits = 16 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI16(
+              (short) (input.readI16Le(byteOffset) << unusedBits >> unusedBits));
+        }
+      };
+    } else if (channel.getBitCount() < 32) {
+      final var unusedBits = 32 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI32(input.readI32Le(byteOffset) << unusedBits >> unusedBits);
+        }
+      };
+    } else if (channel.getBitCount() < 64) {
+      final var unusedBits = 64 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI64(
+              input.readI64Le(byteOffset) << unusedBits >> unusedBits);
+        }
+      };
+    } else {
+      throw new NotImplementedFeatureException(
+          "Integer with more than 64 bits are not implemented, got " + channel.getBitCount());
     }
   }
 
@@ -320,9 +419,51 @@ public final class RecordReaderFactory {
           }
         };
       default:
-        throw new NotImplementedFeatureException(
-            "Only integer with 1, 2, 4 or 8 bytes are implemented");
     }
+
+    if (channel.getBitCount() < 8) {
+      return createSmallIntegerRead(channel, byteOffset);
+    } else if (channel.getBitCount() < 16) {
+      final var unusedBits = 16 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI16(
+              (short) (input.readI16Be(byteOffset) << unusedBits >> unusedBits));
+        }
+      };
+    } else if (channel.getBitCount() < 32) {
+      final var unusedBits = 32 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI32(input.readI32Be(byteOffset) << unusedBits >> unusedBits);
+        }
+      };
+    } else if (channel.getBitCount() < 64) {
+      final var unusedBits = 64 - channel.getBitCount();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitI64(
+              input.readI64Be(byteOffset) << unusedBits >> unusedBits);
+        }
+      };
+    } else {
+      throw new NotImplementedFeatureException(
+          "Integer with more than 64 bits are not implemented, got " + channel.getBitCount());
+    }
+  }
+
+  private static ValueRead createSmallIntegerRead(Channel channel, int byteOffset) {
+    final var unusedBits = 8 - channel.getBitCount();
+    return new ValueRead() {
+      @Override
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        return visitor.visitI8(
+            (byte) (input.readU8(byteOffset) << unusedBits >> unusedBits));
+      }
+    };
   }
 
   private static ValueRead createFloatLeRead(Channel channel)

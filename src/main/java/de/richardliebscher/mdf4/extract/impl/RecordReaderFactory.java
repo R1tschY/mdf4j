@@ -356,7 +356,7 @@ public final class RecordReaderFactory {
     if (channel.getBitCount() < 8) {
       return createSmallIntegerRead(channel, byteOffset);
     } else if (channel.getBitCount() < 16) {
-      final var unusedBits = 16 - channel.getBitCount();
+      final var unusedBits = 32 - channel.getBitCount();
       return new ValueRead() {
         @Override
         public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
@@ -424,7 +424,7 @@ public final class RecordReaderFactory {
     if (channel.getBitCount() < 8) {
       return createSmallIntegerRead(channel, byteOffset);
     } else if (channel.getBitCount() < 16) {
-      final var unusedBits = 16 - channel.getBitCount();
+      final var unusedBits = 32 - channel.getBitCount();
       return new ValueRead() {
         @Override
         public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
@@ -456,7 +456,7 @@ public final class RecordReaderFactory {
   }
 
   private static ValueRead createSmallIntegerRead(Channel channel, int byteOffset) {
-    final var unusedBits = 8 - channel.getBitCount();
+    final var unusedBits = 32 - channel.getBitCount();
     return new ValueRead() {
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {

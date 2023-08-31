@@ -6,6 +6,8 @@
 package de.richardliebscher.mdf4.io;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 
 /**
@@ -34,6 +36,10 @@ public interface ByteInput {
   long pos() throws IOException;
 
   byte[] readBytes(int dataLength) throws IOException;
+
+  InputStream getStream();
+
+  ReadableByteChannel getChannel();
 
   ByteInput dup() throws IOException;
 }

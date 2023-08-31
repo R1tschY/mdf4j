@@ -20,9 +20,7 @@ import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,8 +39,7 @@ public class CsvExample {
     final var target = Path.of(args[1]);
 
     // Open file
-    final var input = new ByteBufferInput(ByteBuffer.wrap(Files.readAllBytes(source)));
-    final var mdf4File = Mdf4File.open(input);
+    final var mdf4File = Mdf4File.open(source);
 
     // Select channel group and channels
     final var channels = new ArrayList<Channel>();

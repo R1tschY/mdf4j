@@ -8,21 +8,26 @@ package de.richardliebscher.mdf4.blocks;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.Value;
 
 @Value
 public class Data implements DataRoot, UncompressedData {
 
-  @ToString.Exclude
-  byte[] data;
+  long dataPos;
+  long dataLength;
+
+  @Override
+  public ReadableByteChannel getChannel(ByteInput input) throws IOException {
+    input.seek(dataPos);
+    return input.getChannel();
+  }
 
   public static Data parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(BlockType.DT, input);
-    final var bytes = input.readBytes(Math.toIntExact(blockHeader.getDataLength()));
-    return new Data(bytes);
+    return new Data(input.pos(), blockHeader.getDataLength());
   }
 
   public static final Meta META = new Meta();

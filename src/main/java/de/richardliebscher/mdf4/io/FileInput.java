@@ -5,10 +5,15 @@
 
 package de.richardliebscher.mdf4.io;
 
+import static de.richardliebscher.mdf4.internal.ChannelSupport.readFully;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -38,7 +43,7 @@ public class FileInput implements ByteInput {
   public byte readU8() throws IOException {
     buffer.position(0);
     buffer.limit(Byte.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.get(0);
   }
 
@@ -46,7 +51,7 @@ public class FileInput implements ByteInput {
   public short readI16() throws IOException {
     buffer.position(0);
     buffer.limit(Short.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.getShort(0);
   }
 
@@ -54,7 +59,7 @@ public class FileInput implements ByteInput {
   public int readI32() throws IOException {
     buffer.position(0);
     buffer.limit(Integer.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.getInt(0);
   }
 
@@ -62,7 +67,7 @@ public class FileInput implements ByteInput {
   public long readI64() throws IOException {
     buffer.position(0);
     buffer.limit(Long.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.getLong(0);
   }
 
@@ -70,7 +75,7 @@ public class FileInput implements ByteInput {
   public float readF32() throws IOException {
     buffer.position(0);
     buffer.limit(Float.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.getFloat(0);
   }
 
@@ -78,7 +83,7 @@ public class FileInput implements ByteInput {
   public double readF64() throws IOException {
     buffer.position(0);
     buffer.limit(Double.BYTES);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.getDouble(0);
   }
 
@@ -105,12 +110,22 @@ public class FileInput implements ByteInput {
   @Override
   public byte[] readBytes(int dataLength) throws IOException {
     final var buffer = ByteBuffer.wrap(new byte[dataLength]);
-    byteChannel.read(buffer);
+    readFully(byteChannel, buffer);
     return buffer.array();
   }
 
   @Override
-  public ByteInput dup() throws IOException {
+  public InputStream getStream() {
+    return Channels.newInputStream(byteChannel);
+  }
+
+  @Override
+  public ReadableByteChannel getChannel() {
+    return byteChannel;
+  }
+
+  @Override
+  public FileInput dup() throws IOException {
     return new FileInput(path);
   }
 }

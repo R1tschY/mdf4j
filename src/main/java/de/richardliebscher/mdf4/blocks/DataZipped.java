@@ -8,13 +8,14 @@ package de.richardliebscher.mdf4.blocks;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
-import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.zip.InflaterInputStream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.Value;
 
 @Value
@@ -24,8 +25,14 @@ public class DataZipped implements DataRoot, DataBlock {
   ZipType zipType;
   long zipParameter;
   long originalDataLength;
-  @ToString.Exclude
-  byte[] data;
+  long dataPos;
+  int dataLength;
+
+  @Override
+  public ReadableByteChannel getChannel(ByteInput input) throws IOException {
+    input.seek(dataPos);
+    return Channels.newChannel(createUncompressedStream(input.getStream()));
+  }
 
   public static DataZipped parse(ByteInput input) throws IOException {
     BlockHeader.parseExpecting(BlockType.DZ, input, 0, 24);
@@ -36,24 +43,12 @@ public class DataZipped implements DataRoot, DataBlock {
     input.skip(1);
     final var zipParameter = Integer.toUnsignedLong(input.readI32());
     final var originalDataLength = input.readI64();
-    final var dataLength = input.readI64();
-    final var data = input.readBytes(Math.toIntExact(dataLength));
-    return new DataZipped(blockId, zipType, zipParameter, originalDataLength, data);
+    final var dataLength = Math.toIntExact(input.readI64());
+    return new DataZipped(blockId, zipType, zipParameter, originalDataLength,
+        input.pos(), dataLength);
   }
 
-  public UncompressedData getUncompressed() throws IOException {
-    try (var stream = createUncompressedStream(new ByteArrayInputStream(data))) {
-      final var buffer = stream.readAllBytes(); // PERF: reduce copying
-      if (originalBlockType.equals(BlockType.DT)) {
-        return new Data(buffer);
-      } else {
-        throw new NotImplementedFeatureException(
-            "Uncompressed data block not implemented: " + originalBlockType);
-      }
-    }
-  }
-
-  private FilterInputStream createUncompressedStream(ByteArrayInputStream compressedStream)
+  private FilterInputStream createUncompressedStream(InputStream compressedStream)
       throws NotImplementedFeatureException {
     switch (getZipType()) {
       case DEFLATE:

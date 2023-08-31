@@ -29,7 +29,7 @@ import de.richardliebscher.mdf4.extract.de.InvalidDeserializer;
 import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.extract.read.ByteBufferRead;
+import de.richardliebscher.mdf4.extract.read.DataBlockRead;
 import de.richardliebscher.mdf4.extract.read.DataListRead;
 import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
@@ -41,7 +41,6 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -660,7 +659,7 @@ public final class RecordReaderFactory {
     if (dataRoot == null) {
       return new EmptyDataRead();
     } else if (dataRoot instanceof Data) {
-      return new ByteBufferRead(ByteBuffer.wrap(((Data) dataRoot).getData()));
+      return new DataBlockRead(input, (Data) dataRoot);
     } else if (dataRoot instanceof DataList) {
       return new DataListRead(input, (DataList) dataRoot);
     } else if (dataRoot instanceof HeaderList) {

@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.Link;
+import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataList;
@@ -15,13 +16,15 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Iterator;
 
 public class DataListRead implements DataRead {
 
   private final ByteInput input;
   private DataList dataList;
-  private ByteBuffer currentBlock;
+  private long remainingDataLength;
+  private ReadableByteChannel currentBlock;
   private boolean closed = false;
   private Iterator<Link<DataBlock>> dataBlocks;
 
@@ -37,40 +40,52 @@ public class DataListRead implements DataRead {
       throw new ClosedChannelException();
     }
 
-    if (currentBlock == null || currentBlock.remaining() == 0) {
+    final var hasData = ensureDataStream();
+    if (!hasData) {
+      return -1;
+    }
+
+    final int remaining = (int) Math.min(remainingDataLength, dst.remaining());
+    final var bytes = currentBlock.read(dst.slice().limit(remaining));
+    if (bytes > 0) {
+      remainingDataLength -= bytes;
+    }
+    return bytes;
+  }
+
+  private boolean ensureDataStream() throws IOException {
+    if (remainingDataLength == 0) {
       if (dataBlocks == null || !dataBlocks.hasNext()) {
         dataList = dataList.getNextDataList().resolve(DataList.META, input).orElse(null);
         if (dataList == null) {
-          return -1;
+          return false;
         }
         dataBlocks = dataList.getData().iterator();
         if (!dataBlocks.hasNext()) {
-          return read(dst);
+          return ensureDataStream();
         }
       }
 
       final var dataBlock = dataBlocks.next().resolveNonCached(DataBlock.META, input)
           .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
       if (dataBlock instanceof Data) {
-        currentBlock = ByteBuffer.wrap(((Data) dataBlock).getData());
+        currentBlock = dataBlock.getChannel(input);
+        remainingDataLength = ((Data) dataBlock).getDataLength();
       } else if (dataBlock instanceof DataZipped) {
-        final var uncompressedDataBlock = ((DataZipped) dataBlock).getUncompressed();
-        if (uncompressedDataBlock instanceof Data) {
-          currentBlock = ByteBuffer.wrap(((Data) uncompressedDataBlock).getData());
+        final var dataZipped = (DataZipped) dataBlock;
+        if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+          currentBlock = dataZipped.getChannel(input);
+          remainingDataLength = dataZipped.getOriginalDataLength();
         } else {
-          throw new FormatException(
-              "Unexpected data block in zipped data: " + uncompressedDataBlock);
+          throw new FormatException("Unexpected data block type in zipped data: "
+              + dataZipped.getOriginalBlockType());
         }
       } else {
         throw new FormatException("Unexpected data block in data list: " + dataBlock);
       }
     }
 
-    int bytesToRead = Math.min(currentBlock.remaining(), dst.remaining());
-    dst.put(currentBlock.slice().limit(bytesToRead));
-    dst.position(0);
-    currentBlock.position(currentBlock.position() + bytesToRead);
-    return bytesToRead;
+    return true;
   }
 
   @Override
@@ -79,7 +94,10 @@ public class DataListRead implements DataRead {
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
+    if (currentBlock != null) {
+      currentBlock.close();
+    }
     closed = true;
   }
 }

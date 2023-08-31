@@ -9,10 +9,13 @@ import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 public interface DataBlock {
+
+  ReadableByteChannel getChannel(ByteInput input) throws IOException;
 
   static DataBlock parse(ByteInput input) throws IOException {
     final var blockId = BlockType.parse(input);

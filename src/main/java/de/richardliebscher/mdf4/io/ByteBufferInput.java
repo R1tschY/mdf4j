@@ -5,8 +5,11 @@
 
 package de.richardliebscher.mdf4.io;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 
 /**
@@ -91,7 +94,20 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
+  public InputStream getStream() {
+    // TODO: PERF: build an unsynchronized version
+    return new ByteArrayInputStream(
+        buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+  }
+
+  @Override
+  public ReadableByteChannel getChannel() {
+    return new ByteBufferChannel(buffer);
+  }
+
+  @Override
   public ByteInput dup() {
     return new ByteBufferInput(buffer.duplicate());
   }
+
 }

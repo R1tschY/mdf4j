@@ -26,33 +26,51 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 public class ReadBenchmarks {
+  @State(Scope.Benchmark)
+  public static class ExecutionPlan {
+    public static final Path PATH = Path.of(
+        URI.create(requireNonNull(
+            ReadBenchmarks.class.getResource("/KonvektionKalt1-20140123-143636.mf4")).toString()));
 
-  public static final Path PATH = Path.of(
-      URI.create(requireNonNull(
-          ReadBenchmarks.class.getResource("/KonvektionKalt1-20140123-143636.mf4")).toString()));
+    public byte[] source;
+
+    @Setup(Level.Trial)
+    public void setUp() throws IOException {
+      source = Files.readAllBytes(PATH);
+    }
+  }
+
 
   @Benchmark
+  @Measurement(iterations = 3)
   @Warmup(iterations = 1, time = 1, batchSize = 1)
-  @Fork(value = 1, warmups = 1)
-  public String simple() throws Exception {
-    return SimpleCsvConverter.convert(PATH);
+  @Fork(value = 1, warmups = 0)
+  public String simple(ExecutionPlan state) throws Exception {
+    return SimpleCsvConverter.convert(state.source);
   }
 
   @Benchmark
+  @Measurement(iterations = 3)
   @Warmup(iterations = 1, time = 1, batchSize = 1)
-  @Fork(value = 1, warmups = 1)
-  public String simpleStream() throws Exception {
-    return SimpleStreamCsvConverter.convert(PATH);
+  @Fork(value = 1, warmups = 0)
+  public String simpleStream(ExecutionPlan state) throws Exception {
+    return SimpleStreamCsvConverter.convert(state.source);
   }
 
   @Benchmark
+  @Measurement(iterations = 3)
   @Warmup(iterations = 1, time = 1, batchSize = 1)
-  @Fork(value = 1, warmups = 1)
-  public String parallelStream() throws Exception {
-    return ParallelStreamCsvConverter.convert(PATH);
+  @Fork(value = 1, warmups = 0)
+  public String parallelStream(ExecutionPlan state) throws Exception {
+    return ParallelStreamCsvConverter.convert(state.source);
   }
 }
 
@@ -62,9 +80,9 @@ class SimpleCsvConverter {
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
-  public static String convert(Path source) throws Exception {
+  public static String convert(byte[] source) throws Exception {
     // Open file
-    final var input = new ByteBufferInput(ByteBuffer.wrap(Files.readAllBytes(source)));
+    final var input = new ByteBufferInput(ByteBuffer.wrap(source));
     final var mdf4File = Mdf4File.open(input);
 
     // Select channel group and channels
@@ -143,9 +161,9 @@ class SimpleStreamCsvConverter {
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
-  public static String convert(Path source) throws Exception {
+  public static String convert(byte[] source) throws Exception {
     // Open file
-    final var input = new ByteBufferInput(ByteBuffer.wrap(Files.readAllBytes(source)));
+    final var input = new ByteBufferInput(ByteBuffer.wrap(source));
     final var mdf4File = Mdf4File.open(input);
 
     // Select channel group and channels
@@ -230,9 +248,9 @@ class ParallelStreamCsvConverter {
   private static final String SEP = ",";
   private static final String LINE_SEP = "\n";
 
-  public static String convert(Path source) throws Exception {
+  public static String convert(byte[] source) throws Exception {
     // Open file
-    final var input = new ByteBufferInput(ByteBuffer.wrap(Files.readAllBytes(source)));
+    final var input = new ByteBufferInput(ByteBuffer.wrap(source));
     final var mdf4File = Mdf4File.open(input);
 
     // Select channel group and channels

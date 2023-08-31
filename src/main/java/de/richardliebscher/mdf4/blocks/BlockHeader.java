@@ -26,7 +26,7 @@ public class BlockHeader {
       throw newWrongBlockTypeException(id, typeId);
     }
 
-    input.readI32(); // padding
+    input.skip(4); // padding
     final var length = input.readI64();
     final var linkCount = input.readI64();
 

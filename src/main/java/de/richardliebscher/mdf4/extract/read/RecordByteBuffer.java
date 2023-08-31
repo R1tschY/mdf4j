@@ -5,8 +5,12 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
+import static de.richardliebscher.mdf4.internal.ChannelSupport.readFully;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import lombok.AllArgsConstructor;
 
@@ -26,68 +30,74 @@ public class RecordByteBuffer implements RecordBuffer {
   }
 
   @Override
+  public void writeFully(ReadableByteChannel channel) throws IOException {
+    buffer.clear();
+    readFully(channel, buffer);
+  }
+
+  @Override
   public byte readU8(int pos) {
-    return buffer.get(buffer.position() + pos);
+    return buffer.get(pos);
   }
 
   @Override
   public short readI16Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getShort(buffer.position() + pos);
+    return buffer.getShort(pos);
   }
 
   @Override
   public int readI32Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getInt(buffer.position() + pos);
+    return buffer.getInt(pos);
   }
 
   @Override
   public long readI64Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getLong(buffer.position() + pos);
+    return buffer.getLong(pos);
   }
 
   @Override
   public float readF32Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getFloat(buffer.position() + pos);
+    return buffer.getFloat(pos);
   }
 
   @Override
   public double readF64Le(int pos) {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
-    return buffer.getDouble(buffer.position() + pos);
+    return buffer.getDouble(pos);
   }
 
   @Override
   public short readI16Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getShort(buffer.position() + pos);
+    return buffer.getShort(pos);
   }
 
   @Override
   public int readI32Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getInt(buffer.position() + pos);
+    return buffer.getInt(pos);
   }
 
   @Override
   public long readI64Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getLong(buffer.position() + pos);
+    return buffer.getLong(pos);
   }
 
   @Override
   public float readF32Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getFloat(buffer.position() + pos);
+    return buffer.getFloat(pos);
   }
 
   @Override
   public double readF64Be(int pos) {
     buffer.order(ByteOrder.BIG_ENDIAN);
-    return buffer.getDouble(buffer.position() + pos);
+    return buffer.getDouble(pos);
   }
 
   @Override

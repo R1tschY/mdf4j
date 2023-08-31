@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
+import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataBlock;
@@ -26,6 +27,7 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -72,7 +74,8 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
 
     private int index;
     private final int end;
-    private ByteBuffer currentBlock;
+    private ReadableByteChannel currentBlock;
+    private long remainingDataLength;
     private long readCycles;
     private int characteristics;
 
@@ -87,6 +90,8 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
       this.estimatedCyclesPerBlock =
           Math.max(1, (int) Math.ceil(cycles / (dataList.length - 0.49)));
 
+      this.recordInput = new RecordByteBuffer(
+          ByteBuffer.allocate(recordSize), offsets[0] / recordSize);
       this.input = input;
       this.index = 0;
       this.end = dataList.length;
@@ -105,12 +110,14 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
 
       this.input = origin.input.dup();
       this.index = origin.index;
-      origin.index = splitPos;
       this.end = splitPos;
       this.currentBlock = origin.currentBlock;
       this.recordInput = origin.recordInput;
+      origin.index = splitPos;
+      origin.remainingDataLength = 0;
       origin.currentBlock = null;
-      origin.recordInput = null;
+      origin.recordInput = new RecordByteBuffer(
+          ByteBuffer.allocate(recordSize), offsets[origin.index] / recordSize);
 
       this.readCycles = origin.readCycles;
       origin.readCycles = 0;
@@ -124,7 +131,7 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         return false;
       }
 
-      if (currentBlock == null || currentBlock.remaining() == 0) {
+      if (currentBlock == null || remainingDataLength == 0) {
         if (currentBlock != null) {
           index += 1;
           readCycles = 0;
@@ -137,31 +144,34 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
             .resolveNonCached(DataBlock.META, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
         if (dataBlock instanceof Data) {
-          currentBlock = ByteBuffer.wrap(((Data) dataBlock).getData());
+          currentBlock = dataBlock.getChannel(input);
+          remainingDataLength = ((Data) dataBlock).getDataLength();
         } else if (dataBlock instanceof DataZipped) {
-          final var uncompressedDataBlock = ((DataZipped) dataBlock).getUncompressed();
-          if (uncompressedDataBlock instanceof Data) {
-            currentBlock = ByteBuffer.wrap(((Data) uncompressedDataBlock).getData());
+          final var dataZipped = (DataZipped) dataBlock;
+          if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+            currentBlock = dataZipped.getChannel(input);
+            remainingDataLength = dataZipped.getOriginalDataLength();
           } else {
-            throw new FormatException(
-                "Unexpected data block in zipped data: " + uncompressedDataBlock);
+            throw new FormatException("Unexpected data block type in zipped data: "
+                + dataZipped.getOriginalBlockType());
           }
         } else {
           throw new FormatException("Unexpected data block in data list: " + dataBlock);
         }
 
-        if (currentBlock.remaining() % recordSize != 0) {
+        if (remainingDataLength % recordSize != 0) {
           throw new FormatException("Data block size is not a multiple of the record size");
         }
-        recordInput = new RecordByteBuffer(currentBlock, offsets[index] / recordSize);
       }
+
+      recordInput.writeFully(currentBlock);
+      remainingDataLength -= recordSize;
 
       action.accept(new Ok<>(rowDeserializer.visitRecord(
           new RecordAccessImpl(channelReaders, recordInput))));
 
       readCycles += 1;
       recordInput.incRecordIndex();
-      currentBlock.position(currentBlock.position() + recordSize);
       return true;
     }
 
@@ -246,11 +256,11 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
     private final List<ValueRead> channelReaders;
     private final SerializableRecordVisitor<R> recordDeserializer;
     private final long[] dataList;
-    private final long[] offsets;
     private final int recordSize;
-    private RecordBuffer recordInput;
+    private final RecordBuffer recordInput;
     private int index;
-    private ByteBuffer currentBlock;
+    private ReadableByteChannel currentBlock;
+    private long remainingDataLength;
 
     public MyRecordReader(
         ByteInput input, List<ValueRead> channelReaders,
@@ -260,9 +270,10 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
       this.channelReaders = channelReaders;
       this.recordDeserializer = recordDeserializer;
       this.dataList = dataListPart;
-      this.offsets = offsets;
       this.recordSize = recordSize;
       this.index = 0;
+      this.recordInput = new RecordByteBuffer(
+          ByteBuffer.allocate(recordSize), offsets[index] / recordSize);
     }
 
     @Override
@@ -276,16 +287,18 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
         throw new NoSuchElementException();
       }
 
+      recordInput.writeFully(currentBlock);
+      remainingDataLength -= recordSize;
+
       final var record = recordDeserializer.visitRecord(
           new RecordAccessImpl(channelReaders, recordInput));
 
       recordInput.incRecordIndex();
-      currentBlock.position(currentBlock.position() + recordSize);
       return record;
     }
 
     private boolean ensureNextBlock() throws IOException {
-      while (currentBlock == null || currentBlock.remaining() == 0) {
+      while (currentBlock == null || remainingDataLength == 0) {
         if (index == dataList.length) {
           return false;
         }
@@ -294,24 +307,25 @@ class DefaultParallelRecordReader<R> implements ParallelRecordReader<R> {
             .resolveNonCached(DataBlock.META, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
         if (dataBlock instanceof Data) {
-          currentBlock = ByteBuffer.wrap(((Data) dataBlock).getData());
+          currentBlock = dataBlock.getChannel(input);
+          remainingDataLength = ((Data) dataBlock).getDataLength();
         } else if (dataBlock instanceof DataZipped) {
-          final var uncompressedDataBlock = ((DataZipped) dataBlock).getUncompressed();
-          if (uncompressedDataBlock instanceof Data) {
-            currentBlock = ByteBuffer.wrap(((Data) uncompressedDataBlock).getData());
+          final var dataZipped = (DataZipped) dataBlock;
+          if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+            currentBlock = dataZipped.getChannel(input);
+            remainingDataLength = dataZipped.getOriginalDataLength();
           } else {
-            throw new FormatException(
-                "Unexpected data block in zipped data: " + uncompressedDataBlock);
+            throw new FormatException("Unexpected data block type in zipped data: "
+                + dataZipped.getOriginalBlockType());
           }
         } else {
           throw new FormatException("Unexpected data block in data list: " + dataBlock);
         }
 
-        if (currentBlock.remaining() % recordSize != 0) {
+        if (remainingDataLength % recordSize != 0) {
           throw new NotImplementedFeatureException(
               "Data block size is not a multiple of the record size");
         }
-        recordInput = new RecordByteBuffer(currentBlock, offsets[index] / recordSize);
         index += 1;
       }
 

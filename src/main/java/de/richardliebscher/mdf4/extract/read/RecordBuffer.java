@@ -5,16 +5,19 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
+import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 
 /**
  * Read input file.
  */
 public interface RecordBuffer {
-
   void incRecordIndex();
 
   long getRecordIndex();
+
+  void writeFully(ReadableByteChannel channel) throws IOException;
 
   byte readU8(int pos);
 

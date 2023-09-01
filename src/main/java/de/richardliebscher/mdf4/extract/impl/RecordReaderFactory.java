@@ -67,6 +67,7 @@ public final class RecordReaderFactory {
     switch (channel.getType()) {
       case FIXED_LENGTH_DATA_CHANNEL:
       case MASTER_CHANNEL:
+      case SYNCHRONIZATION_CHANNEL:
         valueRead = createFixedLengthDataReader(channel);
         break;
       case VIRTUAL_DATA_CHANNEL:
@@ -74,7 +75,6 @@ public final class RecordReaderFactory {
         valueRead = createVirtualDataReader(channel);
         break;
       case VARIABLE_LENGTH_DATA_CHANNEL:
-      case SYNCHRONIZATION_CHANNEL:
       case MAXIMUM_LENGTH_CHANNEL:
       default:
         throw new NotImplementedFeatureException(

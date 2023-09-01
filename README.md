@@ -27,9 +27,15 @@
 ## Unsupported
 * MLC (maximum length channel)
 * VLDC (variable length data channel)
-* Synchronization channel
 * Non-byte-aligned integer
-* Integer bit sizes apart from 8, 16, 32, 64
+* Integer bit sizes bigger than 64
+* Unsupported data types:
+  * CANOpen Date
+  * CANOpen Time
+  * Complex
+  * MIME Sample/Stream
+  * Structure
+  * Array
 * Conversion apart from Identity and Linear
 * Unsorted channel data
 * Unfinished files

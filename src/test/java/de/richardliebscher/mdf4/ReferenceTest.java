@@ -9,10 +9,9 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
-import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
+import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
+import de.richardliebscher.mdf4.extract.de.SerializableDeserializeInto;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -76,11 +75,8 @@ public class ReferenceTest {
   void testSimpleRecordReader() throws Exception {
     final var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"));
 
-    final var channelSelector = new FirstChannelGroupSelector();
-    final var rowDe = new CsvLineVisitor(new TestReprDeserialize());
-
     var records = new ArrayList<String>();
-    mdf4File.newRecordReader(channelSelector, rowDe)
+    mdf4File.newRecordReader(new TestReprRecordFactory())
         .forEachRemaining(records::add);
 
     assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
@@ -90,11 +86,8 @@ public class ReferenceTest {
   void testSimpleRecordReaderFromBytes() throws Exception {
     final var mdf4File = openFileByByteBuffer();
 
-    final var channelSelector = new FirstChannelGroupSelector();
-    final var rowDe = new CsvLineVisitor(new TestReprDeserialize());
-
     var records = new ArrayList<String>();
-    mdf4File.newRecordReader(channelSelector, rowDe)
+    mdf4File.newRecordReader(new TestReprRecordFactory())
         .forEachRemaining(records::add);
 
     assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
@@ -127,11 +120,8 @@ public class ReferenceTest {
   void testParallelRecordReader() throws Exception {
     final var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"));
 
-    final var channelSelector = new FirstChannelGroupSelector();
-    final var rowDe = new CsvLineVisitor(new TestReprDeserialize());
-
     final var threadIds = new HashSet<Long>();
-    final var records = mdf4File.streamRecords(channelSelector, rowDe)
+    final var records = mdf4File.streamRecords(new TestReprRecordFactory())
         .parallel()
         .peek(ignored -> threadIds.add(Thread.currentThread().getId()))
         .map(Result::unwrap)
@@ -146,10 +136,9 @@ public class ReferenceTest {
   void testDistributedRecordReader() throws Exception {
     final Mdf4File mdf4File = openFileByByteBuffer();
 
-    final var channelSelector = new FirstChannelGroupSelector();
-    final var rowDe = new CsvLineVisitor(new TestReprDeserialize());
+    final var factory = new TestReprRecordFactory();
 
-    final var records = mdf4File.splitRecordReaders(42, channelSelector, rowDe)
+    final var records = mdf4File.splitRecordReaders(42, factory)
         .stream()
         .map(rr -> (DetachedRecordReader<String>) JavaSerde.de(JavaSerde.ser(rr)))
         .map(mdf4File::attachRecordReader)
@@ -161,36 +150,37 @@ public class ReferenceTest {
     assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
   }
 
-  private static class FirstChannelGroupSelector implements ChannelSelector {
+  private static class TestReprRecordFactory implements
+      SerializableRecordFactory<StringBuilder, String> {
+
+    private int index = 0;
+    private final TestReprDeserialize de = new TestReprDeserialize();
 
     @Override
-    public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
-      return true;
+    public SerializableDeserializeInto<StringBuilder> selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
+      SerializableDeserializeInto<StringBuilder> res = index == 0
+          ? ((deserializer, dest) -> dest.append(de.deserialize(deserializer)))
+          : ((deserializer, dest) -> {
+            dest.append('|');
+            dest.append(de.deserialize(deserializer));
+          });
+      index += 1;
+      return res;
+    }
+
+    @Override
+    public StringBuilder createRecordBuilder() {
+      return new StringBuilder();
+    }
+
+    @Override
+    public String finishRecord(StringBuilder unfinishedRecord) throws IOException {
+      return unfinishedRecord.toString();
     }
 
     @Override
     public boolean selectGroup(DataGroup dg, ChannelGroup group) {
       return true;
-    }
-  }
-
-  private static class CsvLineVisitor implements SerializableRecordVisitor<String> {
-
-    private final TestReprDeserialize de;
-
-    public CsvLineVisitor(TestReprDeserialize de) {
-      this.de = de;
-    }
-
-    @Override
-    public String visitRecord(RecordAccess rowAccess) throws IOException {
-      final var stringBuilder = new StringBuilder();
-      stringBuilder.append(rowAccess.nextElement(de));
-      while (rowAccess.remaining() != 0) {
-        stringBuilder.append('|');
-        stringBuilder.append(rowAccess.nextElement(de));
-      }
-      return stringBuilder.toString();
     }
   }
 }

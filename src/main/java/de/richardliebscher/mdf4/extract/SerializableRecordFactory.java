@@ -8,25 +8,17 @@ package de.richardliebscher.mdf4.extract;
 import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
+import de.richardliebscher.mdf4.extract.de.SerializableDeserializeInto;
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
- * Select channel group and channels.
+ * Serializable visitor to deserialize record.
+ *
+ * @param <B> Record builder type
+ * @param <R> Record type
  */
-public interface ChannelSelector {
-
-  /**
-   * Select channel group.
-   *
-   * <p>
-   * Search ends on first channel group that return {@code true}.
-   * </p>
-   *
-   * @param dataGroup Data group
-   * @param group     Channel group
-   * @return {@code true}, when channel group should be used
-   */
-  boolean selectGroup(DataGroup dataGroup, ChannelGroup group) throws IOException;
+public interface SerializableRecordFactory<B, R> extends RecordFactory<B, R>, Serializable {
 
   /**
    * Select channel.
@@ -36,7 +28,6 @@ public interface ChannelSelector {
    * @param channel   Channel
    * @return {@code true}, when channel should be used
    */
-  boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel)
-      throws IOException;
-
+  SerializableDeserializeInto<B> selectChannel(
+      DataGroup dataGroup, ChannelGroup group, Channel channel) throws IOException;
 }

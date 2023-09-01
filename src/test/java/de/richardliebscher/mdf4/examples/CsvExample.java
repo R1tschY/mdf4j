@@ -9,18 +9,18 @@ import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.Mdf4File;
-import de.richardliebscher.mdf4.extract.ChannelSelector;
+import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
+import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Half;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,40 +41,44 @@ public class CsvExample {
     // Open file
     final var mdf4File = Mdf4File.open(source);
 
+
     // Select channel group and channels
     final var channels = new ArrayList<Channel>();
-    final var channelSelector = new ChannelSelector() {
-      @Override
-      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
-        channels.add(channel);
-        return true;
-      }
 
-      @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-        return true;
-      }
-    };
-
+    final var de = new CsvColumnDeserialize();
     try (var writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
-      final var recordDe = new RecordVisitor<Void>() {
+
+      final var reader = mdf4File.newRecordReader(new RecordFactory<Writer, Void>() {
         @Override
-        public Void visitRecord(RecordAccess recordAccess) throws IOException {
-          final var de = new CsvColumnDeserialize();
+        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+          // Select first channel group
+          return true;
+        }
 
-          while (recordAccess.remaining() != 0) {
-            writer.write(recordAccess.nextElement(de));
-            if (recordAccess.remaining() > 1) {
-              writer.write(SEP);
-            }
+        @Override
+        public DeserializeInto<Writer> selectChannel(DataGroup dg, ChannelGroup group, Channel channel1) {
+          channels.add(channel1);
+          if (channels.size() == 1) {
+            return (deserializer, writer1) -> writer1.write(de.deserialize(deserializer));
+          } else {
+            return (deserializer, writer1) -> {
+              writer1.write(SEP);
+              writer1.write(de.deserialize(deserializer));
+            };
           }
+        }
 
-          writer.write(LINE_SEP);
+        @Override
+        public Writer createRecordBuilder() {
+          return writer;
+        }
+
+        @Override
+        public Void finishRecord(Writer writer1) throws IOException {
+          writer1.write(LINE_SEP);
           return null;
         }
-      };
-
-      final var reader = mdf4File.newRecordReader(channelSelector, recordDe);
+      });
 
       // Write header
       boolean firstColumn = true;

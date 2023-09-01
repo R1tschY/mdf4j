@@ -22,12 +22,12 @@ import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
-import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.ParallelRecordReader;
+import de.richardliebscher.mdf4.extract.RecordFactory;
+import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
+import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.InvalidDeserializer;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
-import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.extract.read.DataBlockRead;
 import de.richardliebscher.mdf4.extract.read.DataListRead;
@@ -35,7 +35,9 @@ import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
 import de.richardliebscher.mdf4.extract.read.NoValueRead;
+import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
+import de.richardliebscher.mdf4.extract.read.SerializableReadInto;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
@@ -580,13 +582,13 @@ public final class RecordReaderFactory {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  public static <R> SizedRecordReader<R> createFor(FileContext ctx,
-      LazyIoList<DataGroup> dataGroups, ChannelSelector selector, RecordVisitor<R> rowDeserializer)
+  public static <B, R> SizedRecordReader<R> createFor(FileContext ctx,
+      LazyIoList<DataGroup> dataGroups, RecordFactory<B, R> factory)
       throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
 
     // select
-    final var group = selectChannels(dataGroups, selector);
+    final var group = selectChannels(dataGroups, factory);
     final var dataGroup = group.getLeft();
     final var channelGroup = group.getRight();
 
@@ -594,20 +596,19 @@ public final class RecordReaderFactory {
     final var source = createSource(ctx, dataGroup.getBlock());
 
     // build extractor
-    final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
+    final var channelReaders = buildExtractors(factory, input, dataGroup, channelGroup);
 
-    return new DefaultRecordReader<>(channelReaders, rowDeserializer, source,
-        channelGroup.getBlock());
+    return new DefaultRecordReader<>(channelReaders, factory, source, channelGroup.getBlock());
   }
 
-  public static <R> ParallelRecordReader<R> createParallelFor(
-      FileContext ctx, LazyIoList<DataGroup> dataGroups, ChannelSelector selector,
-      SerializableRecordVisitor<R> rowDeserializer)
+  public static <B, R> ParallelRecordReader<R> createParallelFor(
+      FileContext ctx, LazyIoList<DataGroup> dataGroups,
+      SerializableRecordFactory<B, R> recordFactory)
       throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
 
     // select
-    final var group = selectChannels(dataGroups, selector);
+    final var group = selectChannels(dataGroups, recordFactory);
     final var dataGroup = group.getLeft();
     final var channelGroup = group.getRight();
 
@@ -615,16 +616,16 @@ public final class RecordReaderFactory {
     final var dataListAndOffsets = collectDataList(ctx.getInput(), dataGroup.getBlock());
 
     // build extractor
-    final var channelReaders = buildExtractors(selector, input, dataGroup, channelGroup);
+    final var channelReaders = buildExtractors(recordFactory, input, dataGroup, channelGroup);
 
     return new DefaultParallelRecordReader<>(
-        ctx, channelReaders, rowDeserializer,
+        ctx, channelReaders, recordFactory,
         dataListAndOffsets.getLeft(), dataListAndOffsets.getRight(),
         channelGroup.getBlock());
   }
 
   private static Pair<DataGroup, ChannelGroup> selectChannels(
-      LazyIoList<DataGroup> dataGroups, ChannelSelector selector)
+      LazyIoList<DataGroup> dataGroups, RecordFactory<?, ?> selector)
       throws ChannelGroupNotFoundException, IOException {
     DataGroup dataGroup;
     ChannelGroup channelGroup;
@@ -748,8 +749,8 @@ public final class RecordReaderFactory {
         });
   }
 
-  private static ArrayList<ValueRead> buildExtractors(
-      ChannelSelector selector, ByteInput input, DataGroup dataGroup,
+  private static <B, R> ArrayList<ReadInto<B>> buildExtractors(
+      RecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
       ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();
     final var channelGroupBlock = channelGroup.getBlock();
@@ -760,15 +761,61 @@ public final class RecordReaderFactory {
             + channelGroupBlock.getDataBytes()
             + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
-    final var channelReaders = new ArrayList<ValueRead>();
+    final var channelReaders = new ArrayList<ReadInto<B>>();
     final var iter = channelGroup.getChannels().iter();
     de.richardliebscher.mdf4.Channel ch;
     while ((ch = iter.next()) != null) {
       try {
         final var channelReader = createChannelReader(
             dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
-        if (selector.selectChannel(dataGroup, channelGroup, ch)) {
-          channelReaders.add(channelReader);
+        final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
+        if (deserializeInto != null) {
+          channelReaders.add((recordBuffer, destination) -> {
+            deserializeInto.deserializeInto(new Deserializer() {
+              @Override
+              public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
+                return channelReader.read(recordBuffer, visitor);
+              }
+            }, destination);
+          });
+        }
+      } catch (NotImplementedFeatureException exception) {
+        log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
+      }
+    }
+
+    return channelReaders;
+  }
+
+  private static <B, R> ArrayList<SerializableReadInto<B>> buildExtractors(
+      SerializableRecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
+      ChannelGroup channelGroup) throws IOException {
+    final var dataGroupBlock = dataGroup.getBlock();
+    final var channelGroupBlock = channelGroup.getBlock();
+    log.finest(() ->
+        "Record size: " + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
+            + channelGroupBlock.getInvalidationBytes())
+            + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
+            + channelGroupBlock.getDataBytes()
+            + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
+
+    final var channelReaders = new ArrayList<SerializableReadInto<B>>();
+    final var iter = channelGroup.getChannels().iter();
+    de.richardliebscher.mdf4.Channel ch;
+    while ((ch = iter.next()) != null) {
+      try {
+        final var channelReader = createChannelReader(
+            dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
+        final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
+        if (deserializeInto != null) {
+          channelReaders.add((recordBuffer, destination) -> {
+            deserializeInto.deserializeInto(new Deserializer() {
+              @Override
+              public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
+                return channelReader.read(recordBuffer, visitor);
+              }
+            }, destination);
+          });
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());

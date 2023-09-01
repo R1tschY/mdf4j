@@ -2,13 +2,13 @@ package de.richardliebscher.mdf4;
 
 import static java.util.Objects.requireNonNull;
 
-import de.richardliebscher.mdf4.extract.ChannelSelector;
+import de.richardliebscher.mdf4.extract.RecordFactory;
+import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
+import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Half;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
-import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableDeserializeInto;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
@@ -19,6 +19,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -87,39 +88,41 @@ class SimpleCsvConverter {
 
     // Select channel group and channels
     final var channels = new ArrayList<Channel>();
-    final var channelSelector = new ChannelSelector() {
-      @Override
-      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
-        channels.add(channel);
-        return true;
-      }
-
-      @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-        return true;
-      }
-    };
 
     final var target = new StringWriter();
+    final var de = new CsvColumnDeserialize();
     try (var writer = new BufferedWriter(target)) {
-      final var recordDe = new RecordVisitor<>() {
+      final var reader = mdf4File.newRecordReader(new RecordFactory<Writer, Void>() {
         @Override
-        public Object visitRecord(RecordAccess recordAccess) throws IOException {
-          final var de = new CsvColumnDeserialize();
+        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+          // Select first channel group
+          return true;
+        }
 
-          while (recordAccess.remaining() > 0) {
-            writer.write(recordAccess.nextElement(de));
-            if (recordAccess.remaining() > 1) {
-              writer.write(SEP);
-            }
+        @Override
+        public DeserializeInto<Writer> selectChannel(DataGroup dg, ChannelGroup group, Channel channel1) {
+          channels.add(channel1);
+          if (channels.size() == 1) {
+            return (deserializer, writer1) -> writer1.write(de.deserialize(deserializer));
+          } else {
+            return (deserializer, writer1) -> {
+              writer1.write(SEP);
+              writer1.write(de.deserialize(deserializer));
+            };
           }
+        }
 
-          writer.write(LINE_SEP);
+        @Override
+        public Writer createRecordBuilder() {
+          return writer;
+        }
+
+        @Override
+        public Void finishRecord(Writer writer1) throws IOException {
+          writer1.write(LINE_SEP);
           return null;
         }
-      };
-
-      final var reader = mdf4File.newRecordReader(channelSelector, recordDe);
+      });
 
       // Write header
       boolean firstColumn = true;
@@ -168,41 +171,40 @@ class SimpleStreamCsvConverter {
 
     // Select channel group and channels
     final var channels = new ArrayList<Channel>();
-    final var channelSelector = new ChannelSelector() {
-      @Override
-      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
-        channels.add(channel);
-        return true;
-      }
-
-      @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-        return true;
-      }
-    };
-
     final var target = new StringWriter();
+    final var de = new CsvColumnDeserialize();
     try (var writer = new BufferedWriter(target)) {
-      final var recordDe = new SerializableRecordVisitor<String>() {
+      final var reader = mdf4File.streamRecords(new SerializableRecordFactory<StringBuilder, String>() {
         @Override
-        public String visitRecord(RecordAccess recordAccess) throws IOException {
-          final var de = new CsvColumnDeserialize();
-
-          final var builder = new StringBuilder();
-
-          while (recordAccess.remaining() > 0) {
-            writer.write(recordAccess.nextElement(de));
-            if (recordAccess.remaining() > 1) {
-              writer.write(SEP);
-            }
-          }
-
-          builder.append(LINE_SEP);
-          return builder.toString();
+        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+          // Select first channel group
+          return true;
         }
-      };
 
-      final var reader = mdf4File.streamRecords(channelSelector, recordDe);
+        @Override
+        public SerializableDeserializeInto<StringBuilder> selectChannel(DataGroup dg, ChannelGroup group, Channel channel1) {
+          channels.add(channel1);
+          if (channels.size() == 1) {
+            return (deserializer, stringBuilder) -> stringBuilder.append(de.deserialize(deserializer));
+          } else {
+            return (deserializer, stringBuilder) -> {
+              stringBuilder.append(SEP);
+              stringBuilder.append(de.deserialize(deserializer));
+            };
+          }
+        }
+
+        @Override
+        public StringBuilder createRecordBuilder() {
+          return new StringBuilder();
+        }
+
+        @Override
+        public String finishRecord(StringBuilder stringBuilder) {
+          stringBuilder.append(LINE_SEP);
+          return stringBuilder.toString();
+        }
+      });
 
       // Write header
       boolean firstColumn = true;
@@ -255,41 +257,40 @@ class ParallelStreamCsvConverter {
 
     // Select channel group and channels
     final var channels = new ArrayList<Channel>();
-    final var channelSelector = new ChannelSelector() {
-      @Override
-      public boolean selectChannel(DataGroup dg, ChannelGroup group, Channel channel) {
-        channels.add(channel);
-        return true;
-      }
-
-      @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-        return true;
-      }
-    };
-
     final var target = new StringWriter();
+    final var de = new CsvColumnDeserialize();
     try (var writer = new BufferedWriter(target)) {
-      final var recordDe = new SerializableRecordVisitor<String>() {
+      final var reader = mdf4File.streamRecords(new SerializableRecordFactory<StringBuilder, String>() {
         @Override
-        public String visitRecord(RecordAccess recordAccess) throws IOException {
-          final var de = new CsvColumnDeserialize();
-
-          final var builder = new StringBuilder();
-
-          while (recordAccess.remaining() > 0) {
-            writer.write(recordAccess.nextElement(de));
-            if (recordAccess.remaining() > 1) {
-              writer.write(SEP);
-            }
-          }
-
-          builder.append(LINE_SEP);
-          return builder.toString();
+        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+          // Select first channel group
+          return true;
         }
-      };
 
-      final var reader = mdf4File.streamRecords(channelSelector, recordDe);
+        @Override
+        public SerializableDeserializeInto<StringBuilder> selectChannel(DataGroup dg, ChannelGroup group, Channel channel1) {
+          channels.add(channel1);
+          if (channels.size() == 1) {
+            return (deserializer, stringBuilder) -> stringBuilder.append(de.deserialize(deserializer));
+          } else {
+            return (deserializer, stringBuilder) -> {
+              stringBuilder.append(SEP);
+              stringBuilder.append(de.deserialize(deserializer));
+            };
+          }
+        }
+
+        @Override
+        public StringBuilder createRecordBuilder() {
+          return new StringBuilder();
+        }
+
+        @Override
+        public String finishRecord(StringBuilder stringBuilder) {
+          stringBuilder.append(LINE_SEP);
+          return stringBuilder.toString();
+        }
+      });
 
       // Write header
       boolean firstColumn = true;

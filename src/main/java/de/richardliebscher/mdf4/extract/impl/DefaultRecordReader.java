@@ -10,12 +10,12 @@ import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
 import de.richardliebscher.mdf4.extract.read.DataRead;
+import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
-import de.richardliebscher.mdf4.extract.read.ValueRead;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -30,10 +30,10 @@ import lombok.extern.java.Log;
  * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
  */
 @Log
-public class DefaultRecordReader<R> implements SizedRecordReader<R> {
+public class DefaultRecordReader<B, R> implements SizedRecordReader<R> {
 
-  private final List<ValueRead> channelReaders;
-  private final RecordVisitor<R> factory;
+  private final List<ReadInto<B>> channelReaders;
+  private final RecordFactory<B, R> factory;
   private final DataRead dataSource;
   private final ByteBuffer buffer;
   private final ChannelGroupBlock group;
@@ -41,7 +41,8 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
   private long cycle = 0;
 
   DefaultRecordReader(
-      List<ValueRead> channelReaders, RecordVisitor<R> factory, DataRead dataSource,
+      List<ReadInto<B>> channelReaders,
+      RecordFactory<B, R> factory, DataRead dataSource,
       ChannelGroupBlock group) {
     this.channelReaders = channelReaders;
     this.factory = factory;
@@ -105,9 +106,13 @@ public class DefaultRecordReader<R> implements SizedRecordReader<R> {
           "Early end of data at cycle " + cycle + " of " + group.getCycleCount());
     }
 
-    final var record = factory.visitRecord(new RecordAccessImpl(channelReaders, input));
+    final B recordBuilder = factory.createRecordBuilder();
+    for (var channelReader : channelReaders) {
+      channelReader.readInto(input, recordBuilder);
+    }
 
     input.incRecordIndex();
-    return record;
+    return factory.finishRecord(recordBuilder);
   }
+
 }

@@ -8,10 +8,9 @@ package de.richardliebscher.mdf4.extract.de;
 import java.io.Serializable;
 
 /**
- * Serializable visitor to deserialize record.
+ * Serializable variant of {@link DeserializeInto}.
  *
- * @param <T> Target type
+ * @param <T> Structure type
  */
-public interface SerializableRecordVisitor<T> extends RecordVisitor<T>, Serializable {
-
+public interface SerializableDeserializeInto<T> extends DeserializeInto<T>, Serializable {
 }

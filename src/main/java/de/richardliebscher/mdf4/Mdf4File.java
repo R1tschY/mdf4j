@@ -12,12 +12,11 @@ import de.richardliebscher.mdf4.blocks.Id;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
-import de.richardliebscher.mdf4.extract.ChannelSelector;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
+import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.RecordReader;
+import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
-import de.richardliebscher.mdf4.extract.de.RecordVisitor;
-import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
 import de.richardliebscher.mdf4.extract.impl.RecordReaderFactory;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -109,17 +108,15 @@ public class Mdf4File {
   /**
    * Create a record reader to read channels in a channel group.
    *
-   * @param selector      Selector for channel group and channels to read
-   * @param recordVisitor Deserializer for records with selected channels
-   * @param <R>           Deserialized user-defined record type
+   * @param factory Factory for records
+   * @param <R>     Deserialized user-defined record type
    * @return Reader for deserialized records
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <R> SizedRecordReader<R> newRecordReader(
-      ChannelSelector selector,
-      RecordVisitor<R> recordVisitor) throws ChannelGroupNotFoundException, IOException {
-    return RecordReaderFactory.createFor(ctx, getDataGroups(), selector, recordVisitor);
+  public <B, R> SizedRecordReader<R> newRecordReader(
+      RecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory.createFor(ctx, getDataGroups(), factory);
   }
 
   /**
@@ -134,18 +131,16 @@ public class Mdf4File {
   /**
    * Stream channel values from a channel group.
    *
-   * @param selector      Selector for channel group and channels to read
-   * @param recordVisitor Deserializer for records with selected channels
-   * @param <R>           Deserialized user-defined record type
+   * @param factory Factory for records
+   * @param <R>     Deserialized user-defined record type
    * @return Stream of deserialized records
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <R> Stream<Result<R, IOException>> streamRecords(
-      ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
-      throws ChannelGroupNotFoundException, IOException {
-    return RecordReaderFactory.createParallelFor(
-            ctx, getDataGroups(), selector, recordVisitor)
+  public <B, R> Stream<Result<R, IOException>> streamRecords(
+      SerializableRecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory
+        .createParallelFor(ctx, getDataGroups(), factory)
         .stream();
   }
 
@@ -156,20 +151,20 @@ public class Mdf4File {
    * readers are serializable and can be sent to compute nodes to attach them to the file again and
    * start reading records.
    *
-   * @param parts         number of parts to split to
-   * @param selector      Selector for channel group and channels to read
-   * @param recordVisitor Deserializer for records with selected channels
-   * @param <R>           Deserialized user-defined record type
+   * @param parts   number of parts to split to
+   * @param factory Factory for records
+   * @param <R>     Deserialized user-defined record type
    * @return Detached
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    * @see #attachRecordReader
    */
-  public <R> List<DetachedRecordReader<R>> splitRecordReaders(int parts,
-      ChannelSelector selector, SerializableRecordVisitor<R> recordVisitor)
+  public <B, R> List<DetachedRecordReader<R>> splitRecordReaders(int parts,
+      SerializableRecordFactory<B, R> factory)
       throws ChannelGroupNotFoundException, IOException {
-    return RecordReaderFactory.createParallelFor(
-        ctx, getDataGroups(), selector, recordVisitor).splitIntoDetached(parts);
+    return RecordReaderFactory
+        .createParallelFor(ctx, getDataGroups(), factory)
+        .splitIntoDetached(parts);
   }
 
   /**

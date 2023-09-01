@@ -8,16 +8,16 @@ package de.richardliebscher.mdf4;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.richardliebscher.mdf4.extract.ChannelSelector;
+import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
-import de.richardliebscher.mdf4.extract.de.RecordAccess;
-import de.richardliebscher.mdf4.extract.de.SerializableRecordVisitor;
+import de.richardliebscher.mdf4.extract.de.SerializableDeserializeInto;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.io.ByteBufferInput;
+import de.richardliebscher.mdf4.utils.Cell;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -70,8 +70,7 @@ public class IntegrationTest {
     final var mdf4File = Mdf4File.open(input);
 
     // ACT
-    final var recordReader = mdf4File.newRecordReader(
-        new SingleChannelSelector(channel), new ObjectListDeserialize());
+    final var recordReader = mdf4File.newRecordReader(new SignalRecordFactory(channel));
 
     final var lists = collectValues(recordReader);
 
@@ -88,22 +87,19 @@ public class IntegrationTest {
     final var mdf4File = Mdf4File.open(input);
 
     // ACT
-    final List<Object> lists = mdf4File.streamRecords(
-            new SingleChannelSelector(channel), new ObjectListDeserialize())
-            .map(rec -> rec.unwrap().get(0))
-            .collect(Collectors.toList());
+    final List<Object> lists = mdf4File.streamRecords(new SignalRecordFactory(channel))
+        .map(Result::unwrap)
+        .collect(Collectors.toList());
 
     // ASSERT
     assertThat(lists).containsExactlyElementsOf(expected);
   }
 
-  private static List<Object> collectValues(SizedRecordReader<List<Object>> recordReader)
+  private static List<Object> collectValues(SizedRecordReader<Object> recordReader)
       throws IOException {
     List<Object> values = new ArrayList<>();
     while (recordReader.remaining() != 0) {
-      List<Object> record = recordReader.next();
-      assertThat(record).hasSize(1);
-      values.add(record.get(0));
+      values.add(recordReader.next());
     }
     return values;
   }
@@ -114,29 +110,31 @@ public class IntegrationTest {
     return new ByteBufferInput(ByteBuffer.wrap(bytes));
   }
 
-  private static class ObjectListDeserialize implements SerializableRecordVisitor<List<Object>> {
-
-    @Override
-    public List<Object> visitRecord(RecordAccess recordAccess) throws IOException {
-      final var de = new ObjectDeserialize();
-
-      final var result = new ArrayList<>();
-      while (recordAccess.remaining() != 0) {
-        result.add(recordAccess.nextElement(de));
-      }
-      return result;
-    }
-  }
-
   @RequiredArgsConstructor
-  private static class SingleChannelSelector implements ChannelSelector {
+  private static class SignalRecordFactory implements
+      SerializableRecordFactory<Cell<Object>, Object> {
 
     private final String signalName;
 
     @Override
-    public boolean selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel)
+    public SerializableDeserializeInto<Cell<Object>> selectChannel(DataGroup dataGroup, ChannelGroup group,
+        Channel channel)
         throws IOException {
-      return signalName.equals(channel.getName());
+      if (signalName.equals(channel.getName())) {
+        return (deserializer, dest) -> dest.set(new ObjectDeserialize().deserialize(deserializer));
+      } else {
+        return null;
+      }
+    }
+
+    @Override
+    public Cell<Object> createRecordBuilder() {
+      return new Cell<>();
+    }
+
+    @Override
+    public Object finishRecord(Cell<Object> unfinishedRecord) {
+      return unfinishedRecord.get();
     }
 
     @Override

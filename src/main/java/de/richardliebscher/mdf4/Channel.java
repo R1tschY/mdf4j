@@ -17,6 +17,7 @@ import de.richardliebscher.mdf4.blocks.Text;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
+import de.richardliebscher.mdf4.datatypes.StringType;
 import de.richardliebscher.mdf4.datatypes.UnsignedIntegerType;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.internal.FileContext;
@@ -90,6 +91,7 @@ public class Channel {
    * @return Channel value data type
    */
   public DataType getDataType() {
+    // TODO: consider possible conversion
     switch (block.getDataType()) {
       case UINT_LE:
       case UINT_BE:
@@ -105,6 +107,8 @@ public class Channel {
       case STRING_UTF8:
       case STRING_UTF16LE:
       case STRING_UTF16BE:
+        return new StringType(block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
+            ? block.getBitCount() / 8 : null);
       case BYTE_ARRAY:
       case MIME_SAMPLE:
       case MIME_STREAM:

@@ -15,24 +15,24 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class Metadata implements TextBased {
+public class TextBlockBlock implements TextBasedBlock {
 
-  String xml;
+  String text;
 
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<Metadata> {
+  public static class Meta implements FromBytesInput<TextBlockBlock> {
 
     @Override
-    public Metadata parse(ByteInput input) throws IOException {
-      return Metadata.parse(input);
+    public TextBlockBlock parse(ByteInput input) throws IOException {
+      return TextBlockBlock.parse(input);
     }
   }
 
-  public static Metadata parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parse(BlockType.MD, input);
-    return new Metadata(parseText(input, blockHeader.getDataLength()));
+  public static TextBlockBlock parse(ByteInput input) throws IOException {
+    final var blockHeader = BlockHeader.parse(BlockType.TX, input);
+    return new TextBlockBlock(parseText(input, blockHeader.getDataLength()));
   }
 
   @Override

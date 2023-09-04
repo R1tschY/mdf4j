@@ -19,19 +19,19 @@ import lombok.ToString;
 import lombok.Value;
 
 @Value
-public class DataList implements DataRoot {
+public class DataListBlock implements DataRootBlock {
 
-  Link<DataList> nextDataList;
+  Link<DataListBlock> nextDataList;
   @ToString.Exclude
-  List<Link<DataBlock>> data; // DT,SD,RD,DZ
+  List<Link<ChannelDataBlock>> data; // DT,SD,RD,DZ
   LengthOrOffsets offsetInfo;
 
   BitFlags<DataListFlag> flags;
 
-  public static DataList parse(ByteInput input) throws IOException {
+  public static DataListBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.DL, input, 1, 8);
     final var links = blockHeader.getLinks();
-    final Link<DataList> nextDataList = Link.of(links[0]);
+    final Link<DataListBlock> nextDataList = Link.of(links[0]);
     final var data = getDataLinks(links);
 
     final var flags = BitFlags.of(input.readU8(), DataListFlag.class);
@@ -71,12 +71,12 @@ public class DataList implements DataRoot {
     //  }
     //}
 
-    return new DataList(nextDataList, data, offsetInfo, flags);
+    return new DataListBlock(nextDataList, data, offsetInfo, flags);
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Link<DataBlock>> getDataLinks(long[] links) {
-    final var data = (Link<DataBlock>[]) newArray(Link.class, links.length - 1);
+  private static List<Link<ChannelDataBlock>> getDataLinks(long[] links) {
+    final var data = (Link<ChannelDataBlock>[]) newArray(Link.class, links.length - 1);
     for (int i = 1; i < links.length; i++) {
       data[i - 1] = Link.of(links[i]);
     }
@@ -86,11 +86,11 @@ public class DataList implements DataRoot {
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<DataList> {
+  public static class Meta implements FromBytesInput<DataListBlock> {
 
     @Override
-    public DataList parse(ByteInput input) throws IOException {
-      return DataList.parse(input);
+    public DataListBlock parse(ByteInput input) throws IOException {
+      return DataListBlock.parse(input);
     }
   }
 }

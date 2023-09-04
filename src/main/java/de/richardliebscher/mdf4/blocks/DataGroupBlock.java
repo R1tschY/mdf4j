@@ -20,8 +20,8 @@ public class DataGroupBlock {
 
   Link<DataGroupBlock> nextDataGroup; // DG
   Link<ChannelGroupBlock> firstChannelGroup; // CG
-  Link<DataRoot> data; // DT,DV,DZ,DL,LD,HL
-  Link<TextBased> comment; // TX,MD
+  Link<DataRootBlock> data; // DT,DV,DZ,DL,LD,HL
+  Link<TextBasedBlock> comment; // TX,MD
 
   int recordIdSize;
 

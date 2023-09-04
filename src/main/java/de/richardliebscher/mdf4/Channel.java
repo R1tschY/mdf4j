@@ -9,11 +9,12 @@ import static de.richardliebscher.mdf4.blocks.ChannelFlag.ALL_VALUES_INVALID;
 import static de.richardliebscher.mdf4.blocks.ChannelFlag.INVALIDATION_BIT_VALID;
 
 import de.richardliebscher.mdf4.blocks.BitFlags;
+import de.richardliebscher.mdf4.blocks.ChannelBlock;
 import de.richardliebscher.mdf4.blocks.ChannelConversion;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
 import de.richardliebscher.mdf4.blocks.SyncType;
-import de.richardliebscher.mdf4.blocks.Text;
+import de.richardliebscher.mdf4.blocks.TextBlockBlock;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
@@ -26,7 +27,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Channel.
+ * ChannelBlock.
  */
 @RequiredArgsConstructor
 public class Channel {
@@ -34,7 +35,7 @@ public class Channel {
   private static final BitFlags<ChannelFlag> INVALID_FLAGS = BitFlags.of(
       ChannelFlag.class, INVALIDATION_BIT_VALID, ALL_VALUES_INVALID);
 
-  private final de.richardliebscher.mdf4.blocks.Channel block;
+  private final ChannelBlock block;
   private final FileContext ctx;
 
   /**
@@ -42,18 +43,18 @@ public class Channel {
    *
    * @return Corresponding MDF4 block
    */
-  public de.richardliebscher.mdf4.blocks.Channel getBlock() {
+  public ChannelBlock getBlock() {
     return block;
   }
 
   /**
    * Get channel name.
    *
-   * @return Channel name
+   * @return ChannelBlock name
    * @throws IOException Failed to read from MDF file
    */
   public String getName() throws IOException {
-    return block.getChannelName().resolve(Text.META, ctx.getInput())
+    return block.getChannelName().resolve(TextBlockBlock.META, ctx.getInput())
         .orElseThrow(() -> new FormatException("Channel name link is required"))
         .getText();
   }
@@ -143,9 +144,9 @@ public class Channel {
   static class Iterator implements LazyIoIterator<Channel> {
 
     private final FileContext ctx;
-    private Link<de.richardliebscher.mdf4.blocks.Channel> next;
+    private Link<ChannelBlock> next;
 
-    Iterator(Link<de.richardliebscher.mdf4.blocks.Channel> start, FileContext ctx) {
+    Iterator(Link<ChannelBlock> start, FileContext ctx) {
       this.ctx = ctx;
       this.next = start;
     }
@@ -158,7 +159,7 @@ public class Channel {
     @Override
     public Channel next() throws IOException {
       final var dataGroup = next
-          .resolve(de.richardliebscher.mdf4.blocks.Channel.META, ctx.getInput())
+          .resolve(ChannelBlock.META, ctx.getInput())
           .orElse(null);
       if (dataGroup == null) {
         return null;

@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import lombok.Value;
 
 @Value
-public class Id {
+public class IdBlock {
 
   MdfFormatVersion formatId;
   String programId;
@@ -28,7 +28,7 @@ public class Id {
     return unfinalizedFlags != null;
   }
 
-  public static Id parse(ByteInput input) throws IOException {
+  public static IdBlock parse(ByteInput input) throws IOException {
     final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
     final var version = MdfFormatVersion.parse(input);
     var program = input.readString(8, StandardCharsets.ISO_8859_1);
@@ -74,14 +74,14 @@ public class Id {
       throw new FormatException("Unexpected code page number");
     }
 
-    return new Id(version, program, unfinalizedFlags, customUnfinalizedFlags);
+    return new IdBlock(version, program, unfinalizedFlags, customUnfinalizedFlags);
   }
 
-  public static class Meta implements FromBytesInput<Id> {
+  public static class Meta implements FromBytesInput<IdBlock> {
 
     @Override
-    public Id parse(ByteInput input) throws IOException {
-      return Id.parse(input);
+    public IdBlock parse(ByteInput input) throws IOException {
+      return IdBlock.parse(input);
     }
   }
 }

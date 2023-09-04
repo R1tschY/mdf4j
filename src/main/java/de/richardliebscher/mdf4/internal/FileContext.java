@@ -6,10 +6,10 @@
 package de.richardliebscher.mdf4.internal;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.blocks.Metadata;
-import de.richardliebscher.mdf4.blocks.Text;
-import de.richardliebscher.mdf4.blocks.TextBased;
-import de.richardliebscher.mdf4.blocks.TextBased.Visitor;
+import de.richardliebscher.mdf4.blocks.MetadataBlock;
+import de.richardliebscher.mdf4.blocks.TextBasedBlock;
+import de.richardliebscher.mdf4.blocks.TextBasedBlock.Visitor;
+import de.richardliebscher.mdf4.blocks.TextBlockBlock;
 import de.richardliebscher.mdf4.cache.Cache;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -40,19 +40,20 @@ public class FileContext {
     }
   }
 
-  public Optional<String> readText(Link<TextBased> link, String xmlElement) throws IOException {
-    final var maybeComment = link.resolve(TextBased.META, input);
+  public Optional<String> readText(Link<TextBasedBlock> link, String xmlElement)
+      throws IOException {
+    final var maybeComment = link.resolve(TextBasedBlock.META, input);
     if (maybeComment.isEmpty()) {
       return Optional.empty();
     }
     return maybeComment.get().accept(new Visitor<Optional<String>, IOException>() {
       @Override
-      public Optional<String> visit(Text value) {
+      public Optional<String> visit(TextBlockBlock value) {
         return Optional.of(value.getText());
       }
 
       @Override
-      public Optional<String> visit(Metadata value) throws IOException {
+      public Optional<String> visit(MetadataBlock value) throws IOException {
         final var reader = newXmlParser(value.getXml());
         try {
           try {

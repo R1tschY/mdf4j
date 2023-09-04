@@ -6,7 +6,7 @@
 package de.richardliebscher.mdf4.internal;
 
 import de.richardliebscher.mdf4.blocks.Header;
-import de.richardliebscher.mdf4.blocks.Id;
+import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.io.ByteInput;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class InternalReader {
   @Getter
   private final ByteInput input;
   @Getter
-  private final Id id;
+  private final IdBlock idBlock;
   @Getter
   private final Header header;
 }

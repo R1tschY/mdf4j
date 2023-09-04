@@ -8,7 +8,7 @@ package de.richardliebscher.mdf4;
 import static de.richardliebscher.mdf4.blocks.Consts.HD_BLOCK_OFFSET;
 
 import de.richardliebscher.mdf4.blocks.Header;
-import de.richardliebscher.mdf4.blocks.Id;
+import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
@@ -41,12 +41,12 @@ public class Mdf4File {
    */
   public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 20);
 
-  private final Id id;
+  private final IdBlock idBlock;
   private final Header header;
   private final FileContext ctx;
 
-  Mdf4File(Id id, Header header, ByteInput input) {
-    this.id = id;
+  Mdf4File(IdBlock idBlock, Header header, ByteInput input) {
+    this.idBlock = idBlock;
     this.header = header;
     this.ctx = new FileContext(input, null, XMLInputFactory.newDefaultFactory());
   }
@@ -65,8 +65,8 @@ public class Mdf4File {
    *
    * @return ID-Block
    */
-  public Id getId() {
-    return id;
+  public IdBlock getId() {
+    return idBlock;
   }
 
   /**
@@ -77,7 +77,7 @@ public class Mdf4File {
    * @throws IOException Failed to read MDF4 header
    */
   public static Mdf4File open(ByteInput input) throws IOException {
-    final var idBlock = Id.parse(input);
+    final var idBlock = IdBlock.parse(input);
     if (idBlock.isUnfinalized()) {
       throw new FormatException("MDF file is unfinalized");
     }

@@ -16,9 +16,9 @@ import lombok.Value;
 @Value
 public class SourceInformation {
 
-  Link<Text> sourceName;
-  Link<Text> sourcePath;
-  Link<TextBased> commentOrMetadata;
+  Link<TextBlockBlock> sourceName;
+  Link<TextBlockBlock> sourcePath;
+  Link<TextBasedBlock> commentOrMetadata;
   byte type;
   byte busType;
   byte flags;

@@ -20,11 +20,11 @@ import lombok.Value;
 public class ChannelGroupBlock {
 
   Link<ChannelGroupBlock> nextChannelGroup;
-  Link<Channel> firstChannel;
-  Link<Text> acquisitionName;
+  Link<ChannelBlock> firstChannel;
+  Link<TextBlockBlock> acquisitionName;
   Link<SourceInformation> acquisitionSource;
   long firstSampleReduction; // SR
-  Link<TextBased> comment;
+  Link<TextBasedBlock> comment;
 
   long recordId;
   long cycleCount;
@@ -33,19 +33,19 @@ public class ChannelGroupBlock {
   int dataBytes;
   int invalidationBytes;
 
-  public LazyIoList<Channel> getChannels(ByteInput input) {
-    return () -> new Channel.Iterator(firstChannel, input);
+  public LazyIoList<ChannelBlock> getChannels(ByteInput input) {
+    return () -> new ChannelBlock.Iterator(firstChannel, input);
   }
 
   public static ChannelGroupBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(BlockType.CG, input);
     final var links = blockHeader.getLinks();
     final Link<ChannelGroupBlock> nextChannelGroup = Link.of(links[0]);
-    final Link<Channel> firstChannel = Link.of(links[1]);
-    final Link<Text> acquisitionName = Link.of(links[2]);
+    final Link<ChannelBlock> firstChannel = Link.of(links[1]);
+    final Link<TextBlockBlock> acquisitionName = Link.of(links[2]);
     final Link<SourceInformation> acquisitionSource = Link.of(links[3]);
     final var firstSampleReduction = links[4];
-    final Link<TextBased> comment = Link.of(links[5]);
+    final Link<TextBasedBlock> comment = Link.of(links[5]);
 
     final var recordId = input.readI64();
     final var cycleCount = input.readI64();

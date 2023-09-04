@@ -5,7 +5,7 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.blocks.Data;
+import de.richardliebscher.mdf4.blocks.ChannelBlockData;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,12 +15,12 @@ import java.nio.channels.ReadableByteChannel;
 public class DataBlockRead implements DataRead {
 
   private final ByteInput input;
-  private final Data data;
+  private final ChannelBlockData data;
   private long remainingDataLength;
   private ReadableByteChannel currentBlock;
   private boolean closed = false;
 
-  public DataBlockRead(ByteInput input, Data data) {
+  public DataBlockRead(ByteInput input, ChannelBlockData data) {
     this.input = input;
     this.data = data;
   }

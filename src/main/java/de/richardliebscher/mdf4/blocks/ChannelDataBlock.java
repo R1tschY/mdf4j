@@ -13,16 +13,16 @@ import java.nio.channels.ReadableByteChannel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-public interface DataBlock {
+public interface ChannelDataBlock {
 
   ReadableByteChannel getChannel(ByteInput input) throws IOException;
 
-  static DataBlock parse(ByteInput input) throws IOException {
+  static ChannelDataBlock parse(ByteInput input) throws IOException {
     final var blockId = BlockType.parse(input);
     if (blockId.equals(BlockType.DT)) {
-      return Data.parse(input);
+      return ChannelBlockData.parse(input);
     } else if (blockId.equals(BlockType.DZ)) {
-      return DataZipped.parse(input);
+      return ChannelBlockDataZipped.parse(input);
     } else {
       throw new NotImplementedFeatureException("Data block not implemented: " + blockId);
     }
@@ -31,11 +31,11 @@ public interface DataBlock {
   Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  class Meta implements FromBytesInput<DataBlock> {
+  class Meta implements FromBytesInput<ChannelDataBlock> {
 
     @Override
-    public DataBlock parse(ByteInput input) throws IOException {
-      return DataBlock.parse(input);
+    public ChannelDataBlock parse(ByteInput input) throws IOException {
+      return ChannelDataBlock.parse(input);
     }
   }
 }

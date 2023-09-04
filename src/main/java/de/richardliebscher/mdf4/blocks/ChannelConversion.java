@@ -21,11 +21,11 @@ public class ChannelConversion {
 
   public static final String UNIT_ELEMENT = "CCunit";
 
-  Link<Text> name;
-  Link<TextBased> unit;
-  Link<TextBased> comment;
+  Link<TextBlockBlock> name;
+  Link<TextBasedBlock> unit;
+  Link<TextBasedBlock> comment;
   Link<ChannelConversion> inverse;
-  // TODO: List<Link<Text | ChannelConversion>> ref
+  // TODO: List<Link<TextBlockBlock | ChannelConversion>> ref
 
   ChannelConversionType type;
   Integer precision;

@@ -10,10 +10,10 @@ import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.BlockType;
+import de.richardliebscher.mdf4.blocks.ChannelBlockData;
+import de.richardliebscher.mdf4.blocks.ChannelBlockDataZipped;
+import de.richardliebscher.mdf4.blocks.ChannelDataBlock;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
-import de.richardliebscher.mdf4.blocks.Data;
-import de.richardliebscher.mdf4.blocks.DataBlock;
-import de.richardliebscher.mdf4.blocks.DataZipped;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
@@ -141,14 +141,14 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
           return false;
         }
 
-        final var dataBlock = Link.<DataBlock>of(dataList[index])
-            .resolveNonCached(DataBlock.META, input)
+        final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
+            .resolveNonCached(ChannelDataBlock.META, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof Data) {
+        if (dataBlock instanceof ChannelBlockData) {
           currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((Data) dataBlock).getDataLength();
-        } else if (dataBlock instanceof DataZipped) {
-          final var dataZipped = (DataZipped) dataBlock;
+          remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
+        } else if (dataBlock instanceof ChannelBlockDataZipped) {
+          final var dataZipped = (ChannelBlockDataZipped) dataBlock;
           if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
             currentBlock = dataZipped.getChannel(input);
             remainingDataLength = dataZipped.getOriginalDataLength();
@@ -313,14 +313,14 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
           return false;
         }
 
-        final var dataBlock = Link.<DataBlock>of(dataList[index])
-            .resolveNonCached(DataBlock.META, input)
+        final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
+            .resolveNonCached(ChannelDataBlock.META, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof Data) {
+        if (dataBlock instanceof ChannelBlockData) {
           currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((Data) dataBlock).getDataLength();
-        } else if (dataBlock instanceof DataZipped) {
-          final var dataZipped = (DataZipped) dataBlock;
+          remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
+        } else if (dataBlock instanceof ChannelBlockDataZipped) {
+          final var dataZipped = (ChannelBlockDataZipped) dataBlock;
           if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
             currentBlock = dataZipped.getChannel(input);
             remainingDataLength = dataZipped.getOriginalDataLength();

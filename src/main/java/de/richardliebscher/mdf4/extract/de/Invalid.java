@@ -5,7 +5,7 @@
 
 package de.richardliebscher.mdf4.extract.de;
 
-import de.richardliebscher.mdf4.blocks.Channel;
+import de.richardliebscher.mdf4.blocks.ChannelBlock;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 /**
  * Type for an invalid value.
  *
- * @see Channel#getInvalidationBit()
+ * @see ChannelBlock#getInvalidationBit()
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Invalid {

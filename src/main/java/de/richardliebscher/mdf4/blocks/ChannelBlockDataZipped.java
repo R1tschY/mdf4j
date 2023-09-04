@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class DataZipped implements DataRoot, DataBlock {
+public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
 
   BlockType originalBlockType;
   ZipType zipType;
@@ -34,7 +34,7 @@ public class DataZipped implements DataRoot, DataBlock {
     return Channels.newChannel(createUncompressedStream(input.getStream()));
   }
 
-  public static DataZipped parse(ByteInput input) throws IOException {
+  public static ChannelBlockDataZipped parse(ByteInput input) throws IOException {
     BlockHeader.parseExpecting(BlockType.DZ, input, 0, 24);
     final var originalBlockType1 = input.readU8();
     final var originalBlockType2 = input.readU8();
@@ -44,7 +44,7 @@ public class DataZipped implements DataRoot, DataBlock {
     final var zipParameter = Integer.toUnsignedLong(input.readI32());
     final var originalDataLength = input.readI64();
     final var dataLength = Math.toIntExact(input.readI64());
-    return new DataZipped(blockId, zipType, zipParameter, originalDataLength,
+    return new ChannelBlockDataZipped(blockId, zipType, zipParameter, originalDataLength,
         input.pos(), dataLength);
   }
 
@@ -62,11 +62,11 @@ public class DataZipped implements DataRoot, DataBlock {
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<DataZipped> {
+  public static class Meta implements FromBytesInput<ChannelBlockDataZipped> {
 
     @Override
-    public DataZipped parse(ByteInput input) throws IOException {
-      return DataZipped.parse(input);
+    public ChannelBlockDataZipped parse(ByteInput input) throws IOException {
+      return ChannelBlockDataZipped.parse(input);
     }
   }
 }

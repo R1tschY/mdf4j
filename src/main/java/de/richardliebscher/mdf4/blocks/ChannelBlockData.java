@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class Data implements DataRoot, UncompressedData {
+public class ChannelBlockData implements DataRootBlock, UncompressedChannelData {
 
   long dataPos;
   long dataLength;
@@ -25,19 +25,19 @@ public class Data implements DataRoot, UncompressedData {
     return input.getChannel();
   }
 
-  public static Data parse(ByteInput input) throws IOException {
+  public static ChannelBlockData parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(BlockType.DT, input);
-    return new Data(input.pos(), blockHeader.getDataLength());
+    return new ChannelBlockData(input.pos(), blockHeader.getDataLength());
   }
 
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<Data> {
+  public static class Meta implements FromBytesInput<ChannelBlockData> {
 
     @Override
-    public Data parse(ByteInput input) throws IOException {
-      return Data.parse(input);
+    public ChannelBlockData parse(ByteInput input) throws IOException {
+      return ChannelBlockData.parse(input);
     }
   }
 }

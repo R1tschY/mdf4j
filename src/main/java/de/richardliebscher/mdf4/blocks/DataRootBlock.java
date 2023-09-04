@@ -12,18 +12,18 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-public interface DataRoot {
+public interface DataRootBlock {
 
-  static DataRoot parse(ByteInput input) throws IOException {
+  static DataRootBlock parse(ByteInput input) throws IOException {
     final var blockId = BlockType.parse(input);
     if (blockId.equals(BlockType.DL)) {
-      return DataList.parse(input);
+      return DataListBlock.parse(input);
     } else if (blockId.equals(BlockType.DZ)) {
-      return DataZipped.parse(input);
+      return ChannelBlockDataZipped.parse(input);
     } else if (blockId.equals(BlockType.HL)) {
-      return HeaderList.parse(input);
+      return HeaderListBlock.parse(input);
     } else if (blockId.equals(BlockType.DT)) {
-      return Data.parse(input);
+      return ChannelBlockData.parse(input);
     } else {
       throw new NotImplementedFeatureException("Root data block not implemented: " + blockId);
     }
@@ -32,11 +32,11 @@ public interface DataRoot {
   Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  class Meta implements FromBytesInput<DataRoot> {
+  class Meta implements FromBytesInput<DataRootBlock> {
 
     @Override
-    public DataRoot parse(ByteInput input) throws IOException {
-      return DataRoot.parse(input);
+    public DataRootBlock parse(ByteInput input) throws IOException {
+      return DataRootBlock.parse(input);
     }
   }
 }

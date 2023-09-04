@@ -35,7 +35,7 @@ public class Header {
   long firstChannelHierarchy;
   long firstAttachment;
   long firstEventBlock;
-  Link<TextBased> comment;
+  Link<TextBasedBlock> comment;
 
   /**
    * Absolute start time in nanoseconds since midnight Jan 1st, 1970.
@@ -62,8 +62,8 @@ public class Header {
     return () -> new DataGroupBlock.Iterator(firstDataGroup, input);
   }
 
-  public Optional<TextBased> readComment(ByteInput input) throws IOException {
-    return comment.resolve(TextBased.META, input);
+  public Optional<TextBasedBlock> readComment(ByteInput input) throws IOException {
+    return comment.resolve(TextBasedBlock.META, input);
   }
 
   public static Header parse(ByteInput input) throws IOException {

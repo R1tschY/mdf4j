@@ -15,17 +15,17 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class HeaderList implements DataRoot {
+public class HeaderListBlock implements DataRootBlock {
 
-  Link<DataList> firstDataList;
+  Link<DataListBlock> firstDataList;
 
   BitFlags<HeaderListFlag> flags;
   ZipType zipType;
 
-  public static HeaderList parse(ByteInput input) throws IOException {
+  public static HeaderListBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(BlockType.HL, input, 1, 3);
     final var links = blockHeader.getLinks();
-    final Link<DataList> firstDataList = Link.of(links[0]);
+    final Link<DataListBlock> firstDataList = Link.of(links[0]);
 
     final var flags = BitFlags.of(input.readI16(), HeaderListFlag.class);
     if (flags.hasUnknown()) {
@@ -34,17 +34,17 @@ public class HeaderList implements DataRoot {
     }
     final var zipType = ZipType.parse(input.readU8());
 
-    return new HeaderList(firstDataList, flags, zipType);
+    return new HeaderListBlock(firstDataList, flags, zipType);
   }
 
   public static final Meta META = new Meta();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<HeaderList> {
+  public static class Meta implements FromBytesInput<HeaderListBlock> {
 
     @Override
-    public HeaderList parse(ByteInput input) throws IOException {
-      return HeaderList.parse(input);
+    public HeaderListBlock parse(ByteInput input) throws IOException {
+      return HeaderListBlock.parse(input);
     }
   }
 }

@@ -41,7 +41,7 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
+class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
 
   private final FileContext ctx;
   private final List<SerializableReadInto<B>> channelReaders;
@@ -225,7 +225,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
   }
 
   @Override
-  public List<DetachedRecordReader<R>> splitIntoDetached(int parts) {
+  public List<DetachedRecordReader<B, R>> splitIntoDetached(int parts) {
     if (parts < 1) {
       throw new IllegalArgumentException("parts should be greater than or equal to 1");
     }
@@ -248,13 +248,13 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
     }
   }
 
-  private DetachedRecordReader<R> newDetachedRecordReader(long[] dataListPart, long[] offsets) {
+  private DetachedRecordReader<B, R> newDetachedRecordReader(long[] dataListPart, long[] offsets) {
     return new MyDetachedRecordReader<>(
         dataListPart, offsets, channelReaders, factory,
         channelGroup.getDataBytes() + channelGroup.getInvalidationBytes());
   }
 
-  private static class MyRecordReader<B, R> implements RecordReader<R> {
+  private static class MyRecordReader<B, R> implements RecordReader<B, R> {
 
     private final ByteInput input;
     private final List<SerializableReadInto<B>> channelReaders;
@@ -287,19 +287,24 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
 
     @Override
     public R next() throws IOException, NoSuchElementException {
-      if (!ensureNextBlock()) {
-        throw new NoSuchElementException();
-      }
-
-      recordInput.writeFully(currentBlock);
-      remainingDataLength -= recordSize;
+      prepareRead();
 
       final var recordBuilder = recordFactory.createRecordBuilder();
       for (var channelReader : channelReaders) {
         channelReader.readInto(recordInput, recordBuilder);
       }
-      recordInput.incRecordIndex();
+      finishRead();
       return recordFactory.finishRecord(recordBuilder);
+    }
+
+    @Override
+    public void nextInto(B destination) throws IOException, NoSuchElementException {
+      prepareRead();
+
+      for (var channelReader : channelReaders) {
+        channelReader.readInto(recordInput, destination);
+      }
+      finishRead();
     }
 
     private boolean ensureNextBlock() throws IOException {
@@ -336,9 +341,22 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
 
       return true;
     }
+
+    private void prepareRead() throws IOException {
+      if (!ensureNextBlock()) {
+        throw new NoSuchElementException();
+      }
+
+      recordInput.writeFully(currentBlock);
+      remainingDataLength -= recordSize;
+    }
+
+    private void finishRead() {
+      recordInput.incRecordIndex();
+    }
   }
 
-  private static class MyDetachedRecordReader<B, R> implements DetachedRecordReader<R> {
+  private static class MyDetachedRecordReader<B, R> implements DetachedRecordReader<B, R> {
 
     private final long[] dataListPart;
     private final long[] offsets;
@@ -358,7 +376,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<R> {
     }
 
     @Override
-    public RecordReader<R> attach(FileContext ctx) {
+    public RecordReader<B, R> attach(FileContext ctx) {
       return new MyRecordReader<>(
           ctx.getInput(),
           channelReaders,

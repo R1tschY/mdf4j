@@ -17,7 +17,7 @@ import java.util.NoSuchElementException;
  *
  * @param <R> Deserialized record type
  */
-public interface RecordReader<R> {
+public interface RecordReader<B, R> {
 
   /**
    * Create an iterator for deserializing all elements the same way.
@@ -76,8 +76,19 @@ public interface RecordReader<R> {
    * @throws IOException            Unable to read record from file
    * @throws NoSuchElementException No remaining records
    * @see #hasNext
+   * @see #nextInto
    */
   R next() throws IOException, NoSuchElementException;
+
+  /**
+   * Read next record into place.
+   *
+   * @throws IOException            Unable to read record from file
+   * @throws NoSuchElementException No remaining records
+   * @see #hasNext
+   * @see #next
+   */
+  void nextInto(B destination) throws IOException, NoSuchElementException;
 
   /**
    * Iterate over every remaining record.

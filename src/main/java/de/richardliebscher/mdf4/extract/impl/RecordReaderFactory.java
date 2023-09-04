@@ -582,7 +582,7 @@ public final class RecordReaderFactory {
    *
    * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
    */
-  public static <B, R> SizedRecordReader<R> createFor(FileContext ctx,
+  public static <B, R> SizedRecordReader<B, R> createFor(FileContext ctx,
       LazyIoList<DataGroup> dataGroups, RecordFactory<B, R> factory)
       throws ChannelGroupNotFoundException, IOException {
     final var input = ctx.getInput();
@@ -601,7 +601,7 @@ public final class RecordReaderFactory {
     return new DefaultRecordReader<>(channelReaders, factory, source, channelGroup.getBlock());
   }
 
-  public static <B, R> ParallelRecordReader<R> createParallelFor(
+  public static <B, R> ParallelRecordReader<B, R> createParallelFor(
       FileContext ctx, LazyIoList<DataGroup> dataGroups,
       SerializableRecordFactory<B, R> recordFactory)
       throws ChannelGroupNotFoundException, IOException {

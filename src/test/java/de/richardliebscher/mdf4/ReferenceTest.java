@@ -140,7 +140,7 @@ public class ReferenceTest {
 
     final var records = mdf4File.splitRecordReaders(42, factory)
         .stream()
-        .map(rr -> (DetachedRecordReader<String>) JavaSerde.de(JavaSerde.ser(rr)))
+        .map(rr -> (DetachedRecordReader<?, String>) JavaSerde.de(JavaSerde.ser(rr)))
         .map(mdf4File::attachRecordReader)
         .flatMap(recordReader -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(
             recordReader.iterator(), Spliterator.SIZED), false))

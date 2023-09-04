@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  *
  * @param <R> Deserialized user-defined record type
  */
-public interface ParallelRecordReader<R> {
+public interface ParallelRecordReader<B, R> {
   /**
    * Create splittable stream.
    *
@@ -23,5 +23,5 @@ public interface ParallelRecordReader<R> {
    */
   Stream<Result<R, IOException>> stream();
 
-  List<DetachedRecordReader<R>> splitIntoDetached(int parts);
+  List<DetachedRecordReader<B, R>> splitIntoDetached(int parts);
 }

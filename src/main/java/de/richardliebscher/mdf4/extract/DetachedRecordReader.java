@@ -13,11 +13,11 @@ import java.io.Serializable;
  *
  * @param <R> Deserialized record type
  */
-public interface DetachedRecordReader<R> extends Serializable {
+public interface DetachedRecordReader<B, R> extends Serializable {
 
   /**
    * NOT INTENDED FOR PUBLIC USE.
    */
   @SuppressWarnings("ClassEscapesDefinedScope")
-  RecordReader<R> attach(FileContext ctx);
+  RecordReader<B, R> attach(FileContext ctx);
 }

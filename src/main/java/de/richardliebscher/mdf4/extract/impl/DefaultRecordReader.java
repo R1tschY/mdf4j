@@ -30,7 +30,7 @@ import lombok.extern.java.Log;
  * @see de.richardliebscher.mdf4.Mdf4File#newRecordReader
  */
 @Log
-public class DefaultRecordReader<B, R> implements SizedRecordReader<R> {
+public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
 
   private final List<ReadInto<B>> channelReaders;
   private final RecordFactory<B, R> factory;
@@ -94,6 +94,29 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<R> {
 
   @Override
   public R next() throws IOException, NoSuchElementException {
+    prepareRead();
+
+    final B recordBuilder = factory.createRecordBuilder();
+    for (var channelReader : channelReaders) {
+      channelReader.readInto(input, recordBuilder);
+    }
+
+    finishRead();
+    return factory.finishRecord(recordBuilder);
+  }
+
+  @Override
+  public void nextInto(B destination) throws IOException, NoSuchElementException {
+    prepareRead();
+
+    for (var channelReader : channelReaders) {
+      channelReader.readInto(input, destination);
+    }
+
+    finishRead();
+  }
+
+  private void prepareRead() throws IOException {
     if (cycle >= group.getCycleCount()) {
       throw new NoSuchElementException();
     }
@@ -105,14 +128,9 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<R> {
       throw new FormatException(
           "Early end of data at cycle " + cycle + " of " + group.getCycleCount());
     }
-
-    final B recordBuilder = factory.createRecordBuilder();
-    for (var channelReader : channelReaders) {
-      channelReader.readInto(input, recordBuilder);
-    }
-
-    input.incRecordIndex();
-    return factory.finishRecord(recordBuilder);
   }
 
+  private void finishRead() {
+    input.incRecordIndex();
+  }
 }

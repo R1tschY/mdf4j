@@ -95,7 +95,7 @@ public class IntegrationTest {
     assertThat(lists).containsExactlyElementsOf(expected);
   }
 
-  private static List<Object> collectValues(SizedRecordReader<Object> recordReader)
+  private static List<Object> collectValues(SizedRecordReader<?, Object> recordReader)
       throws IOException {
     List<Object> values = new ArrayList<>();
     while (recordReader.remaining() != 0) {

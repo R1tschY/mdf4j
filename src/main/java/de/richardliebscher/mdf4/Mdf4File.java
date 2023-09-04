@@ -114,7 +114,7 @@ public class Mdf4File {
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
    */
-  public <B, R> SizedRecordReader<R> newRecordReader(
+  public <B, R> SizedRecordReader<B, R> newRecordReader(
       RecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createFor(ctx, getDataGroups(), factory);
   }
@@ -159,7 +159,7 @@ public class Mdf4File {
    * @throws IOException                   Unable to create record reader
    * @see #attachRecordReader
    */
-  public <B, R> List<DetachedRecordReader<R>> splitRecordReaders(int parts,
+  public <B, R> List<DetachedRecordReader<B, R>> splitRecordReaders(int parts,
       SerializableRecordFactory<B, R> factory)
       throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory
@@ -177,7 +177,7 @@ public class Mdf4File {
    * @param <R>    Deserialized user-defined record type
    * @return Reader for deserialized records
    */
-  public <R> RecordReader<R> attachRecordReader(DetachedRecordReader<R> reader) {
+  public <B, R> RecordReader<B, R> attachRecordReader(DetachedRecordReader<B, R> reader) {
     return reader.attach(ctx);
   }
 }

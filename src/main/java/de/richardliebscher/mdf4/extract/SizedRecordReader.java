@@ -10,7 +10,7 @@ package de.richardliebscher.mdf4.extract;
  *
  * @param <R> Deserialized record type
  */
-public interface SizedRecordReader<R> extends RecordReader<R> {
+public interface SizedRecordReader<B, R> extends RecordReader<B, R> {
 
   /**
    * Get number of records.

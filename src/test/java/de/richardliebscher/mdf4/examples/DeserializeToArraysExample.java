@@ -76,7 +76,7 @@ public class DeserializeToArraysExample {
 
     // Write values
     for (int i = 0; i < reader.size(); i++) {
-      reader.next();
+      reader.nextInto(records);
     }
 
     System.out.println(records);

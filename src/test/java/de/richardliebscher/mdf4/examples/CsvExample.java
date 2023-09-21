@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.Base64;
 
 /**
- * CSV converter example build for simplicity.
+ * CSV converter example build for simplicity (not speed).
  */
 public class CsvExample {
 
@@ -70,13 +70,12 @@ public class CsvExample {
 
         @Override
         public Writer createRecordBuilder() {
-          return writer;
+          throw new UnsupportedOperationException();
         }
 
         @Override
-        public Void finishRecord(Writer writer1) throws IOException {
-          writer1.write(LINE_SEP);
-          return null;
+        public Void finishRecord(Writer unfinishedRecord) {
+          throw new UnsupportedOperationException();
         }
       });
 
@@ -108,7 +107,8 @@ public class CsvExample {
 
       // Write values
       for (int i = 0; i < reader.size(); i++) {
-        reader.next();
+        reader.nextInto(writer);
+        writer.write(LINE_SEP);
       }
     }
   }

@@ -43,12 +43,12 @@ public class CsvExample {
 
 
     // Select channel group and channels
-    final var channels = new ArrayList<Channel>();
-
     final var de = new CsvColumnDeserialize();
     try (var writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
 
       final var reader = mdf4File.newRecordReader(new RecordFactory<Writer, Void>() {
+        private int channelIndex;
+
         @Override
         public boolean selectGroup(DataGroup dg, ChannelGroup group) {
           // Select first channel group
@@ -56,14 +56,14 @@ public class CsvExample {
         }
 
         @Override
-        public DeserializeInto<Writer> selectChannel(DataGroup dg, ChannelGroup group, Channel channel1) {
-          channels.add(channel1);
-          if (channels.size() == 1) {
-            return (deserializer, writer1) -> writer1.write(de.deserialize(deserializer));
+        public DeserializeInto<Writer> selectChannel(
+            DataGroup dg, ChannelGroup group, Channel channel1) {
+          if (channelIndex++ == 0) {
+            return (deserializer, writer) -> writer.write(de.deserialize(deserializer));
           } else {
-            return (deserializer, writer1) -> {
-              writer1.write(SEP);
-              writer1.write(de.deserialize(deserializer));
+            return (deserializer, writer) -> {
+              writer.write(SEP);
+              writer.write(de.deserialize(deserializer));
             };
           }
         }
@@ -81,7 +81,7 @@ public class CsvExample {
 
       // Write header
       boolean firstColumn = true;
-      for (Channel channel : channels) {
+      for (Channel channel : reader.getChannels()) {
         if (firstColumn) {
           firstColumn = false;
         } else {
@@ -94,7 +94,7 @@ public class CsvExample {
 
       // Write units
       firstColumn = true;
-      for (Channel channel : channels) {
+      for (Channel channel : reader.getChannels()) {
         if (firstColumn) {
           firstColumn = false;
         } else {

@@ -627,7 +627,9 @@ public final class RecordReaderFactory {
     // build extractor
     final var channelReaders = buildExtractors(factory, input, dataGroup, channelGroup);
 
-    return new DefaultRecordReader<>(channelReaders, factory, source, channelGroup.getBlock());
+    return new DefaultRecordReader<>(
+        channelReaders.getRight(), channelReaders.getLeft(), factory, source,
+        channelGroup.getBlock());
   }
 
   public static <B, R> ParallelRecordReader<B, R> createParallelFor(
@@ -778,7 +780,7 @@ public final class RecordReaderFactory {
         });
   }
 
-  private static <B, R> ArrayList<ReadInto<B>> buildExtractors(
+  private static <B, R> Pair<List<ReadInto<B>>, List<Channel>> buildExtractors(
       RecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
       ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();
@@ -790,15 +792,17 @@ public final class RecordReaderFactory {
             + channelGroupBlock.getDataBytes()
             + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
+    final var channels = new ArrayList<Channel>();
     final var channelReaders = new ArrayList<ReadInto<B>>();
     final var iter = channelGroup.getChannels().iter();
-    de.richardliebscher.mdf4.Channel ch;
+    Channel ch;
     while ((ch = iter.next()) != null) {
       try {
         final var channelReader = createChannelReader(
             dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
         if (deserializeInto != null) {
+          channels.add(ch);
           channelReaders.add((recordBuffer, destination) -> {
             deserializeInto.deserializeInto(new Deserializer() {
               @Override
@@ -813,10 +817,10 @@ public final class RecordReaderFactory {
       }
     }
 
-    return channelReaders;
+    return Pair.of(channelReaders, channels);
   }
 
-  private static <B, R> ArrayList<SerializableReadInto<B>> buildExtractors(
+  private static <B, R> List<SerializableReadInto<B>> buildExtractors(
       SerializableRecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
       ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();

@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4.extract.impl;
 
+import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
@@ -18,6 +19,7 @@ import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,6 +34,7 @@ import lombok.extern.java.Log;
 @Log
 public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
 
+  private final List<Channel> channels;
   private final List<ReadInto<B>> channelReaders;
   private final RecordFactory<B, R> factory;
   private final DataRead dataSource;
@@ -41,9 +44,10 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   private long cycle = 0;
 
   DefaultRecordReader(
-      List<ReadInto<B>> channelReaders,
+      List<Channel> channels, List<ReadInto<B>> channelReaders,
       RecordFactory<B, R> factory, DataRead dataSource,
       ChannelGroupBlock group) {
+    this.channels = Collections.unmodifiableList(channels);
     this.channelReaders = channelReaders;
     this.factory = factory;
     this.dataSource = dataSource;
@@ -85,6 +89,11 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
         }
       }
     };
+  }
+
+  @Override
+  public List<Channel> getChannels() {
+    return channels;
   }
 
   @Override

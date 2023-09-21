@@ -7,6 +7,8 @@ package de.richardliebscher.mdf4.extract.de;
 
 import de.richardliebscher.mdf4.exceptions.InvalidTypeException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Visit value.
@@ -134,6 +136,49 @@ public interface Visitor<T> extends Expected {
    */
   default T visitString(String value) throws IOException {
     throw new InvalidTypeException("string value '" + value + "'", this);
+  }
+
+  /**
+   * Visit byte array.
+   *
+   * <p>Value is maybe reused, so only use within function call!
+   *
+   * @param bytes Value
+   * @return Deserialized value
+   */
+  default T visitByteArray(ByteBuffer bytes) throws IOException {
+    if (bytes.hasArray()) {
+      return visitByteArray(bytes.array(), bytes.arrayOffset() + bytes.position(),
+          bytes.remaining());
+    } else {
+      final var newBytes = new byte[bytes.remaining()];
+      bytes.get(newBytes);
+      return visitByteArray(newBytes);
+    }
+  }
+
+  /**
+   * Visit byte array.
+   *
+   * <p>Byte array is maybe reused, so only use within function call!
+   *
+   * @param bytes  Byte array with {@code length} valid bytes at offset {@code offset}
+   * @param offset Start of valid bytes
+   * @param length Length of valid bytes
+   * @return Deserialized value
+   */
+  default T visitByteArray(byte[] bytes, int offset, int length) throws IOException {
+    return visitByteArray(Arrays.copyOfRange(bytes, offset, offset + length));
+  }
+
+  /**
+   * Visit byte array.
+   *
+   * @param bytes  Newly allocated byte array
+   * @return Deserialized value
+   */
+  default T visitByteArray(byte[] bytes) throws IOException {
+    throw new InvalidTypeException("byte array", this);
   }
 
   /**

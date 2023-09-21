@@ -15,6 +15,7 @@ import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
 import de.richardliebscher.mdf4.blocks.SyncType;
 import de.richardliebscher.mdf4.blocks.TextBlockBlock;
+import de.richardliebscher.mdf4.datatypes.ByteArrayType;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
@@ -87,11 +88,11 @@ public class Channel {
   }
 
   /**
-   * Return data type of channel values.
+   * Return RAW data type of channel values.
    *
    * @return Channel value data type
    */
-  public DataType getDataType() {
+  public DataType getRawDataType() {
     // TODO: consider possible conversion
     switch (block.getDataType()) {
       case UINT_LE:
@@ -111,6 +112,8 @@ public class Channel {
         return new StringType(block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
             ? block.getBitCount() / 8 : null);
       case BYTE_ARRAY:
+        return new ByteArrayType(block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
+            ? block.getBitCount() / 8 : null);
       case MIME_SAMPLE:
       case MIME_STREAM:
       case CANOPEN_DATE:

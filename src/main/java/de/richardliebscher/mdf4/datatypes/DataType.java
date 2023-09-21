@@ -74,6 +74,17 @@ public interface DataType {
     }
 
     /**
+     * Visit {@link ByteArrayType}.
+     *
+     * @param type {@link ByteArrayType}
+     * @return Any value
+     * @throws E Any exception
+     */
+    default R visit(ByteArrayType type) throws E {
+      return visitElse(type);
+    }
+
+    /**
      * Visit unhandled type.
      *
      * @param type Data type

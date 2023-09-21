@@ -24,7 +24,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Base64;
 
 /**
  * CSV converter example build for simplicity.
@@ -178,6 +178,16 @@ class CsvColumnDeserialize implements Deserialize<String> {
       @Override
       public String visitF64(double value) {
         return Double.toString(value);
+      }
+
+      @Override
+      public String visitString(String value) {
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+      }
+
+      @Override
+      public String visitByteArray(byte[] bytes) {
+        return new String(Base64.getEncoder().encode(bytes), StandardCharsets.US_ASCII);
       }
 
       @Override

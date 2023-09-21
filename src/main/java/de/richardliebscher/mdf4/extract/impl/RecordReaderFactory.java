@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4.extract.impl;
 
+import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.LazyIoList;
@@ -43,6 +44,7 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -167,6 +169,7 @@ public final class RecordReaderFactory {
       case STRING_UTF16BE:
         return createStringRead(channelBlock, StandardCharsets.UTF_16BE);
       case BYTE_ARRAY:
+        return createByteArrayRead(channelBlock);
       case MIME_SAMPLE:
       case MIME_STREAM:
       case CANOPEN_DATE:
@@ -550,6 +553,26 @@ public final class RecordReaderFactory {
         // TODO: PERF: trimString can work on bytes for Latin-1 and UTF-8
         // TODO: PERF: Use a transient singleton byte buffer to copy string bytes to
         return visitor.visitString(trimString(input.readString(byteOffset, byteCount, charset)));
+      }
+    };
+  }
+
+  private static ValueRead createByteArrayRead(ChannelBlock channelBlock)
+      throws FormatException {
+    final var byteOffset = channelBlock.getByteOffset();
+    final var bitCount = channelBlock.getBitCount();
+    if (bitCount % 8 != 0) {
+      throw new FormatException("Bit count must be a multiple of 8 for byte array channels");
+    }
+    final var byteCount = bitCount / 8;
+
+    return new ValueRead() {
+      @Override
+      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        // TODO: PERF: Use a transient singleton byte buffer to copy bytes to
+        final var dest = new byte[byteCount];
+        input.readBytes(byteOffset, dest);
+        return visitor.visitByteArray(ByteBuffer.wrap(dest));
       }
     };
   }

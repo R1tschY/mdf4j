@@ -37,8 +37,8 @@ dependencies {
     testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.9")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
     "jmhImplementation"(project)
-    "jmhImplementation"("org.openjdk.jmh:jmh-core:1.36")
-    "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.36")
+    "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
+    "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
 
     //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }

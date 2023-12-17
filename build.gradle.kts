@@ -43,6 +43,12 @@ dependencies {
     //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }
 
+plugins.withType<JavaPlugin>().configureEach {
+    configure<JavaPluginExtension> {
+        modularity.inferModulePath.set(true)
+    }
+}
+
 tasks.withType<Javadoc>().configureEach {
     exclude("**/.*PackageGateway\\.java")
     options {

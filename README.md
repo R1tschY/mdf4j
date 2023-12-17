@@ -51,7 +51,7 @@ Available at Maven Central:
 ```groovy
 dependencies {
     // ...
-    implementation('de.richardliebscher.mdf4j:mdf4j:0.1.0')
+    implementation('de.richardliebscher.mdf4j:mdf4j:0.2.0')
 }
 ```
 
@@ -60,7 +60,7 @@ dependencies {
 <dependency>
   <groupId>de.richardliebscher.mdf4j</groupId>
   <artifactId>mdf4j</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 

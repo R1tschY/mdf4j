@@ -26,6 +26,10 @@ sourceSets.create("jmh") {
     java.setSrcDirs(listOf("src/jmh/java"))
 }
 
+sourceSets.create("cli") {
+    java.setSrcDirs(listOf("src/cli/java"))
+}
+
 repositories {
     mavenCentral()
 }
@@ -39,6 +43,12 @@ dependencies {
     "jmhImplementation"(project)
     "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
+
+    "cliImplementation"(project)
+    "cliImplementation"("org.apache.parquet:parquet-hadoop:1.13.1")
+//    "cliImplementation"("org.apache.hadoop:hadoop-client:3.3.6")
+    "cliImplementation"("org.apache.hadoop:hadoop-common:3.3.6")
+//    "cliImplementation"("org.apache.hadoop:hadoop-annotations:3.3.6")
 
     //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }

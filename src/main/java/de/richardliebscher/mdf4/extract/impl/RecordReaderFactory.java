@@ -44,6 +44,7 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -548,11 +549,21 @@ public final class RecordReaderFactory {
     final var byteCount = bitCount / 8;
 
     return new ValueRead() {
+      private transient ThreadLocal<byte[]> buffer = ThreadLocal.withInitial(
+          () -> new byte[byteCount]);
+
+      private void readObject(ObjectInputStream inputStream)
+          throws ClassNotFoundException, IOException {
+        inputStream.defaultReadObject();
+        buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
+      }
+
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
         // TODO: PERF: trimString can work on bytes for Latin-1 and UTF-8
-        // TODO: PERF: Use a transient singleton byte buffer to copy string bytes to
-        return visitor.visitString(trimString(input.readString(byteOffset, byteCount, charset)));
+        final var buf = buffer.get();
+        input.readBytes(byteOffset, buf);
+        return visitor.visitString(trimString(new String(buf, charset)));
       }
     };
   }

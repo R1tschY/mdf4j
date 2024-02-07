@@ -40,6 +40,7 @@ import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.SerializableReadInto;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
+import de.richardliebscher.mdf4.internal.Arrays;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -560,10 +561,18 @@ public final class RecordReaderFactory {
 
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        // TODO: PERF: trimString can work on bytes for Latin-1 and UTF-8
         final var buf = buffer.get();
         input.readBytes(byteOffset, buf);
-        return visitor.visitString(trimString(new String(buf, charset)));
+
+        if (charset.equals(StandardCharsets.UTF_8) || charset.equals(StandardCharsets.ISO_8859_1)) {
+          final var size = Arrays.indexOf(buf, (byte) 0);
+          if (size == -1) {
+            throw new FormatException("Missing zero termination of string value");
+          }
+          return visitor.visitString(trimString(new String(buf, 0, size, charset)));
+        } else {
+          return visitor.visitString(trimString(new String(buf, charset)));
+        }
       }
     };
   }

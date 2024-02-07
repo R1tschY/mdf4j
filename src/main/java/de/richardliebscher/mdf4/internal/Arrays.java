@@ -16,4 +16,13 @@ public final class Arrays {
   public static <T> T[] newArray(Class<T> clazz, int length) {
     return (T[]) Array.newInstance(clazz, length);
   }
+
+  public static int indexOf(byte[] arr, byte elem) {
+    for (int i = 0; i < arr.length; i++) {
+      if (arr[i] == elem) {
+        return i;
+      }
+    }
+    return -1;
+  }
 }

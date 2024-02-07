@@ -578,10 +578,18 @@ public final class RecordReaderFactory {
     final var byteCount = bitCount / 8;
 
     return new ValueRead() {
+      private transient ThreadLocal<byte[]> buffer = ThreadLocal.withInitial(
+          () -> new byte[byteCount]);
+
+      private void readObject(ObjectInputStream inputStream)
+          throws ClassNotFoundException, IOException {
+        inputStream.defaultReadObject();
+        buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
+      }
+
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        // TODO: PERF: Use a transient singleton byte buffer to copy bytes to
-        final var dest = new byte[byteCount];
+        final var dest = buffer.get();
         input.readBytes(byteOffset, dest);
         return visitor.visitByteArray(ByteBuffer.wrap(dest));
       }

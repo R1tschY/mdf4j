@@ -1,0 +1,64 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
+package de.richardliebscher.mdf4.extract.read;
+
+import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
+import de.richardliebscher.mdf4.extract.de.UnsignedLong;
+import de.richardliebscher.mdf4.extract.de.Visitor;
+import java.io.IOException;
+
+public class RationalConversion implements ValueRead {
+
+  private final double p1;
+  private final double p2;
+  private final double p3;
+  private final double p4;
+  private final double p5;
+  private final double p6;
+  private final ValueRead inner;
+
+  public RationalConversion(ChannelConversionBlock cc, ValueRead valueRead) {
+    final var vals = cc.getVals();
+    this.p1 = Double.longBitsToDouble(vals[0]);
+    this.p2 = Double.longBitsToDouble(vals[1]);
+    this.p3 = Double.longBitsToDouble(vals[2]);
+    this.p4 = Double.longBitsToDouble(vals[3]);
+    this.p5 = Double.longBitsToDouble(vals[4]);
+    this.p6 = Double.longBitsToDouble(vals[5]);
+    this.inner = valueRead;
+  }
+
+  @Override
+  public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+    return inner.read(input, new Visitor<>() {
+      @Override
+      public String expecting() {
+        return "numeric value";
+      }
+
+      @Override
+      public T visitU64(long value) throws IOException {
+        return visitF64(UnsignedLong.toDoubleValue(value));
+      }
+
+      @Override
+      public T visitI64(long value) throws IOException {
+        return visitF64(value);
+      }
+
+      @Override
+      public T visitF64(double value) throws IOException {
+        return visitor.visitF64((p1 * value * value + p2 * value + p3)
+            / (p4 * value * value + p5 * value + p6));
+      }
+
+      @Override
+      public T visitInvalid() throws IOException {
+        return visitor.visitInvalid();
+      }
+    });
+  }
+}

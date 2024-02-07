@@ -36,6 +36,7 @@ import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
 import de.richardliebscher.mdf4.extract.read.NoValueRead;
+import de.richardliebscher.mdf4.extract.read.RationalConversion;
 import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.SerializableReadInto;
@@ -98,6 +99,8 @@ public final class RecordReaderFactory {
           valueRead = new LinearConversion(cc, valueRead);
           break;
         case RATIONAL:
+          valueRead = new RationalConversion(cc, valueRead);
+          break;
         case ALGEBRAIC:
         case INTERPOLATED_VALUE_TABLE:
         case VALUE_VALUE_TABLE:

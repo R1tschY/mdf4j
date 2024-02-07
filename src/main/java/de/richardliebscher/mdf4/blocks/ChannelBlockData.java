@@ -6,7 +6,6 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import lombok.AccessLevel;
@@ -26,14 +25,20 @@ public class ChannelBlockData implements DataRootBlock, UncompressedChannelData 
   }
 
   public static ChannelBlockData parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parse(BlockType.DT, input);
+    final var blockHeader = BlockHeader.parse(ID, input);
     return new ChannelBlockData(input.pos(), blockHeader.getDataLength());
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('D', 'T');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelBlockData> {
+  public static class Type implements BlockType<ChannelBlockData> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public ChannelBlockData parse(ByteInput input) throws IOException {

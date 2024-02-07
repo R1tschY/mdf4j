@@ -65,7 +65,7 @@ public class ChannelGroup {
 
     @Override
     public ChannelGroup next() throws IOException {
-      final var dataGroup = next.resolve(ChannelGroupBlock.META, ctx.getInput()).orElse(null);
+      final var dataGroup = next.resolve(ChannelGroupBlock.TYPE, ctx.getInput()).orElse(null);
       if (dataGroup == null) {
         return null;
       }

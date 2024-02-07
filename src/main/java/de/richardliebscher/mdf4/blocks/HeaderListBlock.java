@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.blocks;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -23,7 +22,7 @@ public class HeaderListBlock implements DataRootBlock {
   ZipType zipType;
 
   public static HeaderListBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.HL, input, 1, 3);
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 1, 3);
     final var links = blockHeader.getLinks();
     final Link<DataListBlock> firstDataList = Link.of(links[0]);
 
@@ -37,10 +36,16 @@ public class HeaderListBlock implements DataRootBlock {
     return new HeaderListBlock(firstDataList, flags, zipType);
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('H', 'L');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<HeaderListBlock> {
+  public static class Type implements BlockType<HeaderListBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public HeaderListBlock parse(ByteInput input) throws IOException {

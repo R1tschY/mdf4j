@@ -10,7 +10,6 @@ import static de.richardliebscher.mdf4.blocks.ParseUtils.flagsSet;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -23,7 +22,7 @@ import lombok.Value;
  * Header/HD-Block.
  */
 @Value
-public class Header {
+public class HeaderBlock {
 
   // Time flags
   private static final byte OFFSET_VALID = 1 << 1;
@@ -63,11 +62,11 @@ public class Header {
   }
 
   public Optional<TextBasedBlock> readComment(ByteInput input) throws IOException {
-    return comment.resolve(TextBasedBlock.META, input);
+    return comment.resolve(TextBasedBlock.TYPE, input);
   }
 
-  public static Header parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.HD, input, 6, 24);
+  public static HeaderBlock parse(ByteInput input) throws IOException {
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 6, 24);
     final var startTime = ParseUtils.toInstant(input.readI64());
     final var tzOffsetMin = input.readI16();
     final var dstOffsetMin = input.readI16();
@@ -79,7 +78,7 @@ public class Header {
     final var startDistanceM = input.readF32();
 
     final var links = blockHeader.getLinks();
-    return new Header(
+    return new HeaderBlock(
         Link.of(links[0]),
         links[1],
         links[2],
@@ -96,14 +95,20 @@ public class Header {
     );
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('H', 'D');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<Header> {
+  public static class Type implements BlockType<HeaderBlock> {
 
     @Override
-    public Header parse(ByteInput input) throws IOException {
-      return Header.parse(input);
+    public BlockTypeId id() {
+      return ID;
+    }
+
+    @Override
+    public HeaderBlock parse(ByteInput input) throws IOException {
+      return HeaderBlock.parse(input);
     }
   }
 }

@@ -42,7 +42,7 @@ public class FileContext {
 
   public Optional<String> readText(Link<TextBasedBlock> link, String xmlElement)
       throws IOException {
-    final var maybeComment = link.resolve(TextBasedBlock.META, input);
+    final var maybeComment = link.resolve(TextBasedBlock.TYPE, input);
     if (maybeComment.isEmpty()) {
       return Optional.empty();
     }

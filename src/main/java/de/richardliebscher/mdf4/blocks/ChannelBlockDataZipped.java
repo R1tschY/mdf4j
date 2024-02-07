@@ -7,7 +7,6 @@ package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +20,7 @@ import lombok.Value;
 @Value
 public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
 
-  BlockType originalBlockType;
+  BlockTypeId originalBlockTypeId;
   ZipType zipType;
   long zipParameter;
   long originalDataLength;
@@ -35,10 +34,10 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
   }
 
   public static ChannelBlockDataZipped parse(ByteInput input) throws IOException {
-    BlockHeader.parseExpecting(BlockType.DZ, input, 0, 24);
+    BlockHeader.parseExpecting(ID, input, 0, 24);
     final var originalBlockType1 = input.readU8();
     final var originalBlockType2 = input.readU8();
-    final var blockId = BlockType.of(originalBlockType1, originalBlockType2);
+    final var blockId = BlockTypeId.of(originalBlockType1, originalBlockType2);
     final var zipType = ZipType.parse(input.readU8());
     input.skip(1);
     final var zipParameter = Integer.toUnsignedLong(input.readI32());
@@ -59,10 +58,16 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
     }
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('D', 'Z');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelBlockDataZipped> {
+  public static class Type implements BlockType<ChannelBlockDataZipped> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public ChannelBlockDataZipped parse(ByteInput input) throws IOException {

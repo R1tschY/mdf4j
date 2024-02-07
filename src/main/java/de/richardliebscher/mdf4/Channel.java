@@ -10,7 +10,7 @@ import static de.richardliebscher.mdf4.blocks.ChannelFlag.INVALIDATION_BIT_VALID
 
 import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.ChannelBlock;
-import de.richardliebscher.mdf4.blocks.ChannelConversion;
+import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
 import de.richardliebscher.mdf4.blocks.SyncType;
@@ -55,7 +55,7 @@ public class Channel {
    * @throws IOException Failed to read from MDF file
    */
   public String getName() throws IOException {
-    return block.getChannelName().resolve(TextBlockBlock.META, ctx.getInput())
+    return block.getChannelName().resolve(TextBlockBlock.TYPE, ctx.getInput())
         .orElseThrow(() -> new FormatException("Channel name link is required"))
         .getText();
   }
@@ -67,14 +67,15 @@ public class Channel {
    * @throws IOException Failed to read from MDF file
    */
   public Optional<String> getPhysicalUnit() throws IOException {
-    final var channelUnit = ctx.readText(block.getPhysicalUnit(), ChannelConversion.UNIT_ELEMENT);
+    final var channelUnit = ctx.readText(block.getPhysicalUnit(),
+        ChannelConversionBlock.UNIT_ELEMENT);
     if (channelUnit.isPresent()) {
       return channelUnit;
     }
 
-    final var cc = block.getConversionRule().resolve(ChannelConversion.META, ctx.getInput());
+    final var cc = block.getConversionRule().resolve(ChannelConversionBlock.TYPE, ctx.getInput());
     if (cc.isPresent()) {
-      return ctx.readText(cc.get().getUnit(), ChannelConversion.UNIT_ELEMENT);
+      return ctx.readText(cc.get().getUnit(), ChannelConversionBlock.UNIT_ELEMENT);
     }
 
     return Optional.empty();
@@ -162,7 +163,7 @@ public class Channel {
     @Override
     public Channel next() throws IOException {
       final var dataGroup = next
-          .resolve(ChannelBlock.META, ctx.getInput())
+          .resolve(ChannelBlock.TYPE, ctx.getInput())
           .orElse(null);
       if (dataGroup == null) {
         return null;

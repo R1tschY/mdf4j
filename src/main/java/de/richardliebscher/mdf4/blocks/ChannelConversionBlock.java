@@ -10,22 +10,21 @@ import static de.richardliebscher.mdf4.blocks.ChannelConversionFlag.PRECISION_VA
 
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class ChannelConversion {
+public class ChannelConversionBlock {
 
   public static final String UNIT_ELEMENT = "CCunit";
 
   Link<TextBlockBlock> name;
   Link<TextBasedBlock> unit;
   Link<TextBasedBlock> comment;
-  Link<ChannelConversion> inverse;
-  // TODO: List<Link<TextBlockBlock | ChannelConversion>> ref
+  Link<ChannelConversionBlock> inverse;
+  // TODO: List<Link<TextBlockBlock | ChannelConversionBlock>> ref
 
   ChannelConversionType type;
   Integer precision;
@@ -33,8 +32,8 @@ public class ChannelConversion {
   Range physicalRange;
   long[] vals;
 
-  public static ChannelConversion parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.CC, input, 4, 24);
+  public static ChannelConversionBlock parse(ByteInput input) throws IOException {
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 4, 24);
     final var type = ChannelConversionType.parse(input.readU8());
     final var maybePrecision = Byte.toUnsignedInt(input.readU8());
     final var flags = BitFlags.of(input.readI16(), ChannelConversionFlag.class);
@@ -55,7 +54,7 @@ public class ChannelConversion {
         : null;
 
     final var links = blockHeader.getLinks();
-    return new ChannelConversion(
+    return new ChannelConversionBlock(
         Link.of(links[0]),
         Link.of(links[1]),
         Link.of(links[2]),
@@ -63,14 +62,20 @@ public class ChannelConversion {
         type, precision, flags, physicalRange, vals);
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('C', 'C');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelConversion> {
+  public static class Type implements BlockType<ChannelConversionBlock> {
 
     @Override
-    public ChannelConversion parse(ByteInput input) throws IOException {
-      return ChannelConversion.parse(input);
+    public BlockTypeId id() {
+      return ID;
+    }
+
+    @Override
+    public ChannelConversionBlock parse(ByteInput input) throws IOException {
+      return ChannelConversionBlock.parse(input);
     }
   }
 }

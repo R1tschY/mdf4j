@@ -5,7 +5,7 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.blocks.ChannelConversion;
+import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
@@ -16,7 +16,7 @@ public class LinearConversion implements ValueRead {
   private final double p2;
   private final ValueRead inner;
 
-  public LinearConversion(ChannelConversion cc, ValueRead valueRead) {
+  public LinearConversion(ChannelConversionBlock cc, ValueRead valueRead) {
     this.p1 = Double.longBitsToDouble(cc.getVals()[0]);
     this.p2 = Double.longBitsToDouble(cc.getVals()[1]);
     this.inner = valueRead;

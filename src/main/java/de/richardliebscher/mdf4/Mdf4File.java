@@ -7,7 +7,7 @@ package de.richardliebscher.mdf4;
 
 import static de.richardliebscher.mdf4.blocks.Consts.HD_BLOCK_OFFSET;
 
-import de.richardliebscher.mdf4.blocks.Header;
+import de.richardliebscher.mdf4.blocks.HeaderBlock;
 import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
@@ -42,12 +42,12 @@ public class Mdf4File {
   public static final MdfFormatVersion TOOL_VERSION = MdfFormatVersion.of(4, 20);
 
   private final IdBlock idBlock;
-  private final Header header;
+  private final HeaderBlock headerBlock;
   private final FileContext ctx;
 
-  Mdf4File(IdBlock idBlock, Header header, ByteInput input) {
+  Mdf4File(IdBlock idBlock, HeaderBlock headerBlock, ByteInput input) {
     this.idBlock = idBlock;
-    this.header = header;
+    this.headerBlock = headerBlock;
     this.ctx = new FileContext(input, null, XMLInputFactory.newDefaultFactory());
   }
 
@@ -56,8 +56,8 @@ public class Mdf4File {
    *
    * @return HD-Block
    */
-  public Header getHeader() {
-    return header;
+  public HeaderBlock getHeader() {
+    return headerBlock;
   }
 
   /**
@@ -88,7 +88,7 @@ public class Mdf4File {
     }
 
     input.seek(HD_BLOCK_OFFSET);
-    final var hdBlock = Header.parse(input);
+    final var hdBlock = HeaderBlock.parse(input);
 
     //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
     return new Mdf4File(idBlock, hdBlock, input);

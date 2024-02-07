@@ -9,7 +9,6 @@ import de.richardliebscher.mdf4.LazyIoIterator;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import lombok.AccessLevel;
@@ -22,7 +21,7 @@ public class ChannelGroupBlock {
   Link<ChannelGroupBlock> nextChannelGroup;
   Link<ChannelBlock> firstChannel;
   Link<TextBlockBlock> acquisitionName;
-  Link<SourceInformation> acquisitionSource;
+  Link<SourceInformationBlock> acquisitionSource;
   long firstSampleReduction; // SR
   Link<TextBasedBlock> comment;
 
@@ -38,12 +37,12 @@ public class ChannelGroupBlock {
   }
 
   public static ChannelGroupBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parse(BlockType.CG, input);
+    final var blockHeader = BlockHeader.parse(ID, input);
     final var links = blockHeader.getLinks();
     final Link<ChannelGroupBlock> nextChannelGroup = Link.of(links[0]);
     final Link<ChannelBlock> firstChannel = Link.of(links[1]);
     final Link<TextBlockBlock> acquisitionName = Link.of(links[2]);
-    final Link<SourceInformation> acquisitionSource = Link.of(links[3]);
+    final Link<SourceInformationBlock> acquisitionSource = Link.of(links[3]);
     final var firstSampleReduction = links[4];
     final Link<TextBasedBlock> comment = Link.of(links[5]);
 
@@ -78,17 +77,23 @@ public class ChannelGroupBlock {
 
     @Override
     public ChannelGroupBlock next() throws IOException {
-      final var channelGroup = next.resolve(ChannelGroupBlock.META, input)
+      final var channelGroup = next.resolve(TYPE, input)
           .orElseThrow();
       next = channelGroup.getNextChannelGroup();
       return channelGroup;
     }
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('C', 'G');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelGroupBlock> {
+  public static class Type implements BlockType<ChannelGroupBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public ChannelGroupBlock parse(ByteInput input) throws IOException {

@@ -5,8 +5,8 @@
 
 package de.richardliebscher.mdf4;
 
+import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
@@ -85,7 +85,7 @@ public final class Link<T> {
    * @throws IOException Unable to read structure from file
    * @see #resolveNonCached
    */
-  public <P extends FromBytesInput<T>> Optional<T> resolve(P resolver, ByteInput input)
+  public <P extends BlockType<T>> Optional<T> resolve(P resolver, ByteInput input)
       throws IOException {
     if (link != 0) {
       var loadedLocal = loaded;
@@ -114,7 +114,7 @@ public final class Link<T> {
    * @return Block iff block is not NIL
    * @throws IOException Unable to read structure from file
    */
-  public <P extends FromBytesInput<T>> Optional<T> resolveNonCached(P resolver, ByteInput input)
+  public <P extends BlockType<T>> Optional<T> resolveNonCached(P resolver, ByteInput input)
       throws IOException {
     if (link != 0) {
       input.seek(link);

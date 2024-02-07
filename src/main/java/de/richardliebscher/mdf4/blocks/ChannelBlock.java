@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.blocks;
 import de.richardliebscher.mdf4.LazyIoIterator;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.util.Optional;
 import lombok.AccessLevel;
@@ -21,8 +20,8 @@ public class ChannelBlock {
   Link<ChannelBlock> nextChannel;
   long component; // CA,CN
   Link<TextBlockBlock> channelName;
-  Link<SourceInformation> channelSource; // SI
-  Link<ChannelConversion> conversionRule;
+  Link<SourceInformationBlock> channelSource; // SI
+  Link<ChannelConversionBlock> conversionRule;
   long signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
   Link<TextBasedBlock> physicalUnit;
   Link<TextBasedBlock> comment;
@@ -45,7 +44,7 @@ public class ChannelBlock {
   Range limitExtended;
 
   public static ChannelBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.CN, input, 8, 72);
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 8, 72);
     final var type = ChannelType.parse(input.readU8());
     final var syncType = SyncType.parse(input.readU8());
     final var dataType = ChannelDataType.parse(input.readU8());
@@ -99,17 +98,23 @@ public class ChannelBlock {
 
     @Override
     public ChannelBlock next() throws IOException {
-      final var channel = next.resolve(ChannelBlock.META, input)
+      final var channel = next.resolve(ChannelBlock.TYPE, input)
           .orElseThrow();
       next = channel.getNextChannel();
       return channel;
     }
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('C', 'N');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<ChannelBlock> {
+  public static class Type implements BlockType<ChannelBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public ChannelBlock parse(ByteInput input) throws IOException {

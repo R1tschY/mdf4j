@@ -20,7 +20,7 @@ public class BlockHeader {
     return length - 24L - links.length * 8L;
   }
 
-  public static BlockHeader parse(BlockType id, ByteInput input) throws IOException {
+  public static BlockHeader parse(BlockTypeId id, ByteInput input) throws IOException {
     final var typeId = input.readI32();
     if (id.asInt() != typeId) {
       throw newWrongBlockTypeException(id, typeId);
@@ -37,7 +37,7 @@ public class BlockHeader {
     return new BlockHeader(length, links);
   }
 
-  private static FormatException newWrongBlockTypeException(BlockType expected, int typeId) {
+  private static FormatException newWrongBlockTypeException(BlockTypeId expected, int typeId) {
     final byte hash1 = (byte) (typeId & 0xFF);
     final byte hash2 = (byte) ((typeId >> 8) & 0xFF);
     if (hash1 != '#' || hash2 != '#') {
@@ -51,7 +51,8 @@ public class BlockHeader {
         new String(new char[]{(char) first, (char) second}), first, second));
   }
 
-  public static BlockHeader parseExpecting(BlockType id, ByteInput input, int links, int miniumSize)
+  public static BlockHeader parseExpecting(BlockTypeId id, ByteInput input, int links,
+      int miniumSize)
       throws IOException {
     final var blockHeader = parse(id, input);
     if (blockHeader.links.length < links) {

@@ -7,7 +7,6 @@ package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -15,10 +14,10 @@ import lombok.NoArgsConstructor;
 public interface TextBasedBlock {
 
   static TextBasedBlock parse(ByteInput input) throws IOException {
-    final var blockId = BlockType.parse(input);
-    if (BlockType.MD.equals(blockId)) {
+    final var blockId = BlockTypeId.parse(input);
+    if (MetadataBlock.ID.equals(blockId)) {
       return MetadataBlock.parse(input);
-    } else if (BlockType.TX.equals(blockId)) {
+    } else if (TextBlockBlock.ID.equals(blockId)) {
       return TextBlockBlock.parse(input);
     } else {
       throw new FormatException("Expected MD or TX block, bot got " + blockId);
@@ -33,10 +32,15 @@ public interface TextBasedBlock {
     R visit(MetadataBlock value) throws E;
   }
 
-  Meta META = new Meta();
+  Type TYPE = new Type();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  class Meta implements FromBytesInput<TextBasedBlock> {
+  class Type implements BlockType<TextBasedBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
     public TextBasedBlock parse(ByteInput input) throws IOException {

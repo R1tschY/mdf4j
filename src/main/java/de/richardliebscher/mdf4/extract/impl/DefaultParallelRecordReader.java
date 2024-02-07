@@ -9,7 +9,6 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
-import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.blocks.ChannelBlockData;
 import de.richardliebscher.mdf4.blocks.ChannelBlockDataZipped;
 import de.richardliebscher.mdf4.blocks.ChannelDataBlock;
@@ -142,19 +141,19 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
         }
 
         final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
-            .resolveNonCached(ChannelDataBlock.META, input)
+            .resolveNonCached(ChannelDataBlock.TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
         if (dataBlock instanceof ChannelBlockData) {
           currentBlock = dataBlock.getChannel(input);
           remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
         } else if (dataBlock instanceof ChannelBlockDataZipped) {
           final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-          if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+          if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
             currentBlock = dataZipped.getChannel(input);
             remainingDataLength = dataZipped.getOriginalDataLength();
           } else {
             throw new FormatException("Unexpected data block type in zipped data: "
-                + dataZipped.getOriginalBlockType());
+                + dataZipped.getOriginalBlockTypeId());
           }
         } else {
           throw new FormatException("Unexpected data block in data list: " + dataBlock);
@@ -314,19 +313,19 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
         }
 
         final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
-            .resolveNonCached(ChannelDataBlock.META, input)
+            .resolveNonCached(ChannelDataBlock.TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
         if (dataBlock instanceof ChannelBlockData) {
           currentBlock = dataBlock.getChannel(input);
           remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
         } else if (dataBlock instanceof ChannelBlockDataZipped) {
           final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-          if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+          if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
             currentBlock = dataZipped.getChannel(input);
             remainingDataLength = dataZipped.getOriginalDataLength();
           } else {
             throw new FormatException("Unexpected data block type in zipped data: "
-                + dataZipped.getOriginalBlockType());
+                + dataZipped.getOriginalBlockTypeId());
           }
         } else {
           throw new FormatException("Unexpected data block in data list: " + dataBlock);

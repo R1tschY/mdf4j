@@ -6,7 +6,6 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.blocks.ChannelBlockData;
 import de.richardliebscher.mdf4.blocks.ChannelBlockDataZipped;
 import de.richardliebscher.mdf4.blocks.ChannelDataBlock;
@@ -56,7 +55,7 @@ public class DataListRead implements DataRead {
   private boolean ensureDataStream() throws IOException {
     if (remainingDataLength == 0) {
       if (dataBlocks == null || !dataBlocks.hasNext()) {
-        dataList = dataList.getNextDataList().resolve(DataListBlock.META, input).orElse(null);
+        dataList = dataList.getNextDataList().resolve(DataListBlock.TYPE, input).orElse(null);
         if (dataList == null) {
           return false;
         }
@@ -66,19 +65,19 @@ public class DataListRead implements DataRead {
         }
       }
 
-      final var dataBlock = dataBlocks.next().resolveNonCached(ChannelDataBlock.META, input)
+      final var dataBlock = dataBlocks.next().resolveNonCached(ChannelDataBlock.TYPE, input)
           .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
       if (dataBlock instanceof ChannelBlockData) {
         currentBlock = dataBlock.getChannel(input);
         remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
       } else if (dataBlock instanceof ChannelBlockDataZipped) {
         final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-        if (dataZipped.getOriginalBlockType().equals(BlockType.DT)) {
+        if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
           currentBlock = dataZipped.getChannel(input);
           remainingDataLength = dataZipped.getOriginalDataLength();
         } else {
           throw new FormatException("Unexpected data block type in zipped data: "
-              + dataZipped.getOriginalBlockType());
+              + dataZipped.getOriginalBlockTypeId());
         }
       } else {
         throw new FormatException("Unexpected data block in data list: " + dataBlock);

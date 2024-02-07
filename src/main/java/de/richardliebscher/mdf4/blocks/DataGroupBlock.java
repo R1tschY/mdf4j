@@ -9,7 +9,6 @@ import de.richardliebscher.mdf4.LazyIoIterator;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -30,7 +29,7 @@ public class DataGroupBlock {
   }
 
   public static DataGroupBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.DG, input, 4, 1);
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 4, 1);
     final var recordIdSize = input.readU8();
 
     final var links = blockHeader.getLinks();
@@ -56,16 +55,22 @@ public class DataGroupBlock {
 
     @Override
     public DataGroupBlock next() throws IOException {
-      final var dataGroup = next.resolve(DataGroupBlock.META, input).orElseThrow();
+      final var dataGroup = next.resolve(TYPE, input).orElseThrow();
       next = dataGroup.getNextDataGroup();
       return dataGroup;
     }
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('D', 'G');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<DataGroupBlock> {
+  public static class Type implements BlockType<DataGroupBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public DataGroupBlock parse(ByteInput input) throws IOException {

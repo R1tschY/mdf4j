@@ -65,7 +65,7 @@ public class DataGroup {
 
     @Override
     public DataGroup next() throws IOException {
-      final var dataGroup = next.resolve(DataGroupBlock.META, ctx.getInput()).orElse(null);
+      final var dataGroup = next.resolve(DataGroupBlock.TYPE, ctx.getInput()).orElse(null);
       if (dataGroup == null) {
         return null;
       }

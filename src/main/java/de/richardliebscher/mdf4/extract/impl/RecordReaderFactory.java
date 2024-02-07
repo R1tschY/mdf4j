@@ -12,7 +12,7 @@ import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.ChannelBlock;
 import de.richardliebscher.mdf4.blocks.ChannelBlockData;
-import de.richardliebscher.mdf4.blocks.ChannelConversion;
+import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
@@ -88,7 +88,7 @@ public final class RecordReaderFactory {
     }
 
     final var channelConversion = channelBlock.getConversionRule()
-        .resolve(ChannelConversion.META, input);
+        .resolve(ChannelConversionBlock.TYPE, input);
     if (channelConversion.isPresent()) {
       final var cc = channelConversion.get();
       switch (cc.getType()) {
@@ -715,7 +715,7 @@ public final class RecordReaderFactory {
       FileContext ctx, DataGroupBlock dataGroup) throws IOException {
     final var input = ctx.getInput();
 
-    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.META, input).orElse(null);
+    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.TYPE, input).orElse(null);
     if (dataRoot == null) {
       return new EmptyDataRead();
     } else if (dataRoot instanceof ChannelBlockData) {
@@ -730,7 +730,7 @@ public final class RecordReaderFactory {
             "ZIP type not implemented: " + headerList.getZipType());
       }
 
-      return headerList.getFirstDataList().resolve(DataListBlock.META, input)
+      return headerList.getFirstDataList().resolve(DataListBlock.TYPE, input)
           .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
           .orElseGet(EmptyDataRead::new);
     } else {
@@ -741,7 +741,7 @@ public final class RecordReaderFactory {
   public static Pair<long[], long[]> collectDataList(
       ByteInput input, DataGroupBlock dataGroup) throws IOException {
 
-    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.META, input).orElse(null);
+    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.TYPE, input).orElse(null);
     if (dataRoot == null) {
       return Pair.of(new long[0], new long[0]);
     } else if (dataRoot instanceof ChannelBlockData) {
@@ -756,7 +756,7 @@ public final class RecordReaderFactory {
             "ZIP type not implemented: " + headerList.getZipType());
       }
 
-      final var firstDataList = headerList.getFirstDataList().resolve(DataListBlock.META, input);
+      final var firstDataList = headerList.getFirstDataList().resolve(DataListBlock.TYPE, input);
       return firstDataList.isPresent()
           ? collectDataList(input, firstDataList.get())
           : Pair.of(new long[0], new long[0]);
@@ -772,7 +772,7 @@ public final class RecordReaderFactory {
     addOffsets(offsetsList, dataList);
 
     while (!dataList.getNextDataList().isNil()) {
-      dataList = dataList.getNextDataList().resolve(DataListBlock.META, input).orElseThrow();
+      dataList = dataList.getNextDataList().resolve(DataListBlock.TYPE, input).orElseThrow();
       dataLinks.addAll(dataList.getData());
       addOffsets(offsetsList, dataList);
     }

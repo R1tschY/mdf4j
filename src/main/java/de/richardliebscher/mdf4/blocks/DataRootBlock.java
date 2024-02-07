@@ -7,7 +7,6 @@ package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -15,24 +14,29 @@ import lombok.NoArgsConstructor;
 public interface DataRootBlock {
 
   static DataRootBlock parse(ByteInput input) throws IOException {
-    final var blockId = BlockType.parse(input);
-    if (blockId.equals(BlockType.DL)) {
+    final var blockId = BlockTypeId.parse(input);
+    if (blockId.equals(DataListBlock.ID)) {
       return DataListBlock.parse(input);
-    } else if (blockId.equals(BlockType.DZ)) {
+    } else if (blockId.equals(ChannelBlockDataZipped.ID)) {
       return ChannelBlockDataZipped.parse(input);
-    } else if (blockId.equals(BlockType.HL)) {
+    } else if (blockId.equals(HeaderListBlock.ID)) {
       return HeaderListBlock.parse(input);
-    } else if (blockId.equals(BlockType.DT)) {
+    } else if (blockId.equals(ChannelBlockData.ID)) {
       return ChannelBlockData.parse(input);
     } else {
       throw new NotImplementedFeatureException("Root data block not implemented: " + blockId);
     }
   }
 
-  Meta META = new Meta();
+  Type TYPE = new Type();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  class Meta implements FromBytesInput<DataRootBlock> {
+  class Type implements BlockType<DataRootBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      throw new UnsupportedOperationException();
+    }
 
     @Override
     public DataRootBlock parse(ByteInput input) throws IOException {

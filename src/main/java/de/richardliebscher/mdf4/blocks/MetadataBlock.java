@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.blocks;
 import static de.richardliebscher.mdf4.blocks.ParseUtils.parseText;
 
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -19,24 +18,30 @@ public class MetadataBlock implements TextBasedBlock {
 
   String xml;
 
-  public static final Meta META = new Meta();
-
-  @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<MetadataBlock> {
-
-    @Override
-    public MetadataBlock parse(ByteInput input) throws IOException {
-      return MetadataBlock.parse(input);
-    }
-  }
-
   public static MetadataBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parse(BlockType.MD, input);
+    final var blockHeader = BlockHeader.parse(ID, input);
     return new MetadataBlock(parseText(input, blockHeader.getDataLength()));
   }
 
   @Override
   public <R, E extends Throwable> R accept(Visitor<R, E> visitor) throws E {
     return visitor.visit(this);
+  }
+
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('M', 'D');
+
+  @NoArgsConstructor(access = AccessLevel.PRIVATE)
+  public static class Type implements BlockType<MetadataBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
+
+    @Override
+    public MetadataBlock parse(ByteInput input) throws IOException {
+      return MetadataBlock.parse(input);
+    }
   }
 }

@@ -10,7 +10,6 @@ import static de.richardliebscher.mdf4.internal.Arrays.newArray;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import de.richardliebscher.mdf4.io.FromBytesInput;
 import java.io.IOException;
 import java.util.List;
 import lombok.AccessLevel;
@@ -29,7 +28,7 @@ public class DataListBlock implements DataRootBlock {
   BitFlags<DataListFlag> flags;
 
   public static DataListBlock parse(ByteInput input) throws IOException {
-    final var blockHeader = BlockHeader.parseExpecting(BlockType.DL, input, 1, 8);
+    final var blockHeader = BlockHeader.parseExpecting(ID, input, 1, 8);
     final var links = blockHeader.getLinks();
     final Link<DataListBlock> nextDataList = Link.of(links[0]);
     final var data = getDataLinks(links);
@@ -83,10 +82,16 @@ public class DataListBlock implements DataRootBlock {
     return List.of(data);
   }
 
-  public static final Meta META = new Meta();
+  public static final Type TYPE = new Type();
+  public static final BlockTypeId ID = BlockTypeId.of('D', 'L');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Meta implements FromBytesInput<DataListBlock> {
+  public static class Type implements BlockType<DataListBlock> {
+
+    @Override
+    public BlockTypeId id() {
+      return ID;
+    }
 
     @Override
     public DataListBlock parse(ByteInput input) throws IOException {

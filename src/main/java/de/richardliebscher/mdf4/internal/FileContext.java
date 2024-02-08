@@ -6,10 +6,10 @@
 package de.richardliebscher.mdf4.internal;
 
 import de.richardliebscher.mdf4.Link;
+import de.richardliebscher.mdf4.blocks.Metadata;
+import de.richardliebscher.mdf4.blocks.Metadata.Visitor;
 import de.richardliebscher.mdf4.blocks.MetadataBlock;
-import de.richardliebscher.mdf4.blocks.TextBasedBlock;
-import de.richardliebscher.mdf4.blocks.TextBasedBlock.Visitor;
-import de.richardliebscher.mdf4.blocks.TextBlockBlock;
+import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.cache.Cache;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -40,15 +40,15 @@ public class FileContext {
     }
   }
 
-  public Optional<String> readText(Link<TextBasedBlock> link, String xmlElement)
+  public Optional<String> readText(Link<Metadata> link, String xmlElement)
       throws IOException {
-    final var maybeComment = link.resolve(TextBasedBlock.TYPE, input);
+    final var maybeComment = link.resolve(Metadata.TYPE, input);
     if (maybeComment.isEmpty()) {
       return Optional.empty();
     }
     return maybeComment.get().accept(new Visitor<Optional<String>, IOException>() {
       @Override
-      public Optional<String> visit(TextBlockBlock value) {
+      public Optional<String> visit(TextBlock value) {
         return Optional.of(value.getText());
       }
 

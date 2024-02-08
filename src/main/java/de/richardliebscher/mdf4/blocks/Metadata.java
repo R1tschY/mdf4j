@@ -11,14 +11,14 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-public interface TextBasedBlock {
+public interface Metadata {
 
-  static TextBasedBlock parse(ByteInput input) throws IOException {
+  static Metadata parse(ByteInput input) throws IOException {
     final var blockId = BlockTypeId.parse(input);
     if (MetadataBlock.ID.equals(blockId)) {
       return MetadataBlock.parse(input);
-    } else if (TextBlockBlock.ID.equals(blockId)) {
-      return TextBlockBlock.parse(input);
+    } else if (TextBlock.ID.equals(blockId)) {
+      return TextBlock.parse(input);
     } else {
       throw new FormatException("Expected MD or TX block, bot got " + blockId);
     }
@@ -27,7 +27,7 @@ public interface TextBasedBlock {
   <R, E extends Throwable> R accept(Visitor<R, E> visitor) throws E;
 
   interface Visitor<R, E extends Throwable> {
-    R visit(TextBlockBlock value) throws E;
+    R visit(TextBlock value) throws E;
 
     R visit(MetadataBlock value) throws E;
   }
@@ -35,7 +35,7 @@ public interface TextBasedBlock {
   Type TYPE = new Type();
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  class Type implements BlockType<TextBasedBlock> {
+  class Type implements BlockType<Metadata> {
 
     @Override
     public BlockTypeId id() {
@@ -43,8 +43,8 @@ public interface TextBasedBlock {
     }
 
     @Override
-    public TextBasedBlock parse(ByteInput input) throws IOException {
-      return TextBasedBlock.parse(input);
+    public Metadata parse(ByteInput input) throws IOException {
+      return Metadata.parse(input);
     }
   }
 }

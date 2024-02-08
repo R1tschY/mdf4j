@@ -14,7 +14,7 @@ import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
 import de.richardliebscher.mdf4.blocks.SyncType;
-import de.richardliebscher.mdf4.blocks.TextBlockBlock;
+import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.datatypes.ByteArrayType;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
@@ -55,7 +55,7 @@ public class Channel {
    * @throws IOException Failed to read from MDF file
    */
   public String getName() throws IOException {
-    return block.getChannelName().resolve(TextBlockBlock.TYPE, ctx.getInput())
+    return block.getChannelName().resolve(TextBlock.TYPE, ctx.getInput())
         .orElseThrow(() -> new FormatException("Channel name link is required"))
         .getText();
   }

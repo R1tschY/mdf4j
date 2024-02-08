@@ -19,12 +19,12 @@ public class ChannelBlock {
 
   Link<ChannelBlock> nextChannel;
   long component; // CA,CN
-  Link<TextBlockBlock> channelName;
+  Link<TextBlock> channelName;
   Link<SourceInformationBlock> channelSource; // SI
   Link<ChannelConversionBlock> conversionRule;
   long signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
-  Link<TextBasedBlock> physicalUnit;
-  Link<TextBasedBlock> comment;
+  Link<Metadata> physicalUnit;
+  Link<Metadata> comment;
   // 4.1.0
   // long atReference; // AT
   // long defaultXDg;long defaultXCg;long defaultXCn; // DG+CG,CN

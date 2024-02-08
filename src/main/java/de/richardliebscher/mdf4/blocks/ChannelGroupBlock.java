@@ -20,10 +20,10 @@ public class ChannelGroupBlock {
 
   Link<ChannelGroupBlock> nextChannelGroup;
   Link<ChannelBlock> firstChannel;
-  Link<TextBlockBlock> acquisitionName;
+  Link<TextBlock> acquisitionName;
   Link<SourceInformationBlock> acquisitionSource;
   long firstSampleReduction; // SR
-  Link<TextBasedBlock> comment;
+  Link<Metadata> comment;
 
   long recordId;
   long cycleCount;
@@ -41,10 +41,10 @@ public class ChannelGroupBlock {
     final var links = blockHeader.getLinks();
     final Link<ChannelGroupBlock> nextChannelGroup = Link.of(links[0]);
     final Link<ChannelBlock> firstChannel = Link.of(links[1]);
-    final Link<TextBlockBlock> acquisitionName = Link.of(links[2]);
+    final Link<TextBlock> acquisitionName = Link.of(links[2]);
     final Link<SourceInformationBlock> acquisitionSource = Link.of(links[3]);
     final var firstSampleReduction = links[4];
-    final Link<TextBasedBlock> comment = Link.of(links[5]);
+    final Link<Metadata> comment = Link.of(links[5]);
 
     final var recordId = input.readI64();
     final var cycleCount = input.readI64();

@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class MetadataBlock implements TextBasedBlock {
+public class MetadataBlock implements Metadata {
 
   String xml;
 

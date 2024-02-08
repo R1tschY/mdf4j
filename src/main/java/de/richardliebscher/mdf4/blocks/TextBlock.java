@@ -14,13 +14,13 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class TextBlockBlock implements TextBasedBlock {
+public class TextBlock implements Metadata {
 
   String text;
 
-  public static TextBlockBlock parse(ByteInput input) throws IOException {
+  public static TextBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(ID, input);
-    return new TextBlockBlock(parseText(input, blockHeader.getDataLength()));
+    return new TextBlock(parseText(input, blockHeader.getDataLength()));
   }
 
   @Override
@@ -32,7 +32,7 @@ public class TextBlockBlock implements TextBasedBlock {
   public static final BlockTypeId ID = BlockTypeId.of('T', 'X');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Type implements BlockType<TextBlockBlock> {
+  public static class Type implements BlockType<TextBlock> {
 
     @Override
     public BlockTypeId id() {
@@ -40,8 +40,8 @@ public class TextBlockBlock implements TextBasedBlock {
     }
 
     @Override
-    public TextBlockBlock parse(ByteInput input) throws IOException {
-      return TextBlockBlock.parse(input);
+    public TextBlock parse(ByteInput input) throws IOException {
+      return TextBlock.parse(input);
     }
   }
 }

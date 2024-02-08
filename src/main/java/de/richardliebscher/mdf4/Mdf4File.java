@@ -177,7 +177,8 @@ public class Mdf4File {
    * @param <R>    Deserialized user-defined record type
    * @return Reader for deserialized records
    */
-  public <B, R> RecordReader<B, R> attachRecordReader(DetachedRecordReader<B, R> reader) {
+  public <B, R> RecordReader<B, R> attachRecordReader(DetachedRecordReader<B, R> reader)
+      throws IOException {
     return reader.attach(ctx);
   }
 }

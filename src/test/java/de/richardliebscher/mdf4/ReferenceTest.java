@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
+import static de.richardliebscher.mdf4.utils.Exceptions.wrapIOException;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -141,7 +142,7 @@ public class ReferenceTest {
     final var records = mdf4File.splitRecordReaders(42, factory)
         .stream()
         .map(rr -> (DetachedRecordReader<?, String>) JavaSerde.de(JavaSerde.ser(rr)))
-        .map(mdf4File::attachRecordReader)
+        .map(wrapIOException(mdf4File::attachRecordReader))
         .flatMap(recordReader -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(
             recordReader.iterator(), Spliterator.SIZED), false))
         .map(Result::unwrap)

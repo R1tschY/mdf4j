@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.extract;
 
 import de.richardliebscher.mdf4.internal.FileContext;
+import java.io.IOException;
 import java.io.Serializable;
 
 /**
@@ -19,5 +20,5 @@ public interface DetachedRecordReader<B, R> extends Serializable {
    * NOT INTENDED FOR PUBLIC USE.
    */
   @SuppressWarnings("ClassEscapesDefinedScope")
-  RecordReader<B, R> attach(FileContext ctx);
+  RecordReader<B, R> attach(FileContext ctx) throws IOException;
 }

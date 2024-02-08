@@ -21,7 +21,7 @@ public interface ParallelRecordReader<B, R> {
    *
    * @return Splittable stream
    */
-  Stream<Result<R, IOException>> stream();
+  Stream<Result<R, IOException>> stream() throws IOException;
 
   List<DetachedRecordReader<B, R>> splitIntoDetached(int parts);
 }

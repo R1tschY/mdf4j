@@ -6,8 +6,9 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.io.ByteInput;
+import java.io.IOException;
 import java.io.Serializable;
 
 public interface ReadIntoFactory<T> extends Serializable {
-  ReadInto<T> build(ByteInput input);
+  ReadInto<T> build(ByteInput input) throws IOException;
 }

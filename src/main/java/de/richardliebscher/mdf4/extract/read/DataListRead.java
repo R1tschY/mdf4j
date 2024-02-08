@@ -6,10 +6,10 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.blocks.ChannelBlockData;
-import de.richardliebscher.mdf4.blocks.ChannelBlockDataZipped;
-import de.richardliebscher.mdf4.blocks.ChannelDataBlock;
+import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
+import de.richardliebscher.mdf4.blocks.DataStorage;
+import de.richardliebscher.mdf4.blocks.DataZippedBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -21,13 +21,13 @@ import java.util.Iterator;
 public class DataListRead implements DataRead {
 
   private final ByteInput input;
-  private DataListBlock dataList;
+  private DataListBlock<DataBlock> dataList;
   private long remainingDataLength;
   private ReadableByteChannel currentBlock;
   private boolean closed = false;
-  private Iterator<Link<ChannelDataBlock>> dataBlocks;
+  private Iterator<Link<DataStorage<DataBlock>>> dataBlocks;
 
-  public DataListRead(ByteInput input, DataListBlock firstDataList) {
+  public DataListRead(ByteInput input, DataListBlock<DataBlock> firstDataList) {
     this.input = input;
     this.dataList = firstDataList;
     this.dataBlocks = firstDataList.getData().iterator();
@@ -55,7 +55,7 @@ public class DataListRead implements DataRead {
   private boolean ensureDataStream() throws IOException {
     if (remainingDataLength == 0) {
       if (dataBlocks == null || !dataBlocks.hasNext()) {
-        dataList = dataList.getNextDataList().resolve(DataListBlock.TYPE, input).orElse(null);
+        dataList = dataList.getNextDataList().resolve(DataListBlock.DT_TYPE, input).orElse(null);
         if (dataList == null) {
           return false;
         }
@@ -65,14 +65,14 @@ public class DataListRead implements DataRead {
         }
       }
 
-      final var dataBlock = dataBlocks.next().resolveNonCached(ChannelDataBlock.TYPE, input)
+      final var dataBlock = dataBlocks.next().resolveNonCached(DataBlock.STORAGE_TYPE, input)
           .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-      if (dataBlock instanceof ChannelBlockData) {
+      if (dataBlock instanceof DataBlock) {
         currentBlock = dataBlock.getChannel(input);
-        remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
-      } else if (dataBlock instanceof ChannelBlockDataZipped) {
-        final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-        if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
+        remainingDataLength = ((DataBlock) dataBlock).getDataLength();
+      } else if (dataBlock instanceof DataZippedBlock) {
+        final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
+        if (dataZipped.getOriginalBlockTypeId().equals(DataBlock.ID)) {
           currentBlock = dataZipped.getChannel(input);
           remainingDataLength = dataZipped.getOriginalDataLength();
         } else {

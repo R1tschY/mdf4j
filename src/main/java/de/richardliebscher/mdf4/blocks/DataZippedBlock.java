@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
+public class DataZippedBlock<T extends Data<T>> implements DataContainer<T>, DataStorage<T> {
 
   BlockTypeId originalBlockTypeId;
   ZipType zipType;
@@ -33,7 +33,8 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
     return Channels.newChannel(createUncompressedStream(input.getStream()));
   }
 
-  public static ChannelBlockDataZipped parse(ByteInput input) throws IOException {
+  public static <T extends Data<T>> DataZippedBlock<T> parse(ByteInput input)
+      throws IOException {
     BlockHeader.parseExpecting(ID, input, 0, 24);
     final var originalBlockType1 = input.readU8();
     final var originalBlockType2 = input.readU8();
@@ -43,7 +44,7 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
     final var zipParameter = Integer.toUnsignedLong(input.readI32());
     final var originalDataLength = input.readI64();
     final var dataLength = Math.toIntExact(input.readI64());
-    return new ChannelBlockDataZipped(blockId, zipType, zipParameter, originalDataLength,
+    return new DataZippedBlock<>(blockId, zipType, zipParameter, originalDataLength,
         input.pos(), dataLength);
   }
 
@@ -58,11 +59,13 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
     }
   }
 
-  public static final Type TYPE = new Type();
+  public static final Type<DataBlock> DT_TYPE = new Type<>();
+  public static final Type<SignalDataBlock> SD_TYPE = new Type<>();
   public static final BlockTypeId ID = BlockTypeId.of('D', 'Z');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Type implements BlockType<ChannelBlockDataZipped> {
+  public static class Type<T extends Data<T>> implements
+      DataContainerType<T, DataZippedBlock<T>> {
 
     @Override
     public BlockTypeId id() {
@@ -70,8 +73,8 @@ public class ChannelBlockDataZipped implements DataRootBlock, ChannelDataBlock {
     }
 
     @Override
-    public ChannelBlockDataZipped parse(ByteInput input) throws IOException {
-      return ChannelBlockDataZipped.parse(input);
+    public DataZippedBlock<T> parse(ByteInput input) throws IOException {
+      return DataZippedBlock.parse(input);
     }
   }
 }

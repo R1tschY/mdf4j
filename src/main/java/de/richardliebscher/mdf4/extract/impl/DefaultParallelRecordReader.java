@@ -9,10 +9,10 @@ import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
-import de.richardliebscher.mdf4.blocks.ChannelBlockData;
-import de.richardliebscher.mdf4.blocks.ChannelBlockDataZipped;
-import de.richardliebscher.mdf4.blocks.ChannelDataBlock;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.DataBlock;
+import de.richardliebscher.mdf4.blocks.DataStorage;
+import de.richardliebscher.mdf4.blocks.DataZippedBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
@@ -28,6 +28,7 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -51,11 +52,13 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
   private final ChannelGroupBlock channelGroup;
 
   @Override
-  public Stream<Result<R, IOException>> stream() {
+  public Stream<Result<R, IOException>> stream() throws IOException {
     final var input = ctx.getInput();
-    final var channelReaders = this.channelReaderFactories.stream()
-        .map(factory -> factory.build(input))
-        .collect(Collectors.toList());
+    final var channelReaders = new ArrayList<ReadInto<B>>();
+    for (ReadIntoFactory<B> channelReaderFactory : this.channelReaderFactories) {
+      ReadInto<B> build = channelReaderFactory.build(input);
+      channelReaders.add(build);
+    }
 
     return StreamSupport.stream(new RecordSpliterator<>(
         channelReaders, factory,
@@ -144,21 +147,16 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
           return false;
         }
 
-        final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
-            .resolveNonCached(ChannelDataBlock.TYPE, input)
+        final var dataBlock = Link.<DataStorage<DataBlock>>of(dataList[index])
+            .resolveNonCached(DataBlock.STORAGE_TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof ChannelBlockData) {
+        if (dataBlock instanceof DataBlock) {
           currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
-        } else if (dataBlock instanceof ChannelBlockDataZipped) {
-          final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-          if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
-            currentBlock = dataZipped.getChannel(input);
-            remainingDataLength = dataZipped.getOriginalDataLength();
-          } else {
-            throw new FormatException("Unexpected data block type in zipped data: "
-                + dataZipped.getOriginalBlockTypeId());
-          }
+          remainingDataLength = ((DataBlock) dataBlock).getDataLength();
+        } else if (dataBlock instanceof DataZippedBlock) {
+          final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
+          currentBlock = dataZipped.getChannel(input);
+          remainingDataLength = dataZipped.getOriginalDataLength();
         } else {
           throw new FormatException("Unexpected data block in data list: " + dataBlock);
         }
@@ -316,15 +314,15 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
           return false;
         }
 
-        final var dataBlock = Link.<ChannelDataBlock>of(dataList[index])
-            .resolveNonCached(ChannelDataBlock.TYPE, input)
+        final var dataBlock = Link.<DataStorage<DataBlock>>of(dataList[index])
+            .resolveNonCached(DataBlock.STORAGE_TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof ChannelBlockData) {
+        if (dataBlock instanceof DataBlock) {
           currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((ChannelBlockData) dataBlock).getDataLength();
-        } else if (dataBlock instanceof ChannelBlockDataZipped) {
-          final var dataZipped = (ChannelBlockDataZipped) dataBlock;
-          if (dataZipped.getOriginalBlockTypeId().equals(ChannelBlockData.ID)) {
+          remainingDataLength = ((DataBlock) dataBlock).getDataLength();
+        } else if (dataBlock instanceof DataZippedBlock) {
+          final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
+          if (dataZipped.getOriginalBlockTypeId().equals(DataBlock.ID)) {
             currentBlock = dataZipped.getChannel(input);
             remainingDataLength = dataZipped.getOriginalDataLength();
           } else {
@@ -369,10 +367,12 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     private final int recordSize;
 
     @Override
-    public RecordReader<B, R> attach(FileContext ctx) {
-      final var channelReaders = channelReaderFactories.stream()
-          .map(factory -> factory.build(ctx.getInput()))
-          .collect(Collectors.toList());
+    public RecordReader<B, R> attach(FileContext ctx) throws IOException {
+      final var channelReaders = new ArrayList<ReadInto<B>>();
+      for (ReadIntoFactory<B> channelReaderFactory : channelReaderFactories) {
+        channelReaders.add(channelReaderFactory.build(ctx.getInput()));
+      }
+
       return new MyRecordReader<>(
           ctx.getInput(),
           channelReaders,

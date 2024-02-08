@@ -14,17 +14,17 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class HeaderListBlock implements DataRootBlock {
+public class HeaderListBlock<T extends Data<T>> implements DataContainer<T> {
 
-  Link<DataListBlock> firstDataList;
+  Link<DataListBlock<T>> firstDataList;
 
   BitFlags<HeaderListFlag> flags;
   ZipType zipType;
 
-  public static HeaderListBlock parse(ByteInput input) throws IOException {
+  public static <T extends Data<T>> HeaderListBlock<T> parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(ID, input, 1, 3);
     final var links = blockHeader.getLinks();
-    final Link<DataListBlock> firstDataList = Link.of(links[0]);
+    final Link<DataListBlock<T>> firstDataList = Link.of(links[0]);
 
     final var flags = BitFlags.of(input.readI16(), HeaderListFlag.class);
     if (flags.hasUnknown()) {
@@ -33,14 +33,16 @@ public class HeaderListBlock implements DataRootBlock {
     }
     final var zipType = ZipType.parse(input.readU8());
 
-    return new HeaderListBlock(firstDataList, flags, zipType);
+    return new HeaderListBlock<>(firstDataList, flags, zipType);
   }
 
-  public static final Type TYPE = new Type();
+  public static final Type<DataBlock> DT_TYPE = new Type<>();
+  public static final Type<SignalDataBlock> SD_TYPE = new Type<>();
   public static final BlockTypeId ID = BlockTypeId.of('H', 'L');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Type implements BlockType<HeaderListBlock> {
+  public static class Type<T extends Data<T>> implements
+      DataContainerType<T, HeaderListBlock<T>> {
 
     @Override
     public BlockTypeId id() {
@@ -48,7 +50,7 @@ public class HeaderListBlock implements DataRootBlock {
     }
 
     @Override
-    public HeaderListBlock parse(ByteInput input) throws IOException {
+    public HeaderListBlock<T> parse(ByteInput input) throws IOException {
       return HeaderListBlock.parse(input);
     }
   }

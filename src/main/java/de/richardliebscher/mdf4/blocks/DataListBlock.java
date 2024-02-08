@@ -18,20 +18,20 @@ import lombok.ToString;
 import lombok.Value;
 
 @Value
-public class DataListBlock implements DataRootBlock {
+public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
 
-  Link<DataListBlock> nextDataList;
+  Link<DataListBlock<T>> nextDataList;
   @ToString.Exclude
-  List<Link<ChannelDataBlock>> data; // DT,SD,RD,DZ
+  List<Link<DataStorage<T>>> data; // DT,SD,RD,DZ
   LengthOrOffsets offsetInfo;
 
   BitFlags<DataListFlag> flags;
 
-  public static DataListBlock parse(ByteInput input) throws IOException {
+  public static <T extends Data<T>> DataListBlock<T> parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(ID, input, 1, 8);
     final var links = blockHeader.getLinks();
-    final Link<DataListBlock> nextDataList = Link.of(links[0]);
-    final var data = getDataLinks(links);
+    final Link<DataListBlock<T>> nextDataList = Link.of(links[0]);
+    final List<Link<DataStorage<T>>> data = getDataLinks(links);
 
     final var flags = BitFlags.of(input.readU8(), DataListFlag.class);
     input.skip(3);
@@ -70,23 +70,24 @@ public class DataListBlock implements DataRootBlock {
     //  }
     //}
 
-    return new DataListBlock(nextDataList, data, offsetInfo, flags);
+    return new DataListBlock<>(nextDataList, data, offsetInfo, flags);
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Link<ChannelDataBlock>> getDataLinks(long[] links) {
-    final var data = (Link<ChannelDataBlock>[]) newArray(Link.class, links.length - 1);
+  private static <T extends Data<T>> List<Link<DataStorage<T>>> getDataLinks(long[] links) {
+    final var data = (Link<DataStorage<T>>[]) newArray(Link.class, links.length - 1);
     for (int i = 1; i < links.length; i++) {
       data[i - 1] = Link.of(links[i]);
     }
     return List.of(data);
   }
 
-  public static final Type TYPE = new Type();
+  public static final Type<DataBlock> DT_TYPE = new Type<>();
+  public static final Type<SignalDataBlock> SD_TYPE = new Type<>();
   public static final BlockTypeId ID = BlockTypeId.of('D', 'L');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Type implements BlockType<DataListBlock> {
+  public static class Type<T extends Data<T>> implements DataContainerType<T, DataListBlock<T>> {
 
     @Override
     public BlockTypeId id() {
@@ -94,7 +95,7 @@ public class DataListBlock implements DataRootBlock {
     }
 
     @Override
-    public DataListBlock parse(ByteInput input) throws IOException {
+    public DataListBlock<T> parse(ByteInput input) throws IOException {
       return DataListBlock.parse(input);
     }
   }

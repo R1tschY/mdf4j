@@ -11,13 +11,12 @@ import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.ChannelBlock;
-import de.richardliebscher.mdf4.blocks.ChannelBlockData;
 import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
-import de.richardliebscher.mdf4.blocks.DataRootBlock;
 import de.richardliebscher.mdf4.blocks.HeaderListBlock;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -77,11 +76,13 @@ public final class RecordReaderFactory {
       case SYNCHRONIZATION_CHANNEL:
         rawValue = createFixedLengthDataReader(channelBlock);
         break;
+      case VARIABLE_LENGTH_DATA_CHANNEL:
+        rawValue = createVariableLengthDataReader(channelBlock);
+        break;
       case VIRTUAL_DATA_CHANNEL:
       case VIRTUAL_MASTER_CHANNEL:
         rawValue = createVirtualDataReader(channelBlock);
         break;
-      case VARIABLE_LENGTH_DATA_CHANNEL:
       case MAXIMUM_LENGTH_CHANNEL:
       default:
         throw new NotImplementedFeatureException(
@@ -612,7 +613,60 @@ public final class RecordReaderFactory {
     return data.substring(0, size);
   }
 
-  private static ValueRead createVirtualDataReader(ChannelBlock channelBlock)
+  private static ValueReadFactory createVariableLengthDataReader(ChannelBlock channelBlock)
+      throws IOException {
+    switch (channelBlock.getDataType()) {
+      case STRING_LATIN1:
+        return createStringRead(channelBlock, StandardCharsets.ISO_8859_1);
+      case STRING_UTF8:
+        return createStringRead(channelBlock, StandardCharsets.UTF_8);
+      case STRING_UTF16LE:
+        return createStringRead(channelBlock, StandardCharsets.UTF_16LE);
+      case STRING_UTF16BE:
+        return createStringRead(channelBlock, StandardCharsets.UTF_16BE);
+      case BYTE_ARRAY:
+        return createByteArrayRead(channelBlock);
+      default:
+        throw new NotImplementedFeatureException(
+            "Reading data type " + channelBlock.getDataType()
+                + " with variable length not implemented");
+    }
+  }
+
+  private static ValueReadFactory createVarcharRead(ChannelBlock channelBlock, Charset charset)
+      throws FormatException {
+    final var byteOffset = channelBlock.getByteOffset();
+    final var bitCount = channelBlock.getBitCount();
+    if (bitCount % 8 != 0) {
+      throw new FormatException("Bit count must be a multiple of 8 for string channels");
+    }
+    final var byteCount = bitCount / 8;
+
+    return input -> {
+      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
+      final var sdInput = input.dup();
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          final var buf = buffer.get();
+          input.readBytes(byteOffset, buf);
+
+          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
+              StandardCharsets.ISO_8859_1)) {
+            final var size = Arrays.indexOf(buf, (byte) 0);
+            if (size == -1) {
+              throw new FormatException("Missing zero termination of string value");
+            }
+            return visitor.visitString(trimString(new String(buf, 0, size, charset)));
+          } else {
+            return visitor.visitString(trimString(new String(buf, charset)));
+          }
+        }
+      };
+    };
+  }
+
+  private static ValueReadFactory createVirtualDataReader(ChannelBlock channelBlock)
       throws FormatException {
     if (channelBlock.getBitCount() != 0) {
       throw new FormatException("Bit count of virtual master channel must be zero, but got "
@@ -714,22 +768,22 @@ public final class RecordReaderFactory {
       FileContext ctx, DataGroupBlock dataGroup) throws IOException {
     final var input = ctx.getInput();
 
-    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.TYPE, input).orElse(null);
+    final var dataRoot = dataGroup.getData().resolve(DataBlock.CONTAINER_TYPE, input).orElse(null);
     if (dataRoot == null) {
       return new EmptyDataRead();
-    } else if (dataRoot instanceof ChannelBlockData) {
-      return new DataBlockRead(input, (ChannelBlockData) dataRoot);
+    } else if (dataRoot instanceof DataBlock) {
+      return new DataBlockRead(input, (DataBlock) dataRoot);
     } else if (dataRoot instanceof DataListBlock) {
-      return new DataListRead(input, (DataListBlock) dataRoot);
+      return new DataListRead(input, (DataListBlock<DataBlock>) dataRoot);
     } else if (dataRoot instanceof HeaderListBlock) {
-      final var headerList = (HeaderListBlock) dataRoot;
+      final var headerList = (HeaderListBlock<DataBlock>) dataRoot;
 
       if (headerList.getZipType() != ZipType.DEFLATE) {
         throw new NotImplementedFeatureException(
             "ZIP type not implemented: " + headerList.getZipType());
       }
 
-      return headerList.getFirstDataList().resolve(DataListBlock.TYPE, input)
+      return headerList.getFirstDataList().resolve(DataListBlock.DT_TYPE, input)
           .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
           .orElseGet(EmptyDataRead::new);
     } else {
@@ -740,22 +794,22 @@ public final class RecordReaderFactory {
   public static Pair<long[], long[]> collectDataList(
       ByteInput input, DataGroupBlock dataGroup) throws IOException {
 
-    final var dataRoot = dataGroup.getData().resolve(DataRootBlock.TYPE, input).orElse(null);
+    final var dataRoot = dataGroup.getData().resolve(DataBlock.CONTAINER_TYPE, input).orElse(null);
     if (dataRoot == null) {
       return Pair.of(new long[0], new long[0]);
-    } else if (dataRoot instanceof ChannelBlockData) {
+    } else if (dataRoot instanceof DataBlock) {
       return Pair.of(new long[]{dataGroup.getData().asLong()}, new long[]{0});
     } else if (dataRoot instanceof DataListBlock) {
-      return collectDataList(input, (DataListBlock) dataRoot);
+      return collectDataList(input, (DataListBlock<DataBlock>) dataRoot);
     } else if (dataRoot instanceof HeaderListBlock) {
-      final var headerList = (HeaderListBlock) dataRoot;
+      final var headerList = (HeaderListBlock<DataBlock>) dataRoot;
 
       if (headerList.getZipType() != ZipType.DEFLATE) {
         throw new NotImplementedFeatureException(
             "ZIP type not implemented: " + headerList.getZipType());
       }
 
-      final var firstDataList = headerList.getFirstDataList().resolve(DataListBlock.TYPE, input);
+      final var firstDataList = headerList.getFirstDataList().resolve(DataListBlock.DT_TYPE, input);
       return firstDataList.isPresent()
           ? collectDataList(input, firstDataList.get())
           : Pair.of(new long[0], new long[0]);
@@ -765,13 +819,13 @@ public final class RecordReaderFactory {
   }
 
   private static Pair<long[], long[]> collectDataList(
-      ByteInput input, DataListBlock dataList) throws IOException {
+      ByteInput input, DataListBlock<DataBlock> dataList) throws IOException {
     final var dataLinks = new ArrayList<>(dataList.getData());
     final var offsetsList = new ArrayList<Long>();
     addOffsets(offsetsList, dataList);
 
     while (!dataList.getNextDataList().isNil()) {
-      dataList = dataList.getNextDataList().resolve(DataListBlock.TYPE, input).orElseThrow();
+      dataList = dataList.getNextDataList().resolve(DataListBlock.DT_TYPE, input).orElseThrow();
       dataLinks.addAll(dataList.getData());
       addOffsets(offsetsList, dataList);
     }

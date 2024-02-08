@@ -6,12 +6,13 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.io.ByteInput;
+import java.io.IOException;
 import java.io.Serializable;
 
 @FunctionalInterface
 public interface ValueReadFactory extends Serializable {
 
-  ValueRead build(ByteInput input);
+  ValueRead build(ByteInput input) throws IOException;
 
   static ValueReadFactory of(ValueRead valueRead) {
     return input -> valueRead;

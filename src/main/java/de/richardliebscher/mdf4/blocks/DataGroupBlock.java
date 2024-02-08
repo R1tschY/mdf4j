@@ -19,7 +19,7 @@ public class DataGroupBlock {
 
   Link<DataGroupBlock> nextDataGroup; // DG
   Link<ChannelGroupBlock> firstChannelGroup; // CG
-  Link<DataRootBlock> data; // DT,DV,DZ,DL,LD,HL
+  Link<DataContainer<DataBlock>> data; // DT,DV,DZ,DL,LD,HL
   Link<TextBasedBlock> comment; // TX,MD
 
   int recordIdSize;

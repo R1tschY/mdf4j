@@ -80,12 +80,11 @@ public final class Link<T> {
    *
    * @param resolver Parser for block type
    * @param input    Input file
-   * @param <P>      Parser type for block type
    * @return Block iff block is not NIL
    * @throws IOException Unable to read structure from file
    * @see #resolveNonCached
    */
-  public <P extends BlockType<T>> Optional<T> resolve(P resolver, ByteInput input)
+  public Optional<T> resolve(BlockType<T> resolver, ByteInput input)
       throws IOException {
     if (link != 0) {
       var loadedLocal = loaded;
@@ -110,11 +109,10 @@ public final class Link<T> {
    *
    * @param resolver Parser for block type
    * @param input    Input file
-   * @param <P>      Parser type for block type
    * @return Block iff block is not NIL
    * @throws IOException Unable to read structure from file
    */
-  public <P extends BlockType<T>> Optional<T> resolveNonCached(P resolver, ByteInput input)
+  public Optional<T> resolveNonCached(BlockType<T> resolver, ByteInput input)
       throws IOException {
     if (link != 0) {
       input.seek(link);

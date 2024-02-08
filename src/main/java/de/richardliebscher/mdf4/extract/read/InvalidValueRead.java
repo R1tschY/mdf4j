@@ -5,18 +5,15 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class NoValueRead implements ValueRead {
-
-  private final Deserializer deserializer;
+public class InvalidValueRead implements ValueRead {
 
   @Override
   public <T> T read(RecordBuffer ignore, Visitor<T> visitor) throws IOException {
-    return deserializer.deserialize_value(visitor);
+    return visitor.visitInvalid();
   }
 }

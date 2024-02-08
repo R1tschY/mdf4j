@@ -27,26 +27,26 @@ import de.richardliebscher.mdf4.extract.ParallelRecordReader;
 import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
+import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
-import de.richardliebscher.mdf4.extract.de.InvalidDeserializer;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.extract.read.DataBlockRead;
 import de.richardliebscher.mdf4.extract.read.DataListRead;
 import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
+import de.richardliebscher.mdf4.extract.read.InvalidValueRead;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
-import de.richardliebscher.mdf4.extract.read.NoValueRead;
 import de.richardliebscher.mdf4.extract.read.RationalConversion;
 import de.richardliebscher.mdf4.extract.read.ReadInto;
+import de.richardliebscher.mdf4.extract.read.ReadIntoFactory;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
-import de.richardliebscher.mdf4.extract.read.SerializableReadInto;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
+import de.richardliebscher.mdf4.extract.read.ValueReadFactory;
 import de.richardliebscher.mdf4.internal.Arrays;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -60,26 +60,26 @@ import lombok.extern.java.Log;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RecordReaderFactory {
 
-  private static ValueRead createChannelReader(
+  private static ValueReadFactory createChannelReaderFactory(
       DataGroupBlock dataGroup, ChannelGroupBlock group,
       ChannelBlock channelBlock, ByteInput input) throws IOException {
     if (channelBlock.getBitOffset() != 0) {
       throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
     }
     if (channelBlock.getFlags().isSet(ChannelFlag.ALL_VALUES_INVALID)) {
-      return new NoValueRead(new InvalidDeserializer());
+      return ValueReadFactory.of(new InvalidValueRead());
     }
 
-    ValueRead valueRead;
+    final ValueReadFactory rawValue;
     switch (channelBlock.getType()) {
       case FIXED_LENGTH_DATA_CHANNEL:
       case MASTER_CHANNEL:
       case SYNCHRONIZATION_CHANNEL:
-        valueRead = createFixedLengthDataReader(channelBlock);
+        rawValue = createFixedLengthDataReader(channelBlock);
         break;
       case VIRTUAL_DATA_CHANNEL:
       case VIRTUAL_MASTER_CHANNEL:
-        valueRead = createVirtualDataReader(channelBlock);
+        rawValue = createVirtualDataReader(channelBlock);
         break;
       case VARIABLE_LENGTH_DATA_CHANNEL:
       case MAXIMUM_LENGTH_CHANNEL:
@@ -88,18 +88,20 @@ public final class RecordReaderFactory {
             "Channel type not implemented: " + channelBlock.getType());
     }
 
+    final ValueReadFactory converted;
     final var channelConversion = channelBlock.getConversionRule()
         .resolve(ChannelConversionBlock.TYPE, input);
     if (channelConversion.isPresent()) {
       final var cc = channelConversion.get();
       switch (cc.getType()) {
         case IDENTITY:
+          converted = rawValue;
           break;
         case LINEAR:
-          valueRead = new LinearConversion(cc, valueRead);
+          converted = in -> new LinearConversion(cc, rawValue.build(in));
           break;
         case RATIONAL:
-          valueRead = new RationalConversion(cc, valueRead);
+          converted = in -> new RationalConversion(cc, rawValue.build(in));
           break;
         case ALGEBRAIC:
         case INTERPOLATED_VALUE_TABLE:
@@ -114,18 +116,20 @@ public final class RecordReaderFactory {
           throw new NotImplementedFeatureException(
               "Channel conversion not implemented: " + cc.getType());
       }
+    } else {
+      converted = rawValue;
     }
 
     if (channelBlock.getFlags().isSet(ChannelFlag.INVALIDATION_BIT_VALID)) {
-      valueRead = createInvalidationReader(dataGroup, group, channelBlock, valueRead);
+      return createInvalidationReader(dataGroup, group, channelBlock, converted);
+    } else {
+      return converted;
     }
-
-    return valueRead;
   }
 
-  private static ValueRead createInvalidationReader(
+  private static ValueReadFactory createInvalidationReader(
       DataGroupBlock dataGroup, ChannelGroupBlock group, ChannelBlock channelBlock,
-      ValueRead valueRead)
+      ValueReadFactory valueReadFactory)
       throws FormatException {
     final var groupBits = group.getInvalidationBytes() * 8;
     final var invalidationBit = channelBlock.getInvalidationBit();
@@ -138,33 +142,36 @@ public final class RecordReaderFactory {
     final var invalidationByteIndex =
         dataGroup.getRecordIdSize() + group.getDataBytes() + (invalidationBit >>> 3);
     final var invalidationBitMask = 1 << (invalidationBit & 0x07);
-    return new ValueRead() {
-      @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        if ((input.readU8(invalidationByteIndex) & invalidationBitMask) != 0) {
-          return visitor.visitInvalid();
-        } else {
-          return valueRead.read(input, visitor);
+    return input -> {
+      final var valueRead = valueReadFactory.build(input);
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          if ((input.readU8(invalidationByteIndex) & invalidationBitMask) != 0) {
+            return visitor.visitInvalid();
+          } else {
+            return valueRead.read(input, visitor);
+          }
         }
-      }
+      };
     };
   }
 
-  private static ValueRead createFixedLengthDataReader(ChannelBlock channelBlock)
+  private static ValueReadFactory createFixedLengthDataReader(ChannelBlock channelBlock)
       throws IOException {
     switch (channelBlock.getDataType()) {
       case UINT_LE:
-        return createUintLeRead(channelBlock);
+        return ValueReadFactory.of(createUintLeRead(channelBlock));
       case UINT_BE:
-        return createUintBeRead(channelBlock);
+        return ValueReadFactory.of(createUintBeRead(channelBlock));
       case INT_LE:
-        return createIntLeRead(channelBlock);
+        return ValueReadFactory.of(createIntLeRead(channelBlock));
       case INT_BE:
-        return createIntBeRead(channelBlock);
+        return ValueReadFactory.of(createIntBeRead(channelBlock));
       case FLOAT_LE:
-        return createFloatLeRead(channelBlock);
+        return ValueReadFactory.of(createFloatLeRead(channelBlock));
       case FLOAT_BE:
-        return createFloatBeRead(channelBlock);
+        return ValueReadFactory.of(createFloatBeRead(channelBlock));
       case STRING_LATIN1:
         return createStringRead(channelBlock, StandardCharsets.ISO_8859_1);
       case STRING_UTF8:
@@ -543,7 +550,7 @@ public final class RecordReaderFactory {
     }
   }
 
-  private static ValueRead createStringRead(ChannelBlock channelBlock, Charset charset)
+  private static ValueReadFactory createStringRead(ChannelBlock channelBlock, Charset charset)
       throws FormatException {
     final var byteOffset = channelBlock.getByteOffset();
     final var bitCount = channelBlock.getBitCount();
@@ -552,35 +559,30 @@ public final class RecordReaderFactory {
     }
     final var byteCount = bitCount / 8;
 
-    return new ValueRead() {
-      private transient ThreadLocal<byte[]> buffer = ThreadLocal.withInitial(
-          () -> new byte[byteCount]);
+    return input -> {
+      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          final var buf = buffer.get();
+          input.readBytes(byteOffset, buf);
 
-      private void readObject(ObjectInputStream inputStream)
-          throws ClassNotFoundException, IOException {
-        inputStream.defaultReadObject();
-        buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      }
-
-      @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        final var buf = buffer.get();
-        input.readBytes(byteOffset, buf);
-
-        if (charset.equals(StandardCharsets.UTF_8) || charset.equals(StandardCharsets.ISO_8859_1)) {
-          final var size = Arrays.indexOf(buf, (byte) 0);
-          if (size == -1) {
-            throw new FormatException("Missing zero termination of string value");
+          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
+              StandardCharsets.ISO_8859_1)) {
+            final var size = Arrays.indexOf(buf, (byte) 0);
+            if (size == -1) {
+              throw new FormatException("Missing zero termination of string value");
+            }
+            return visitor.visitString(trimString(new String(buf, 0, size, charset)));
+          } else {
+            return visitor.visitString(trimString(new String(buf, charset)));
           }
-          return visitor.visitString(trimString(new String(buf, 0, size, charset)));
-        } else {
-          return visitor.visitString(trimString(new String(buf, charset)));
         }
-      }
+      };
     };
   }
 
-  private static ValueRead createByteArrayRead(ChannelBlock channelBlock)
+  private static ValueReadFactory createByteArrayRead(ChannelBlock channelBlock)
       throws FormatException {
     final var byteOffset = channelBlock.getByteOffset();
     final var bitCount = channelBlock.getBitCount();
@@ -589,22 +591,16 @@ public final class RecordReaderFactory {
     }
     final var byteCount = bitCount / 8;
 
-    return new ValueRead() {
-      private transient ThreadLocal<byte[]> buffer = ThreadLocal.withInitial(
-          () -> new byte[byteCount]);
-
-      private void readObject(ObjectInputStream inputStream)
-          throws ClassNotFoundException, IOException {
-        inputStream.defaultReadObject();
-        buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      }
-
-      @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        final var dest = buffer.get();
-        input.readBytes(byteOffset, dest);
-        return visitor.visitByteArray(ByteBuffer.wrap(dest));
-      }
+    return input -> {
+      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          final var dest = buffer.get();
+          input.readBytes(byteOffset, dest);
+          return visitor.visitByteArray(ByteBuffer.wrap(dest));
+        }
+      };
     };
   }
 
@@ -629,12 +625,12 @@ public final class RecordReaderFactory {
     //             + channelBlock.getDataType());
     // }
     // TODO: apply offset from HD block
-    return new ValueRead() {
+    return ValueReadFactory.of(new ValueRead() {
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
         return visitor.visitU64(input.getRecordIndex());
       }
-    };
+    });
   }
 
   /**
@@ -829,19 +825,13 @@ public final class RecordReaderFactory {
     Channel ch;
     while ((ch = iter.next()) != null) {
       try {
-        final var channelReader = createChannelReader(
-            dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
         if (deserializeInto != null) {
+          final var channelReaderFactory = createChannelReaderFactory(
+              dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
+          final var channelReader = channelReaderFactory.build(input);
           channels.add(ch);
-          channelReaders.add((recordBuffer, destination) -> {
-            deserializeInto.deserializeInto(new Deserializer() {
-              @Override
-              public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-                return channelReader.read(recordBuffer, visitor);
-              }
-            }, destination);
-          });
+          channelReaders.add(new ReadIntoImpl<>(deserializeInto, channelReader));
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
@@ -851,7 +841,7 @@ public final class RecordReaderFactory {
     return Pair.of(channelReaders, channels);
   }
 
-  private static <B, R> List<SerializableReadInto<B>> buildExtractors(
+  private static <B, R> List<ReadIntoFactory<B>> buildExtractors(
       SerializableRecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
       ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();
@@ -863,23 +853,17 @@ public final class RecordReaderFactory {
             + channelGroupBlock.getDataBytes()
             + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
-    final var channelReaders = new ArrayList<SerializableReadInto<B>>();
+    final var channelReaders = new ArrayList<ReadIntoFactory<B>>();
     final var iter = channelGroup.getChannels().iter();
     de.richardliebscher.mdf4.Channel ch;
     while ((ch = iter.next()) != null) {
       try {
-        final var channelReader = createChannelReader(
-            dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
         final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
         if (deserializeInto != null) {
-          channelReaders.add((recordBuffer, destination) -> {
-            deserializeInto.deserializeInto(new Deserializer() {
-              @Override
-              public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-                return channelReader.read(recordBuffer, visitor);
-              }
-            }, destination);
-          });
+          final var channelReaderFactory = createChannelReaderFactory(
+              dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
+          channelReaders.add(
+              in -> new ReadIntoImpl<>(deserializeInto, channelReaderFactory.build(input)));
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
@@ -887,5 +871,26 @@ public final class RecordReaderFactory {
     }
 
     return channelReaders;
+  }
+
+  private static class ReadIntoImpl<B> implements ReadInto<B> {
+
+    private final DeserializeInto<B> deserializeInto;
+    private final ValueRead channelReader;
+
+    public ReadIntoImpl(DeserializeInto<B> deserializeInto, ValueRead channelReader) {
+      this.deserializeInto = deserializeInto;
+      this.channelReader = channelReader;
+    }
+
+    @Override
+    public void readInto(RecordBuffer recordBuffer, B destination) throws IOException {
+      deserializeInto.deserializeInto(new Deserializer() {
+        @Override
+        public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
+          return channelReader.read(recordBuffer, visitor);
+        }
+      }, destination);
+    }
   }
 }

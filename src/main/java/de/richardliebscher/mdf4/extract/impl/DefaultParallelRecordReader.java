@@ -19,9 +19,10 @@ import de.richardliebscher.mdf4.extract.DetachedRecordReader;
 import de.richardliebscher.mdf4.extract.ParallelRecordReader;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
+import de.richardliebscher.mdf4.extract.read.ReadInto;
+import de.richardliebscher.mdf4.extract.read.ReadIntoFactory;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
-import de.richardliebscher.mdf4.extract.read.SerializableReadInto;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -43,7 +44,7 @@ import lombok.RequiredArgsConstructor;
 class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
 
   private final FileContext ctx;
-  private final List<SerializableReadInto<B>> channelReaders;
+  private final List<ReadIntoFactory<B>> channelReaderFactories;
   private final SerializableRecordFactory<B, R> factory;
   private final long[] dataList;
   private final long[] offsets;
@@ -52,6 +53,9 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
   @Override
   public Stream<Result<R, IOException>> stream() {
     final var input = ctx.getInput();
+    final var channelReaders = this.channelReaderFactories.stream()
+        .map(factory -> factory.build(input))
+        .collect(Collectors.toList());
 
     return StreamSupport.stream(new RecordSpliterator<>(
         channelReaders, factory,
@@ -64,7 +68,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
       Spliterator<Result<R, IOException>> {
 
     private final ByteInput input;
-    private final List<SerializableReadInto<B>> channelReaders;
+    private final List<ReadInto<B>> channelReaders;
     private final SerializableRecordFactory<B, R> recordFactory;
     private final long[] dataList;
     private final long[] offsets;
@@ -79,7 +83,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     private long readCycles;
     private int characteristics;
 
-    public RecordSpliterator(List<SerializableReadInto<B>> channelReaders,
+    public RecordSpliterator(List<ReadInto<B>> channelReaders,
         SerializableRecordFactory<B, R> recordFactory,
         ByteInput input, int recordSize, long[] dataList, long[] offsets, long cycles) {
       this.channelReaders = channelReaders;
@@ -249,14 +253,14 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
 
   private DetachedRecordReader<B, R> newDetachedRecordReader(long[] dataListPart, long[] offsets) {
     return new MyDetachedRecordReader<>(
-        dataListPart, offsets, channelReaders, factory,
+        dataListPart, offsets, channelReaderFactories, factory,
         channelGroup.getDataBytes() + channelGroup.getInvalidationBytes());
   }
 
   private static class MyRecordReader<B, R> implements RecordReader<B, R> {
 
     private final ByteInput input;
-    private final List<SerializableReadInto<B>> channelReaders;
+    private final List<ReadInto<B>> channelReaders;
     private final SerializableRecordFactory<B, R> recordFactory;
     private final long[] dataList;
     private final int recordSize;
@@ -266,7 +270,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     private long remainingDataLength;
 
     public MyRecordReader(
-        ByteInput input, List<SerializableReadInto<B>> channelReaders,
+        ByteInput input, List<ReadInto<B>> channelReaders,
         SerializableRecordFactory<B, R> recordFactory, int recordSize, long[] dataListPart,
         long[] offsets) {
       this.input = input;
@@ -355,27 +359,20 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     }
   }
 
+  @RequiredArgsConstructor
   private static class MyDetachedRecordReader<B, R> implements DetachedRecordReader<B, R> {
 
     private final long[] dataListPart;
     private final long[] offsets;
-    private final List<SerializableReadInto<B>> channelReaders;
+    private final List<ReadIntoFactory<B>> channelReaderFactories;
     private final SerializableRecordFactory<B, R> recordDeserializer;
     private final int recordSize;
 
-    public MyDetachedRecordReader(long[] dataListPart, long[] offsets,
-        List<SerializableReadInto<B>> channelReaders,
-        SerializableRecordFactory<B, R> recordDeserializer,
-        int recordSize) {
-      this.dataListPart = dataListPart;
-      this.offsets = offsets;
-      this.channelReaders = channelReaders;
-      this.recordDeserializer = recordDeserializer;
-      this.recordSize = recordSize;
-    }
-
     @Override
     public RecordReader<B, R> attach(FileContext ctx) {
+      final var channelReaders = channelReaderFactories.stream()
+          .map(factory -> factory.build(ctx.getInput()))
+          .collect(Collectors.toList());
       return new MyRecordReader<>(
           ctx.getInput(),
           channelReaders,

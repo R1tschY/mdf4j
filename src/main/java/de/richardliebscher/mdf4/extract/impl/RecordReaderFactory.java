@@ -751,11 +751,6 @@ public final class RecordReaderFactory {
             throw new NotImplementedFeatureException("Unsorted data groups not implemented");
           }
 
-          if (!channelGroup.getBlock().getFlags().isEmpty()) {
-            throw new NotImplementedFeatureException(
-                "Some channel group flags not implemented: " + channelGroup.getBlock().getFlags());
-          }
-
           return Pair.of(dataGroup, channelGroup);
         }
       }

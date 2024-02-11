@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.ChannelGroupFlag;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
 import java.util.Optional;
@@ -37,6 +38,24 @@ public class ChannelGroup {
    */
   public Optional<String> getName() throws IOException {
     return ctx.readText(block.getComment(), "CGcomment");
+  }
+
+  /**
+   * Get information whether channel group contains bus events.
+   *
+   * @return {@code true} iff "Bus event channel group flag" is set.
+   */
+  public boolean containsBusEvents() {
+    return block.getFlags().isSet(ChannelGroupFlag.BUS_EVENT_CHANNEL_GROUP);
+  }
+
+  /**
+   * Get information whether channel group contains plain bus events.
+   *
+   * @return {@code true} iff "Plain bus event channel group flag" is set.
+   */
+  public boolean containsPlainBusEvents() {
+    return block.getFlags().isSet(ChannelGroupFlag.PLAIN_BUS_EVENT_CHANNEL_GROUP);
   }
 
   /**

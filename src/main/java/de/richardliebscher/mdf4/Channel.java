@@ -61,6 +61,15 @@ public class Channel {
   }
 
   /**
+   * Get information whether channel contains bus events.
+   *
+   * @return {@code true} iff "Bus event flag" is set.
+   */
+  public boolean containsBusEvent() {
+    return block.getFlags().isSet(ChannelFlag.BUS_EVENT);
+  }
+
+  /**
    * Return Physical unit (after conversion).
    *
    * @return Physical unit (after conversion)

@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.extract.de;
 import de.richardliebscher.mdf4.exceptions.InvalidTypeException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * Visit value.
@@ -168,7 +167,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitByteArray(byte[] bytes, int offset, int length) throws IOException {
-    return visitByteArray(Arrays.copyOfRange(bytes, offset, offset + length));
+    throw new InvalidTypeException("byte array", this);
   }
 
   /**
@@ -178,7 +177,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitByteArray(byte[] bytes) throws IOException {
-    throw new InvalidTypeException("byte array", this);
+    return visitByteArray(bytes, 0, bytes.length);
   }
 
   /**

@@ -17,6 +17,7 @@ import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
+import de.richardliebscher.mdf4.blocks.DataStorage;
 import de.richardliebscher.mdf4.blocks.HeaderListBlock;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -29,10 +30,7 @@ import de.richardliebscher.mdf4.extract.SizedRecordReader;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Visitor;
-import de.richardliebscher.mdf4.extract.read.DataBlockRead;
-import de.richardliebscher.mdf4.extract.read.DataListRead;
 import de.richardliebscher.mdf4.extract.read.DataRead;
-import de.richardliebscher.mdf4.extract.read.EmptyDataRead;
 import de.richardliebscher.mdf4.extract.read.InvalidValueRead;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
 import de.richardliebscher.mdf4.extract.read.RationalConversion;
@@ -759,31 +757,12 @@ public final class RecordReaderFactory {
     throw new ChannelGroupNotFoundException("No matching channel group found");
   }
 
-  public static DataRead createSource(
+  public static DataRead<DataBlock> createSource(
       FileContext ctx, DataGroupBlock dataGroup) throws IOException {
-    final var input = ctx.getInput();
-
-    final var dataRoot = dataGroup.getData().resolve(DataBlock.CONTAINER_TYPE, input).orElse(null);
-    if (dataRoot == null) {
-      return new EmptyDataRead();
-    } else if (dataRoot instanceof DataBlock) {
-      return new DataBlockRead(input, (DataBlock) dataRoot);
-    } else if (dataRoot instanceof DataListBlock) {
-      return new DataListRead(input, (DataListBlock<DataBlock>) dataRoot);
-    } else if (dataRoot instanceof HeaderListBlock) {
-      final var headerList = (HeaderListBlock<DataBlock>) dataRoot;
-
-      if (headerList.getZipType() != ZipType.DEFLATE) {
-        throw new NotImplementedFeatureException(
-            "ZIP type not implemented: " + headerList.getZipType());
-      }
-
-      return headerList.getFirstDataList().resolve(DataListBlock.DT_TYPE, input)
-          .map(firstDataList -> (DataRead) new DataListRead(input, firstDataList))
-          .orElseGet(EmptyDataRead::new);
-    } else {
-      throw new IllegalStateException("Should not happen");
-    }
+    return DataRead.of(
+        dataGroup.getData().resolve(DataBlock.CONTAINER_TYPE, ctx.getInput()).orElse(null),
+        ctx.getInput(),
+        DataBlock.STORAGE_TYPE);
   }
 
   public static Pair<long[], long[]> collectDataList(
@@ -792,7 +771,7 @@ public final class RecordReaderFactory {
     final var dataRoot = dataGroup.getData().resolve(DataBlock.CONTAINER_TYPE, input).orElse(null);
     if (dataRoot == null) {
       return Pair.of(new long[0], new long[0]);
-    } else if (dataRoot instanceof DataBlock) {
+    } else if (dataRoot instanceof DataStorage) {
       return Pair.of(new long[]{dataGroup.getData().asLong()}, new long[]{0});
     } else if (dataRoot instanceof DataListBlock) {
       return collectDataList(input, (DataListBlock<DataBlock>) dataRoot);
@@ -830,7 +809,7 @@ public final class RecordReaderFactory {
         offsetsList.stream().mapToLong(Long::longValue).toArray());
   }
 
-  private static void addOffsets(List<Long> offsetsList, DataListBlock dataList) {
+  private static void addOffsets(List<Long> offsetsList, DataListBlock<DataBlock> dataList) {
     dataList.getOffsetInfo().accept(
         new de.richardliebscher.mdf4.blocks.LengthOrOffsets.Visitor<
             List<Long>, RuntimeException>() {

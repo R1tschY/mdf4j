@@ -24,6 +24,11 @@ public class DataBlock implements Data<DataBlock> {
     return input.getChannel();
   }
 
+  @Override
+  public long getChannelLength() {
+    return dataLength;
+  }
+
   public static DataBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(ID, input);
     return new DataBlock(input.pos(), blockHeader.getDataLength());

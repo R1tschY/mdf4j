@@ -6,10 +6,10 @@
 package de.richardliebscher.mdf4.extract.read;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.blocks.DataBlock;
+import de.richardliebscher.mdf4.blocks.BlockType;
+import de.richardliebscher.mdf4.blocks.Data;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
 import de.richardliebscher.mdf4.blocks.DataStorage;
-import de.richardliebscher.mdf4.blocks.DataZippedBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -18,19 +18,22 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Iterator;
 
-public class DataListRead implements DataRead {
+public class DataListRead<T extends Data<T>> implements DataRead<T> {
 
   private final ByteInput input;
-  private DataListBlock<DataBlock> dataList;
+  private DataListBlock<T> dataList;
   private long remainingDataLength;
   private ReadableByteChannel currentBlock;
   private boolean closed = false;
-  private Iterator<Link<DataStorage<DataBlock>>> dataBlocks;
+  private Iterator<Link<DataStorage<T>>> dataBlocks;
+  private final BlockType<DataStorage<T>> storageBlockType;
 
-  public DataListRead(ByteInput input, DataListBlock<DataBlock> firstDataList) {
+  public DataListRead(ByteInput input, DataListBlock<T> firstDataList,
+      BlockType<DataStorage<T>> storageBlockType) {
     this.input = input;
     this.dataList = firstDataList;
     this.dataBlocks = firstDataList.getData().iterator();
+    this.storageBlockType = storageBlockType;
   }
 
   @Override
@@ -55,7 +58,7 @@ public class DataListRead implements DataRead {
   private boolean ensureDataStream() throws IOException {
     if (remainingDataLength == 0) {
       if (dataBlocks == null || !dataBlocks.hasNext()) {
-        dataList = dataList.getNextDataList().resolve(DataListBlock.DT_TYPE, input).orElse(null);
+        dataList = dataList.getNextDataList().resolve(DataListBlock.type(), input).orElse(null);
         if (dataList == null) {
           return false;
         }
@@ -65,23 +68,10 @@ public class DataListRead implements DataRead {
         }
       }
 
-      final var dataBlock = dataBlocks.next().resolveNonCached(DataBlock.STORAGE_TYPE, input)
+      final var storage = dataBlocks.next().resolveNonCached(storageBlockType, input)
           .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-      if (dataBlock instanceof DataBlock) {
-        currentBlock = dataBlock.getChannel(input);
-        remainingDataLength = ((DataBlock) dataBlock).getDataLength();
-      } else if (dataBlock instanceof DataZippedBlock) {
-        final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
-        if (dataZipped.getOriginalBlockTypeId().equals(DataBlock.ID)) {
-          currentBlock = dataZipped.getChannel(input);
-          remainingDataLength = dataZipped.getOriginalDataLength();
-        } else {
-          throw new FormatException("Unexpected data block type in zipped data: "
-              + dataZipped.getOriginalBlockTypeId());
-        }
-      } else {
-        throw new FormatException("Unexpected data block in data list: " + dataBlock);
-      }
+      currentBlock = storage.getChannel(input);
+      remainingDataLength = storage.getChannelLength();
     }
 
     return true;
@@ -99,4 +89,5 @@ public class DataListRead implements DataRead {
     }
     closed = true;
   }
+
 }

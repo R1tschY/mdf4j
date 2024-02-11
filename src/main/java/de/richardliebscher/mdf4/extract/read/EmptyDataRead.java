@@ -5,11 +5,12 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
+import de.richardliebscher.mdf4.blocks.Data;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
-public class EmptyDataRead implements DataRead {
+public class EmptyDataRead<T extends Data<T>> implements DataRead<T> {
 
   private boolean closed;
 

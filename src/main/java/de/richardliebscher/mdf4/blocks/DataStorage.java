@@ -11,4 +11,6 @@ import java.nio.channels.ReadableByteChannel;
 
 public interface DataStorage<T extends Data<T>> {
   ReadableByteChannel getChannel(ByteInput input) throws IOException;
+
+  long getChannelLength();
 }

@@ -82,9 +82,15 @@ public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
     return List.of(data);
   }
 
+  public static final Type<?> TYPE = new Type<>();
   public static final Type<DataBlock> DT_TYPE = new Type<>();
   public static final Type<SignalDataBlock> SD_TYPE = new Type<>();
   public static final BlockTypeId ID = BlockTypeId.of('D', 'L');
+
+  @SuppressWarnings("unchecked")
+  public static <T extends Data<T>> Type<T> type() {
+    return (Type<T>) TYPE;
+  }
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
   public static class Type<T extends Data<T>> implements DataContainerType<T, DataListBlock<T>> {

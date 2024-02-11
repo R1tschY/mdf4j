@@ -22,6 +22,11 @@ public class SignalDataBlock implements Data<SignalDataBlock> {
     return input.getChannel();
   }
 
+  @Override
+  public long getChannelLength() {
+    return dataLength;
+  }
+
   public static SignalDataBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parse(ID, input);
     return new SignalDataBlock(input.pos(), blockHeader.getDataLength());

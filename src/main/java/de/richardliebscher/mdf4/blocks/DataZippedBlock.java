@@ -33,6 +33,11 @@ public class DataZippedBlock<T extends Data<T>> implements DataContainer<T>, Dat
     return Channels.newChannel(createUncompressedStream(input.getStream()));
   }
 
+  @Override
+  public long getChannelLength() {
+    return originalDataLength;
+  }
+
   public static <T extends Data<T>> DataZippedBlock<T> parse(ByteInput input)
       throws IOException {
     BlockHeader.parseExpecting(ID, input, 0, 24);

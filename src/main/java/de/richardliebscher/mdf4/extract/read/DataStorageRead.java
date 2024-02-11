@@ -5,24 +5,31 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.blocks.DataBlock;
+import de.richardliebscher.mdf4.blocks.Data;
+import de.richardliebscher.mdf4.blocks.DataStorage;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 
-public class DataBlockRead implements DataRead {
+public class DataStorageRead<T extends Data<T>> implements DataRead<T> {
 
   private final ByteInput input;
-  private final DataBlock data;
+  private final DataStorage<T> storage;
   private long remainingDataLength;
   private ReadableByteChannel currentBlock;
   private boolean closed = false;
 
-  public DataBlockRead(ByteInput input, DataBlock data) {
+  public DataStorageRead(ByteInput input, DataStorage<T> storage) {
     this.input = input;
-    this.data = data;
+    this.storage = storage;
+  }
+
+  public DataStorageRead(ReadableByteChannel input, long remainingDataLength) {
+    this(null, null);
+    this.currentBlock = input;
+    this.remainingDataLength = remainingDataLength;
   }
 
   @Override
@@ -32,8 +39,8 @@ public class DataBlockRead implements DataRead {
     }
 
     if (currentBlock == null) {
-      currentBlock = data.getChannel(input);
-      remainingDataLength = data.getDataLength();
+      currentBlock = storage.getChannel(input);
+      remainingDataLength = storage.getChannelLength();
     }
 
     if (remainingDataLength == 0) {

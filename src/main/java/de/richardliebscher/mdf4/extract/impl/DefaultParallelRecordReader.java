@@ -12,7 +12,6 @@ import de.richardliebscher.mdf4.Result.Ok;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataStorage;
-import de.richardliebscher.mdf4.blocks.DataZippedBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
@@ -150,16 +149,8 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
         final var dataBlock = Link.<DataStorage<DataBlock>>of(dataList[index])
             .resolveNonCached(DataBlock.STORAGE_TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof DataBlock) {
-          currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((DataBlock) dataBlock).getDataLength();
-        } else if (dataBlock instanceof DataZippedBlock) {
-          final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
-          currentBlock = dataZipped.getChannel(input);
-          remainingDataLength = dataZipped.getOriginalDataLength();
-        } else {
-          throw new FormatException("Unexpected data block in data list: " + dataBlock);
-        }
+        currentBlock = dataBlock.getChannel(input);
+        remainingDataLength = dataBlock.getChannelLength();
 
         if (remainingDataLength % recordSize != 0) {
           throw new FormatException("Data block size is not a multiple of the record size");
@@ -317,21 +308,8 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
         final var dataBlock = Link.<DataStorage<DataBlock>>of(dataList[index])
             .resolveNonCached(DataBlock.STORAGE_TYPE, input)
             .orElseThrow(() -> new FormatException("Data link in DL block should not be NIL"));
-        if (dataBlock instanceof DataBlock) {
-          currentBlock = dataBlock.getChannel(input);
-          remainingDataLength = ((DataBlock) dataBlock).getDataLength();
-        } else if (dataBlock instanceof DataZippedBlock) {
-          final var dataZipped = (DataZippedBlock<DataBlock>) dataBlock;
-          if (dataZipped.getOriginalBlockTypeId().equals(DataBlock.ID)) {
-            currentBlock = dataZipped.getChannel(input);
-            remainingDataLength = dataZipped.getOriginalDataLength();
-          } else {
-            throw new FormatException("Unexpected data block type in zipped data: "
-                + dataZipped.getOriginalBlockTypeId());
-          }
-        } else {
-          throw new FormatException("Unexpected data block in data list: " + dataBlock);
-        }
+        currentBlock = dataBlock.getChannel(input);
+        remainingDataLength = dataBlock.getChannelLength();
 
         if (remainingDataLength % recordSize != 0) {
           throw new NotImplementedFeatureException(

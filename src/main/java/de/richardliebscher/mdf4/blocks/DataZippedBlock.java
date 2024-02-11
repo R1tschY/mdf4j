@@ -7,7 +7,7 @@ package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
-import java.io.FilterInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
@@ -53,15 +53,34 @@ public class DataZippedBlock<T extends Data<T>> implements DataContainer<T>, Dat
         input.pos(), dataLength);
   }
 
-  private FilterInputStream createUncompressedStream(InputStream compressedStream)
-      throws NotImplementedFeatureException {
+  private InputStream createUncompressedStream(InputStream compressedStream) throws IOException {
     switch (getZipType()) {
       case DEFLATE:
         return new InflaterInputStream(compressedStream);
       case TRANSPOSITION_DEFLATE:
+        return transposed(zipParameter, new InflaterInputStream(compressedStream));
       default:
-        throw new NotImplementedFeatureException("ZIP type not implemented: " + getZipType());
+        throw new NotImplementedFeatureException(
+            "ZIP type not implemented: " + getZipType().getName());
     }
+  }
+
+  private static InputStream transposed(long columnSize, InputStream in) throws IOException {
+    final var bytes = in.readAllBytes();
+
+    final var n = Math.toIntExact(columnSize);
+    final var m = bytes.length / columnSize;
+
+    final var result = new byte[bytes.length];
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < m; j++, k++) {
+        result[j * n + i] = bytes[k];
+      }
+    }
+    System.arraycopy(bytes, k, result, k, bytes.length - k);
+
+    return new ByteArrayInputStream(result);
   }
 
   public static final Type<DataBlock> DT_TYPE = new Type<>();

@@ -6,10 +6,16 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
+@Getter
 public enum ZipType {
-  DEFLATE,
-  TRANSPOSITION_DEFLATE;
+  DEFLATE("Deflate"),
+  TRANSPOSITION_DEFLATE("Transposition + Deflate");
+
+  private final String name;
 
   private static final ZipType[] VALUES = values();
 

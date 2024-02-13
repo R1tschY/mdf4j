@@ -16,9 +16,7 @@ import lombok.NoArgsConstructor;
  * @see ChannelBlock#getInvalidationBit()
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class Invalid {
-
-  private static final int HASH = Invalid.class.hashCode();
+public final class Invalid {
 
   private static final Invalid INSTANCE = new Invalid();
 
@@ -29,16 +27,6 @@ public class Invalid {
    */
   public static Invalid get() {
     return INSTANCE;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    return obj instanceof Invalid;
-  }
-
-  @Override
-  public int hashCode() {
-    return HASH;
   }
 
   @Override

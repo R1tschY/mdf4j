@@ -918,6 +918,11 @@ public final class RecordReaderFactory {
         public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
           return channelReader.read(recordBuffer, visitor);
         }
+
+        @Override
+        public void ignore() {
+          // noop
+        }
       }, destination);
     }
   }

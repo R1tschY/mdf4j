@@ -25,4 +25,11 @@ public interface Deserializer {
    * @throws IOException Unable to deserialize
    */
   <R> R deserialize_value(Visitor<R> visitor) throws IOException;
+
+  /**
+   * Ignore value.
+   *
+   * @throws IOException Unable to skip value
+   */
+  void ignore() throws IOException;
 }

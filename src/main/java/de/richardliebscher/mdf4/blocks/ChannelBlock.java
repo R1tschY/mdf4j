@@ -15,12 +15,12 @@ import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
-public class ChannelBlock {
+public class ChannelBlock implements Composition {
 
   Link<ChannelBlock> nextChannel;
-  long component; // CA,CN
+  Link<Composition> composition;
   Link<TextBlock> channelName;
-  Link<SourceInformationBlock> channelSource; // SI
+  Link<SourceInformationBlock> channelSource;
   Link<ChannelConversionBlock> conversionRule;
   long signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
   Link<Metadata> physicalUnit;
@@ -62,9 +62,8 @@ public class ChannelBlock {
 
     final var links = blockHeader.getLinks();
     return new ChannelBlock(
-        Link.of(links[0]), links[1], Link.of(links[2]), Link.of(links[3]), Link.of(links[4]),
-        links[5],
-        Link.of(links[6]), Link.of(links[7]),
+        Link.of(links[0]), Link.of(links[1]), Link.of(links[2]), Link.of(links[3]),
+        Link.of(links[4]), links[5], Link.of(links[6]), Link.of(links[7]),
         type, syncType, dataType, bitOffset, byteOffset, bitCount, flags,
         invalidationBit, precision, attachmentCount, valueRange, limit,
         limitExtended);

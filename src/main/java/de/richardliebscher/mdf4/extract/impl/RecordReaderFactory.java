@@ -11,14 +11,18 @@ import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.blocks.ChannelBlock;
+import de.richardliebscher.mdf4.blocks.ChannelBlock.Iterator;
 import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
+import de.richardliebscher.mdf4.blocks.ChannelDataType;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.Composition;
 import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
 import de.richardliebscher.mdf4.blocks.DataStorage;
 import de.richardliebscher.mdf4.blocks.HeaderListBlock;
+import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
@@ -27,8 +31,10 @@ import de.richardliebscher.mdf4.extract.ParallelRecordReader;
 import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
+import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
+import de.richardliebscher.mdf4.extract.de.StructAccess;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.InvalidValueRead;
@@ -49,6 +55,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
@@ -65,6 +72,10 @@ public final class RecordReaderFactory {
     }
     if (channelBlock.getFlags().isSet(ChannelFlag.ALL_VALUES_INVALID)) {
       return ValueReadFactory.of(new InvalidValueRead());
+    }
+
+    if (!channelBlock.getComposition().isNil()) {
+      return createCompositionDataReader(dataGroup, group, channelBlock, input);
     }
 
     final ValueReadFactory rawValue;
@@ -124,6 +135,107 @@ public final class RecordReaderFactory {
     } else {
       return converted;
     }
+  }
+
+  private static ValueReadFactory createCompositionDataReader(
+      DataGroupBlock dataGroup, ChannelGroupBlock group,
+      ChannelBlock frame, ByteInput input) throws IOException {
+    final var composition = frame.getComposition().resolve(Composition.TYPE, input)
+        .orElseThrow();
+    final ChannelBlock firstField;
+    if (composition instanceof ChannelBlock) {
+      firstField = (ChannelBlock) composition;
+    } else {
+      throw new NotImplementedFeatureException("Reading arrays is not implemented");
+    }
+
+    final var fields = new ArrayList<ChannelBlock>();
+    fields.add(firstField);
+    final var fieldsIter = new Iterator(firstField.getNextChannel(), input);
+    while (fieldsIter.hasNext()) {
+      fields.add(fieldsIter.next());
+    }
+
+    if (frame.getDataType() != ChannelDataType.BYTE_ARRAY) {
+      log.warning(() -> "Composition channel " + frame.getChannelName()
+          + " has unexpected data type " + frame.getDataType());
+    }
+
+    switch (frame.getType()) {
+      case FIXED_LENGTH_DATA_CHANNEL:
+        return createFixedLengthStructureDataReader(dataGroup, group, frame, fields, input);
+      case MASTER_CHANNEL:
+      case SYNCHRONIZATION_CHANNEL:
+      case VARIABLE_LENGTH_DATA_CHANNEL:
+      case VIRTUAL_DATA_CHANNEL:
+      case VIRTUAL_MASTER_CHANNEL:
+      case MAXIMUM_LENGTH_CHANNEL:
+      default:
+        throw new NotImplementedFeatureException(
+            "Channel type not implemented for composition: " + frame.getType());
+    }
+  }
+
+  private static ValueReadFactory createFixedLengthStructureDataReader(
+      DataGroupBlock dataGroup, ChannelGroupBlock group, ChannelBlock frame,
+      List<ChannelBlock> fields, ByteInput input) throws IOException {
+
+    final var readFieldFactories = new ArrayList<ValueReadFactory>(fields.size());
+    for (int i = 0; i < fields.size(); i++) {
+      final var field = fields.get(i);
+      try {
+        readFieldFactories.add(createChannelReaderFactory(dataGroup, group, field, input));
+      } catch (NotImplementedFeatureException e) {
+        log.warning("Ignoring field '" + getChannelName(field, input) + "' of channel '"
+            + getChannelName(frame, input) + "': " + e.getMessage());
+      }
+    }
+
+    return in -> {
+      final var fieldReaders = new ValueRead[readFieldFactories.size()];
+      for (int i = 0; i < readFieldFactories.size(); i++) {
+        fieldReaders[i] = readFieldFactories.get(i).build(input);
+      }
+
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          return visitor.visitStruct(new StructAccess() {
+            private int index = 0;
+
+            @Override
+            public int fields() {
+              return fieldReaders.length;
+            }
+
+            @Override
+            public <T1> T1 next_field(Deserialize<T1> deserialize) throws IOException {
+              if (index >= fieldReaders.length) {
+                throw new NoSuchElementException();
+              }
+
+              return deserialize.deserialize(new Deserializer() {
+                @Override
+                public <R> R deserialize_value(Visitor<R> visitor) throws IOException {
+                  return fieldReaders[index++].read(input, visitor);
+                }
+
+                @Override
+                public void ignore() {
+                  index++;
+                }
+              });
+            }
+          });
+        }
+      };
+    };
+  }
+
+  private static TextBlock getChannelName(ChannelBlock channel, ByteInput input)
+      throws IOException {
+    return channel.getChannelName().resolve(TextBlock.TYPE, input)
+        .orElseThrow(() -> new FormatException("channel name required"));
   }
 
   private static ValueReadFactory createInvalidationReader(

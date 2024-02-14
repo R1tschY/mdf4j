@@ -173,11 +173,21 @@ public interface Visitor<T> extends Expected {
   /**
    * Visit byte array.
    *
-   * @param bytes  Newly allocated byte array
+   * @param bytes Newly allocated byte array
    * @return Deserialized value
    */
   default T visitByteArray(byte[] bytes) throws IOException {
     return visitByteArray(bytes, 0, bytes.length);
+  }
+
+  /**
+   * Visit structure.
+   *
+   * @param access Access to structure
+   * @return Deserialized value
+   */
+  default T visitStruct(StructAccess access) throws IOException {
+    throw new InvalidTypeException("structure", this);
   }
 
   /**

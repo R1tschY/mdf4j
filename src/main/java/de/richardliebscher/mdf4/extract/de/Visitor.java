@@ -23,7 +23,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitU8(byte value) throws IOException {
-    return visitU64(UnsignedByte.toLong(value));
+    return visitU32(UnsignedByte.toInt(value));
   }
 
   /**
@@ -33,7 +33,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitU16(short value) throws IOException {
-    return visitU64(UnsignedShort.toLong(value));
+    return visitU32(UnsignedShort.toInt(value));
   }
 
   /**
@@ -63,7 +63,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitI8(byte value) throws IOException {
-    return visitI64(value);
+    return visitI32(value);
   }
 
   /**
@@ -73,7 +73,7 @@ public interface Visitor<T> extends Expected {
    * @return Deserialized value
    */
   default T visitI16(short value) throws IOException {
-    return visitI64(value);
+    return visitI32(value);
   }
 
   /**

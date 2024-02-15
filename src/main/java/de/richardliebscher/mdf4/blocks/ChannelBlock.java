@@ -22,7 +22,7 @@ public class ChannelBlock implements Composition {
   Link<TextBlock> channelName;
   Link<SourceInformationBlock> channelSource;
   Link<ChannelConversionBlock> conversionRule;
-  long signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
+  Link<?> signalData; // cnType=1:SD,DZ,DL,HL,CG,cnType=4:AT,cnType=5:CN,event:EV
   Link<Metadata> physicalUnit;
   Link<Metadata> comment;
   // 4.1.0
@@ -63,7 +63,7 @@ public class ChannelBlock implements Composition {
     final var links = blockHeader.getLinks();
     return new ChannelBlock(
         Link.of(links[0]), Link.of(links[1]), Link.of(links[2]), Link.of(links[3]),
-        Link.of(links[4]), links[5], Link.of(links[6]), Link.of(links[7]),
+        Link.of(links[4]), Link.of(links[5]), Link.of(links[6]), Link.of(links[7]),
         type, syncType, dataType, bitOffset, byteOffset, bitCount, flags,
         invalidationBit, precision, attachmentCount, valueRange, limit,
         limitExtended);
@@ -78,6 +78,14 @@ public class ChannelBlock implements Composition {
       }
     }
     return Optional.empty();
+  }
+
+  @SuppressWarnings("unchecked")
+  public Link<ChannelBlock> getMaxLengthChannel() {
+    if (type != ChannelType.MAXIMUM_LENGTH_CHANNEL) {
+      throw new IllegalStateException();
+    }
+    return (Link<ChannelBlock>) signalData;
   }
 
   public static class Iterator implements LazyIoIterator<ChannelBlock> {

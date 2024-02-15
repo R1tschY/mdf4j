@@ -43,5 +43,5 @@ public interface RecordBuffer {
 
   String readString(int pos, int bytes, Charset charset);
 
-  void readBytes(int pos, byte[] buf);
+  void readBytes(int pos, byte[] buf, int offset, int length);
 }

@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
- * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ * SPDX-FileCopyrightText: Copyright 2024 Richard Liebscher <r1tschy@posteo.de>
  */
 
 package de.richardliebscher.mdf4.extract.impl;
@@ -50,7 +50,6 @@ import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -93,6 +92,8 @@ public final class RecordReaderFactory {
         rawValue = createVirtualDataReader(channelBlock);
         break;
       case MAXIMUM_LENGTH_CHANNEL:
+        rawValue = createMaxLengthDataReader(channelBlock, input);
+        break;
       default:
         throw new NotImplementedFeatureException(
             "Channel type not implemented: " + channelBlock.getType());
@@ -661,14 +662,20 @@ public final class RecordReaderFactory {
     }
   }
 
+  private static int getByteCount(ChannelBlock channelBlock, String message)
+      throws FormatException {
+    final var bitCount = channelBlock.getBitCount();
+    if (bitCount % 8 != 0) {
+      throw new FormatException(message);
+    }
+    return bitCount / 8;
+  }
+
   private static ValueReadFactory createStringRead(ChannelBlock channelBlock, Charset charset)
       throws FormatException {
     final var byteOffset = channelBlock.getByteOffset();
-    final var bitCount = channelBlock.getBitCount();
-    if (bitCount % 8 != 0) {
-      throw new FormatException("Bit count must be a multiple of 8 for string channels");
-    }
-    final var byteCount = bitCount / 8;
+    final var byteCount = getByteCount(channelBlock,
+        "Bit count must be a multiple of 8 for string channels");
 
     return input -> {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
@@ -676,7 +683,7 @@ public final class RecordReaderFactory {
         @Override
         public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
           final var buf = buffer.get();
-          input.readBytes(byteOffset, buf);
+          input.readBytes(byteOffset, buf, 0, buf.length);
 
           if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
               StandardCharsets.ISO_8859_1)) {
@@ -696,11 +703,8 @@ public final class RecordReaderFactory {
   private static ValueReadFactory createByteArrayRead(ChannelBlock channelBlock)
       throws FormatException {
     final var byteOffset = channelBlock.getByteOffset();
-    final var bitCount = channelBlock.getBitCount();
-    if (bitCount % 8 != 0) {
-      throw new FormatException("Bit count must be a multiple of 8 for byte array channels");
-    }
-    final var byteCount = bitCount / 8;
+    final var byteCount = getByteCount(channelBlock,
+        "Bit count must be a multiple of 8 for byte array channels");
 
     return input -> {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
@@ -708,8 +712,8 @@ public final class RecordReaderFactory {
         @Override
         public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
           final var dest = buffer.get();
-          input.readBytes(byteOffset, dest);
-          return visitor.visitByteArray(ByteBuffer.wrap(dest));
+          input.readBytes(byteOffset, dest, 0, dest.length);
+          return visitor.visitByteArray(dest);
         }
       };
     };
@@ -746,11 +750,8 @@ public final class RecordReaderFactory {
   private static ValueReadFactory createVarcharRead(ChannelBlock channelBlock, Charset charset)
       throws FormatException {
     final var byteOffset = channelBlock.getByteOffset();
-    final var bitCount = channelBlock.getBitCount();
-    if (bitCount % 8 != 0) {
-      throw new FormatException("Bit count must be a multiple of 8 for string channels");
-    }
-    final var byteCount = bitCount / 8;
+    final var byteCount = getByteCount(channelBlock,
+        "Bit count must be a multiple of 8 for string channels");
 
     return input -> {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
@@ -759,7 +760,7 @@ public final class RecordReaderFactory {
         @Override
         public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
           final var buf = buffer.get();
-          input.readBytes(byteOffset, buf);
+          input.readBytes(byteOffset, buf, 0, buf.length);
 
           if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
               StandardCharsets.ISO_8859_1)) {
@@ -795,6 +796,136 @@ public final class RecordReaderFactory {
         return visitor.visitU64(input.getRecordIndex());
       }
     });
+  }
+
+  ////
+  // Max length channels
+
+  private static ValueReadFactory createMaxLengthDataReader(
+      ChannelBlock channelBlock, ByteInput input) throws IOException {
+    switch (channelBlock.getDataType()) {
+      case STRING_LATIN1:
+        return createMaxLenStringRead(channelBlock, StandardCharsets.ISO_8859_1, input);
+      case STRING_UTF8:
+        return createMaxLenStringRead(channelBlock, StandardCharsets.UTF_8, input);
+      case STRING_UTF16LE:
+        return createMaxLenStringRead(channelBlock, StandardCharsets.UTF_16LE, input);
+      case STRING_UTF16BE:
+        return createMaxLenStringRead(channelBlock, StandardCharsets.UTF_16BE, input);
+      case BYTE_ARRAY:
+        return createMaxLenByteArrayRead(channelBlock, input);
+      case MIME_SAMPLE:
+      case MIME_STREAM:
+        throw new NotImplementedFeatureException(
+            "Reading data type " + channelBlock.getDataType()
+                + " not implemented for maximum length channel");
+      default:
+        throw new FormatException(
+            "Data type " + channelBlock.getDataType()
+                + " not allowed for maximum length channel");
+
+    }
+  }
+
+  private static ValueReadFactory createSizeDataReader(ChannelBlock channelBlock, ByteInput input)
+      throws IOException {
+    final var sizeChannel = channelBlock.getMaxLengthChannel()
+        .resolve(ChannelBlock.TYPE, input)
+        .orElseThrow(() -> new FormatException("Maximum length channel requires cn_data link set"));
+
+    if (!sizeChannel.getConversionRule().isNil()) {
+      throw new NotImplementedFeatureException("Conversion rule for size channel not implemented");
+    }
+
+    switch (sizeChannel.getDataType()) {
+      case UINT_LE:
+        return ValueReadFactory.of(createUintLeRead(sizeChannel));
+      case UINT_BE:
+        return ValueReadFactory.of(createUintBeRead(sizeChannel));
+      case INT_LE:
+        return ValueReadFactory.of(createIntLeRead(sizeChannel));
+      case INT_BE:
+        return ValueReadFactory.of(createIntBeRead(sizeChannel));
+      default:
+        throw new NotImplementedFeatureException(
+            "Reading data type " + sizeChannel.getDataType() + " as size not implemented");
+    }
+  }
+
+  private static int readSize(
+      ValueRead valueRead, RecordBuffer input, SizeVisitor sizeVisitor, byte[] buf)
+      throws IOException {
+    valueRead.read(input, sizeVisitor);
+
+    final var size = sizeVisitor.getValue();
+    if (size > buf.length) {
+      throw new FormatException(
+          "Size value bigger than maximum allowed size: " + size + " > " + buf.length);
+    }
+    return size;
+  }
+
+  private static ValueReadFactory createMaxLenStringRead(ChannelBlock channelBlock, Charset charset,
+      ByteInput input) throws IOException {
+    final var byteOffset = channelBlock.getByteOffset();
+    final var byteCount = getByteCount(channelBlock,
+        "Bit count must be a multiple of 8 for string channels");
+
+    final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
+
+    return in -> {
+      final var buffer = ThreadLocal.withInitial(
+          () -> Pair.of(new byte[byteCount], new SizeVisitor()));
+      final var sizeReader = sizeReaderFactory.build(in);
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          final var localCache = buffer.get();
+          sizeReader.read(input, localCache.getRight());
+
+          final var buf = localCache.getLeft();
+          final var size = readSize(sizeReader, input, localCache.getRight(), buf);
+
+          input.readBytes(byteOffset, buf, 0, size);
+          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
+              StandardCharsets.ISO_8859_1)) {
+            final var trimmedSize = Arrays.indexOf(buf, 0, size, (byte) 0);
+            if (trimmedSize == -1) {
+              throw new FormatException("Missing zero termination of string value");
+            }
+            return visitor.visitString(trimString(new String(buf, 0, trimmedSize, charset)));
+          } else {
+            return visitor.visitString(trimString(new String(buf, charset)));
+          }
+        }
+      };
+    };
+  }
+
+  private static ValueReadFactory createMaxLenByteArrayRead(
+      ChannelBlock channelBlock, ByteInput input) throws IOException {
+    final var byteOffset = channelBlock.getByteOffset();
+    final var byteCount = getByteCount(channelBlock,
+        "Bit count must be a multiple of 8 for byte array channels");
+    final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
+
+    return in -> {
+      final var buffer = ThreadLocal.withInitial(
+          () -> Pair.of(new byte[byteCount], new SizeVisitor()));
+      final var sizeReader = sizeReaderFactory.build(in);
+      return new ValueRead() {
+        @Override
+        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+          final var localCache = buffer.get();
+          final var buf = localCache.getLeft();
+
+          final var size = readSize(sizeReader, input, localCache.getRight(), buf);
+
+          input.readBytes(byteOffset, buf, 0, size);
+          return visitor.visitByteArray(buf, 0, size);
+        }
+      };
+    };
   }
 
   /**

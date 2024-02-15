@@ -18,11 +18,29 @@ public final class Arrays {
   }
 
   public static int indexOf(byte[] arr, byte elem) {
-    for (int i = 0; i < arr.length; i++) {
+    return indexOf(arr, 0, arr.length, elem);
+  }
+
+  public static int indexOf(byte[] arr, int offset, int length, byte elem) {
+    checkRange(arr, offset, length);
+
+    for (int i = offset; i < offset + length; i++) {
       if (arr[i] == elem) {
         return i;
       }
     }
     return -1;
+  }
+
+  private static void checkRange(byte[] arr, int offset, int length) {
+    if (length < 0) {
+      throw new IllegalArgumentException("length should not be negative");
+    }
+    if (offset < 0 || offset > arr.length) {
+      throw new ArrayIndexOutOfBoundsException(offset);
+    }
+    if (offset + length > arr.length) {
+      throw new ArrayIndexOutOfBoundsException(offset + length - 1);
+    }
   }
 }

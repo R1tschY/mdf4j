@@ -108,7 +108,7 @@ public class RecordByteBuffer implements RecordBuffer {
   }
 
   @Override
-  public void readBytes(int pos, byte[] bytes) {
-    buffer.slice().position(pos).slice().get(bytes); // TODO: PERF
+  public void readBytes(int pos, byte[] bytes, int offset, int length) {
+    buffer.slice().position(pos).slice().get(bytes, offset, length); // TODO: PERF
   }
 }

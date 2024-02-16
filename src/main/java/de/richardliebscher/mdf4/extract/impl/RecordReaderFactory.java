@@ -67,7 +67,12 @@ public final class RecordReaderFactory {
       DataGroupBlock dataGroup, ChannelGroupBlock group,
       ChannelBlock channelBlock, ByteInput input) throws IOException {
     if (channelBlock.getBitOffset() != 0) {
-      throw new NotImplementedFeatureException("Non-zero bit offset is not implemented");
+      if (!channelBlock.getDataType().isInteger()) {
+        throw new FormatException("Non-zero bit offset is not allowed for non-integers");
+      } else if (channelBlock.getBitOffset() > 7) {
+        throw new FormatException(
+            "Bit offset should be in range 0-7, got " + channelBlock.getBitOffset());
+      }
     }
     if (channelBlock.getFlags().isSet(ChannelFlag.ALL_VALUES_INVALID)) {
       return ValueReadFactory.of(new InvalidValueRead());
@@ -309,40 +314,46 @@ public final class RecordReaderFactory {
   private static ValueRead createUintLeRead(ChannelBlock channelBlock)
       throws NotImplementedFeatureException {
     final var byteOffset = channelBlock.getByteOffset();
-    switch (channelBlock.getBitCount()) {
-      case 8:
-        return new ValueRead() {
-          @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU8(input.readU8(byteOffset));
-          }
-        };
-      case 16:
-        return new ValueRead() {
-          @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16Le(byteOffset));
-          }
-        };
-      case 32:
-        return new ValueRead() {
-          @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32Le(byteOffset));
-          }
-        };
-      case 64:
-        return new ValueRead() {
-          @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64Le(byteOffset));
-          }
-        };
-      default:
+    final var bitOffset = channelBlock.getBitOffset();
+    if (bitOffset == 0) {
+      switch (channelBlock.getBitCount()) {
+        case 8:
+          return new ValueRead() {
+            @Override
+            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+              return visitor.visitU8(input.readU8(byteOffset));
+            }
+          };
+        case 16:
+          return new ValueRead() {
+            @Override
+            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+              return visitor.visitU16(input.readI16Le(byteOffset));
+            }
+          };
+        case 32:
+          return new ValueRead() {
+            @Override
+            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+              return visitor.visitU32(input.readI32Le(byteOffset));
+            }
+          };
+        case 64:
+          return new ValueRead() {
+            @Override
+            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+              return visitor.visitU64(input.readI64Le(byteOffset));
+            }
+          };
+        default:
+      }
     }
 
-    if (channelBlock.getBitCount() < 8) {
+    if (channelBlock.getBitOffset() + channelBlock.getBitCount() <= 8) {
       return createSmallUnsignedRead(channelBlock, byteOffset);
+    } else if (channelBlock.getBitOffset() != 0) {
+      throw new NotImplementedFeatureException(
+          "Reading from non-zero bit offset not implemented when value spans over multiple bytes");
     } else if (channelBlock.getBitCount() < 16) {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
@@ -410,6 +421,9 @@ public final class RecordReaderFactory {
 
     if (channelBlock.getBitCount() < 8) {
       return createSmallUnsignedRead(channelBlock, byteOffset);
+    } else if (channelBlock.getBitOffset() != 0) {
+      throw new NotImplementedFeatureException(
+          "Reading from non-zero bit offset not implemented when value spans over multiple bytes");
     } else if (channelBlock.getBitCount() < 16) {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
@@ -442,10 +456,11 @@ public final class RecordReaderFactory {
 
   private static ValueRead createSmallUnsignedRead(ChannelBlock channelBlock, int byteOffset) {
     final var mask = (1 << channelBlock.getBitCount()) - 1;
+    final var offset = channelBlock.getBitOffset();
     return new ValueRead() {
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        return visitor.visitU8((byte) (input.readU8(byteOffset) & mask));
+        return visitor.visitU8((byte) ((input.readU8(byteOffset) >>> offset) & mask));
       }
     };
   }
@@ -487,6 +502,9 @@ public final class RecordReaderFactory {
 
     if (channelBlock.getBitCount() < 8) {
       return createSmallIntegerRead(channelBlock, byteOffset);
+    } else if (channelBlock.getBitOffset() != 0) {
+      throw new NotImplementedFeatureException(
+          "Reading from non-zero bit offset not implemented when value spans over multiple bytes");
     } else if (channelBlock.getBitCount() < 16) {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
@@ -556,6 +574,9 @@ public final class RecordReaderFactory {
 
     if (channelBlock.getBitCount() < 8) {
       return createSmallIntegerRead(channelBlock, byteOffset);
+    } else if (channelBlock.getBitOffset() != 0) {
+      throw new NotImplementedFeatureException(
+          "Reading from non-zero bit offset not implemented when value spans over multiple bytes");
     } else if (channelBlock.getBitCount() < 16) {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
@@ -590,11 +611,12 @@ public final class RecordReaderFactory {
 
   private static ValueRead createSmallIntegerRead(ChannelBlock channelBlock, int byteOffset) {
     final var unusedBits = 32 - channelBlock.getBitCount();
+    final var rightOffset = unusedBits - channelBlock.getBitOffset();
     return new ValueRead() {
       @Override
       public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
         return visitor.visitI8(
-            (byte) (input.readU8(byteOffset) << unusedBits >> unusedBits));
+            (byte) (input.readU8(byteOffset) << rightOffset >> unusedBits));
       }
     };
   }

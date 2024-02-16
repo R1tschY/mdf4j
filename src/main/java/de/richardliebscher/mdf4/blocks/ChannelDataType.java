@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import java.util.EnumSet;
 
 public enum ChannelDataType {
   UINT_LE, UINT_BE,
@@ -20,6 +21,10 @@ public enum ChannelDataType {
   // 4.2.0
   COMPLEX_LE, COMPLEX_BE;
 
+  private static final EnumSet<ChannelDataType> INTEGERS = EnumSet.of(
+      ChannelDataType.UINT_BE, ChannelDataType.UINT_LE,
+      ChannelDataType.INT_BE, ChannelDataType.INT_LE);
+
   private static final ChannelDataType[] VALUES = values();
 
   public static ChannelDataType parse(int value) throws FormatException {
@@ -28,5 +33,9 @@ public enum ChannelDataType {
     } else {
       throw new FormatException("Unknown channel data type: " + value);
     }
+  }
+
+  public boolean isInteger() {
+    return INTEGERS.contains(this);
   }
 }

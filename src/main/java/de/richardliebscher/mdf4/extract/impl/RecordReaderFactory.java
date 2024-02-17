@@ -713,7 +713,7 @@ public final class RecordReaderFactory {
             if (size == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(trimString(new String(buf, 0, size, charset)));
+            return visitor.visitString(new String(buf, 0, size, charset));
           } else {
             return visitor.visitString(trimString(new String(buf, charset)));
           }
@@ -790,7 +790,7 @@ public final class RecordReaderFactory {
             if (size == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(trimString(new String(buf, 0, size, charset)));
+            return visitor.visitString(new String(buf, 0, size, charset));
           } else {
             return visitor.visitString(trimString(new String(buf, charset)));
           }

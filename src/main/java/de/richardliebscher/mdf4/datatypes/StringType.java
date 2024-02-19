@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * String type.
  */
-public class StringType implements DataType {
+public final class StringType implements DataType {
 
   private final Integer maximumLength;
 

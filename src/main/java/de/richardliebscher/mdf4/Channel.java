@@ -13,6 +13,7 @@ import de.richardliebscher.mdf4.blocks.ChannelBlock;
 import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
+import de.richardliebscher.mdf4.blocks.Composition;
 import de.richardliebscher.mdf4.blocks.SyncType;
 import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.datatypes.ByteArrayType;
@@ -20,10 +21,13 @@ import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
 import de.richardliebscher.mdf4.datatypes.StringType;
+import de.richardliebscher.mdf4.datatypes.StructType;
 import de.richardliebscher.mdf4.datatypes.UnsignedIntegerType;
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.internal.FileContext;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
@@ -102,8 +106,31 @@ public class Channel {
    *
    * @return Channel value data type
    */
-  public DataType getRawDataType() {
+  public DataType getRawDataType() throws IOException {
     // TODO: consider possible conversion
+    return getRawDataTypeFromBlock(block, ctx);
+  }
+
+  private static DataType getRawDataTypeFromBlock(ChannelBlock block, FileContext ctx)
+      throws IOException {
+    final var compositionOptional = block.getComposition()
+        .resolve(Composition.TYPE, ctx.getInput());
+    if (compositionOptional.isPresent()) {
+      final var composition = compositionOptional.get();
+      if (composition instanceof ChannelBlock) {
+        final var fields = new ArrayList<DataType>();
+        fields.add(getRawDataTypeFromBlock((ChannelBlock) composition, ctx));
+        var iter = new ChannelBlock.Iterator(
+            ((ChannelBlock) composition).getNextChannel(), ctx.getInput());
+        while (iter.hasNext()) {
+          fields.add(getRawDataTypeFromBlock(iter.next(), ctx));
+        }
+        return new StructType(fields);
+      } else {
+        throw new NotImplementedFeatureException("Array composition not implemented");
+      }
+    }
+
     switch (block.getDataType()) {
       case UINT_LE:
       case UINT_BE:

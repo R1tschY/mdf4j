@@ -8,7 +8,7 @@ package de.richardliebscher.mdf4.datatypes;
 /**
  * Unsigned integer type.
  */
-public class UnsignedIntegerType implements DataType {
+public final class UnsignedIntegerType implements DataType {
   private final int bitCount;
 
   public UnsignedIntegerType(int bitCount) {

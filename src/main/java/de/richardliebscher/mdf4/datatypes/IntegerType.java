@@ -8,7 +8,7 @@ package de.richardliebscher.mdf4.datatypes;
 /**
  * Signed integer type.
  */
-public class IntegerType implements DataType {
+public final class IntegerType implements DataType {
   private final int bitCount;
 
   public IntegerType(int bitCount) {

@@ -11,7 +11,7 @@ import java.util.Optional;
 /**
  * Floating-point type.
  */
-public class FloatType implements DataType {
+public final class FloatType implements DataType {
 
   private final int bitCount;
   private final Integer precision;

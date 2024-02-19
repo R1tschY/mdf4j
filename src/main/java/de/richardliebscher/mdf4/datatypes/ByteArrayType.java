@@ -10,7 +10,7 @@ import java.util.Optional;
 /**
  * Byte array type.
  */
-public class ByteArrayType implements DataType {
+public final class ByteArrayType implements DataType {
 
   private final Integer maximumLength;
 

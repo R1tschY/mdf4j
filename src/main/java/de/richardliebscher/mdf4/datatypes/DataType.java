@@ -85,6 +85,17 @@ public interface DataType {
     }
 
     /**
+     * Visit {@link StructType}.
+     *
+     * @param type {@link StructType}
+     * @return Any value
+     * @throws E Any exception
+     */
+    default R visit(StructType type) throws E {
+      return visitElse(type);
+    }
+
+    /**
      * Visit unhandled type.
      *
      * @param type Data type

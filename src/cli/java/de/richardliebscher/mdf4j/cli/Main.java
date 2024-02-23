@@ -10,22 +10,25 @@ import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.Mdf4File;
 import de.richardliebscher.mdf4.Result;
+import de.richardliebscher.mdf4.datatypes.ByteArrayType;
 import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.DataType.Visitor;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
 import de.richardliebscher.mdf4.datatypes.StringType;
+import de.richardliebscher.mdf4.datatypes.StructType;
 import de.richardliebscher.mdf4.datatypes.UnsignedIntegerType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.extract.RecordFactory;
-import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
+import de.richardliebscher.mdf4.extract.de.StructAccess;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,96 +123,101 @@ public class Main {
     MessageType schema = new MessageType("Record", fields);
 
     try (final var writer = new Builder(targetPath).withType(schema).build()) {
-      final var recordReader = reader.newRecordReader(
-          new RecordFactory<RecordConsumer, Void>() {
-            @Override
-            public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
-              return true;
-            }
+      final var recordReader = reader.newRecordReader(new RecordFactory<RecordConsumer, Void>() {
+        @Override
+        public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
+          return true;
+        }
 
-            @Override
-            public DeserializeInto<RecordConsumer> selectChannel(DataGroup dataGroup,
-                ChannelGroup group, Channel channel) throws IOException {
-              return channel.getRawDataType()
-                  .accept(new Visitor<DeserializeInto<RecordConsumer>, IOException>() {
-                    @Override
-                    public DeserializeInto<RecordConsumer> visit(IntegerType type)
-                        throws IOException {
-                      if (type.getBitCount() == 1) {
-                        return (deserializer, dest) -> new BooleanFieldDeserialize(
-                            dest).deserialize(deserializer);
-                      } else if (type.getBitCount() <= 32) {
-                        return (deserializer, dest) -> new Int32FieldDeserialize(dest).deserialize(
-                            deserializer);
-                      } else if (type.getBitCount() <= 64) {
-                        return (deserializer, dest) -> new Int64FieldDeserialize(dest).deserialize(
-                            deserializer);
-                      } else {
-                        throw new IOException("Integer types bigger than 64 bits not supported");
-                      }
-                    }
+        @Override
+        public DeserializeInto<RecordConsumer> selectChannel(DataGroup dataGroup,
+            ChannelGroup group, Channel channel) throws IOException {
+          return createDeserializeInto(channel.getRawDataType());
+        }
 
-                    @Override
-                    public DeserializeInto<RecordConsumer> visit(UnsignedIntegerType type)
-                        throws IOException {
-                      if (type.getBitCount() == 1) {
-                        return (deserializer, dest) -> new BooleanFieldDeserialize(
-                            dest).deserialize(deserializer);
-                      } else if (type.getBitCount() <= 31) {
-                        return (deserializer, dest) -> new Int32FieldDeserialize(dest).deserialize(
-                            deserializer);
-                      } else if (type.getBitCount() <= 63) {
-                        return (deserializer, dest) -> new Int64FieldDeserialize(dest).deserialize(
-                            deserializer);
-                      } else {
-                        throw new IOException(
-                            "Unsigned integer types bigger than 63 bits not supported");
-                      }
-                    }
+        @Override
+        public RecordConsumer createRecordBuilder() {
+          throw new UnsupportedOperationException();
+        }
 
-                    @Override
-                    public DeserializeInto<RecordConsumer> visit(FloatType type)
-                        throws IOException {
-                      if (type.getBitCount() == 16 || type.getBitCount() == 32) {
-                        return (deserializer, dest) -> new Float32FieldDeserialize(
-                            dest).deserialize(deserializer);
-                      } else if (type.getBitCount() == 64) {
-                        return (deserializer, dest) -> new Float64FieldDeserialize(
-                            dest).deserialize(deserializer);
-                      } else {
-                        throw new IOException("Float types should have 16, 32 or 64 bits");
-                      }
-                    }
-
-                    @Override
-                    public DeserializeInto<RecordConsumer> visit(StringType type)
-                        throws RuntimeException {
-                      return (deserializer, dest) -> new StringFieldDeserialize(dest).deserialize(
-                          deserializer);
-                    }
-
-                    @Override
-                    public DeserializeInto<RecordConsumer> visitElse(DataType type) {
-                      return null;
-                    }
-                  });
-            }
-
-            @Override
-            public RecordConsumer createRecordBuilder() {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Void finishRecord(RecordConsumer unfinishedRecord) {
-              throw new UnsupportedOperationException();
-            }
-          });
+        @Override
+        public Void finishRecord(RecordConsumer unfinishedRecord) {
+          throw new UnsupportedOperationException();
+        }
+      });
 
       while (recordReader.hasNext()) {
         writer.write(recordReader::nextInto);
       }
     }
+  }
+
+  private static DeserializeInto<RecordConsumer> createDeserializeInto(DataType dataType)
+      throws IOException {
+    return dataType.accept(new Visitor<DeserializeInto<RecordConsumer>, IOException>() {
+      @Override
+      public DeserializeInto<RecordConsumer> visit(IntegerType type)
+          throws IOException {
+        if (type.getBitCount() == 1) {
+          return new BooleanFieldDeserialize();
+        } else if (type.getBitCount() <= 32) {
+          return new Int32FieldDeserialize();
+        } else if (type.getBitCount() <= 64) {
+          return new Int64FieldDeserialize();
+        } else {
+          throw new IOException("Integer types bigger than 64 bits not supported");
+        }
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visit(UnsignedIntegerType type)
+          throws IOException {
+        if (type.getBitCount() == 1) {
+          return new BooleanFieldDeserialize();
+        } else if (type.getBitCount() <= 31) {
+          return new Int32FieldDeserialize();
+        } else if (type.getBitCount() <= 63) {
+          return new Int64FieldDeserialize();
+        } else {
+          throw new IOException(
+              "Unsigned integer types bigger than 63 bits not supported");
+        }
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visit(FloatType type)
+          throws IOException {
+        if (type.getBitCount() == 16 || type.getBitCount() == 32) {
+          return new Float32FieldDeserialize();
+        } else if (type.getBitCount() == 64) {
+          return new Float64FieldDeserialize();
+        } else {
+          throw new IOException("Float types should have 16, 32 or 64 bits");
+        }
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visit(StringType type)
+          throws RuntimeException {
+        return new StringFieldDeserialize();
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visit(ByteArrayType type)
+          throws RuntimeException {
+        return new ByteArrayFieldDeserialize();
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visit(StructType type) throws IOException {
+        return new StructFieldDeserialize(type);
+      }
+
+      @Override
+      public DeserializeInto<RecordConsumer> visitElse(DataType type) throws IOException {
+        throw new IOException("Unsupported data type " + type);
+      }
+    });
   }
 
 
@@ -272,237 +280,296 @@ public class Main {
 
   @RequiredArgsConstructor
   @Getter
-  static class Int32FieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-
-    private final RecordConsumer recordConsumer;
+  static final class Int32FieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
     }
 
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+    @Override
+    public String expecting() {
+      return "32-bit integer";
+    }
 
-      @Override
-      public String expecting() {
-        return "32-bit integer";
-      }
+    @Override
+    public Void visitU8(byte value, RecordConsumer recordConsumer) {
+      return visitI32(UnsignedByte.toInt(value), recordConsumer);
+    }
 
-      @Override
-      public Void visitU8(byte value, RecordConsumer recordConsumer) {
-        return visitI32(UnsignedByte.toInt(value), recordConsumer);
-      }
+    @Override
+    public Void visitU16(short value, RecordConsumer recordConsumer) {
+      return visitI32(UnsignedShort.toInt(value), recordConsumer);
+    }
 
-      @Override
-      public Void visitU16(short value, RecordConsumer recordConsumer) {
-        return visitI32(UnsignedShort.toInt(value), recordConsumer);
-      }
+    @Override
+    public Void visitU32(int value, RecordConsumer recordConsumer) {
+      return visitI32(Math.toIntExact(UnsignedInteger.toLong(value)), recordConsumer);
+    }
 
-      @Override
-      public Void visitU32(int value, RecordConsumer recordConsumer) {
-        return visitI32(Math.toIntExact(UnsignedInteger.toLong(value)), recordConsumer);
-      }
+    @Override
+    public Void visitI32(int value, RecordConsumer recordConsumer) {
+      recordConsumer.addInteger(value);
+      return null;
+    }
 
-      @Override
-      public Void visitI32(int value, RecordConsumer recordConsumer) {
-        recordConsumer.addInteger(value);
-        return null;
-      }
-
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
-      }
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
     }
   }
 
   @RequiredArgsConstructor
   @Getter
-  static class BooleanFieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-
-    private final RecordConsumer recordConsumer;
+  static final class BooleanFieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
     }
 
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+    @Override
+    public String expecting() {
+      return "boolean";
+    }
 
-      @Override
-      public String expecting() {
-        return "boolean";
-      }
+    @Override
+    public Void visitU8(byte value, RecordConsumer recordConsumer) {
+      recordConsumer.addBoolean(value != 0);
+      return null;
+    }
 
-      @Override
-      public Void visitU8(byte value, RecordConsumer recordConsumer) {
-        recordConsumer.addBoolean(value != 0);
-        return null;
-      }
+    @Override
+    public Void visitI8(byte value, RecordConsumer recordConsumer) {
+      recordConsumer.addBoolean(value != 0);
+      return null;
+    }
 
-      @Override
-      public Void visitI8(byte value, RecordConsumer recordConsumer) {
-        recordConsumer.addBoolean(value != 0);
-        return null;
-      }
-
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
-      }
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
     }
   }
 
   @RequiredArgsConstructor
   @Getter
-  static class Int64FieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-
-    private final RecordConsumer recordConsumer;
+  static final class Int64FieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
     }
-
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
-
-      @Override
-      public String expecting() {
-        return "64-bit integer";
-      }
-
-      @Override
-      public Void visitU32(int value, RecordConsumer recordConsumer) {
-        return visitI64(UnsignedInteger.toLong(value), recordConsumer);
-      }
-
-      @Override
-      public Void visitU64(long value, RecordConsumer recordConsumer) {
-        if (value < 0) {
-          throw new ArithmeticException("long overflow"); // TODO
-        }
-        return visitI64(value, recordConsumer);
-      }
-
-      @Override
-      public Void visitI64(long value, RecordConsumer recordConsumer) {
-        recordConsumer.addLong(value);
-        return null;
-      }
-
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
-      }
-    }
-  }
-
-
-  @RequiredArgsConstructor
-  @Getter
-  static class Float32FieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-    private final RecordConsumer recordConsumer;
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public String expecting() {
+      return "64-bit integer";
     }
 
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+    @Override
+    public Void visitU32(int value, RecordConsumer recordConsumer) {
+      return visitI64(UnsignedInteger.toLong(value), recordConsumer);
+    }
 
-      @Override
-      public String expecting() {
-        return "32-bit float";
+    @Override
+    public Void visitU64(long value, RecordConsumer recordConsumer) {
+      if (value < 0) {
+        throw new ArithmeticException("long overflow"); // TODO
       }
+      return visitI64(value, recordConsumer);
+    }
 
-      @Override
-      public Void visitF32(float value, RecordConsumer recordConsumer) {
-        recordConsumer.addFloat(value);
-        return null;
-      }
+    @Override
+    public Void visitI64(long value, RecordConsumer recordConsumer) {
+      recordConsumer.addLong(value);
+      return null;
+    }
 
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
-      }
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
     }
   }
 
   @RequiredArgsConstructor
   @Getter
-  static class Float64FieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-    private final RecordConsumer recordConsumer;
+  static final class Float32FieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
     }
 
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+    @Override
+    public String expecting() {
+      return "32-bit float";
+    }
 
-      @Override
-      public String expecting() {
-        return "64-bit float";
-      }
+    @Override
+    public Void visitF32(float value, RecordConsumer recordConsumer) {
+      recordConsumer.addFloat(value);
+      return null;
+    }
 
-      @Override
-      public Void visitF64(double value, RecordConsumer recordConsumer) {
-        recordConsumer.addDouble(value);
-        return null;
-      }
-
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
-      }
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
     }
   }
 
   @RequiredArgsConstructor
   @Getter
-  static class StringFieldDeserialize implements Deserialize<Void> {
-
-    private static final Visitor VISITOR = new Visitor();
-    private final RecordConsumer recordConsumer;
+  static final class Float64FieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
 
     @Override
-    public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR, recordConsumer);
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
     }
 
-    private static class Visitor implements
-        de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+    @Override
+    public String expecting() {
+      return "64-bit float";
+    }
 
-      @Override
-      public String expecting() {
-        return "string";
-      }
+    @Override
+    public Void visitF64(double value, RecordConsumer recordConsumer) {
+      recordConsumer.addDouble(value);
+      return null;
+    }
 
-      @Override
-      public Void visitString(String value, RecordConsumer recordConsumer) {
-        recordConsumer.addBinary(Binary.fromString(value));
-        return null;
-      }
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
+    }
+  }
 
-      @Override
-      public Void visitInvalid(RecordConsumer recordConsumer) {
-        return null;
+  @RequiredArgsConstructor
+  @Getter
+  static final class StringFieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+
+    @Override
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
+    }
+
+    @Override
+    public String expecting() {
+      return "string";
+    }
+
+    @Override
+    public Void visitString(String value, RecordConsumer recordConsumer) {
+      recordConsumer.addBinary(Binary.fromString(value));
+      return null;
+    }
+
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
+    }
+  }
+
+  @RequiredArgsConstructor
+  @Getter
+  static final class ByteArrayFieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+
+    @Override
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
+    }
+
+    @Override
+    public String expecting() {
+      return "byte array";
+    }
+
+    @Override
+    public Void visitByteArray(ByteBuffer bytes, RecordConsumer recordConsumer) {
+      recordConsumer.addBinary(Binary.fromReusedByteBuffer(bytes));
+      return null;
+    }
+
+    @Override
+    public Void visitByteArray(byte[] bytes, int offset, int length,
+        RecordConsumer recordConsumer) {
+      recordConsumer.addBinary(Binary.fromReusedByteArray(bytes, offset, length));
+      return null;
+    }
+
+    @Override
+    public Void visitByteArray(byte[] bytes, RecordConsumer recordConsumer) {
+      recordConsumer.addBinary(Binary.fromReusedByteArray(bytes));
+      return null;
+    }
+
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
+    }
+  }
+
+  @RequiredArgsConstructor
+  @Getter
+  static final class StructFieldDeserialize implements DeserializeInto<RecordConsumer>,
+      de.richardliebscher.mdf4.extract.de.Visitor<Void, RecordConsumer> {
+
+    private final String[] fieldNames;
+    private final DeserializeInto<RecordConsumer>[] fieldDe;
+
+    @SuppressWarnings("unchecked")
+    public StructFieldDeserialize(StructType type) throws IOException {
+      final var fieldCount = type.fields().size();
+      fieldNames = new String[fieldCount];
+      fieldDe = (DeserializeInto<RecordConsumer>[]) new DeserializeInto<?>[fieldCount];
+
+      final var fields = type.fields();
+      for (int i = 0; i < fieldCount; i++) {
+        final var field = fields.get(i);
+        fieldNames[i] = field.getKey();
+        fieldDe[i] = createDeserializeInto(field.getValue());
       }
+    }
+
+    @Override
+    public void deserializeInto(Deserializer deserializer, RecordConsumer recordConsumer)
+        throws IOException {
+      deserializer.deserialize_value(this, recordConsumer);
+    }
+
+    @Override
+    public String expecting() {
+      return "structure";
+    }
+
+    @Override
+    public Void visitStruct(StructAccess struct, RecordConsumer recordConsumer) throws IOException {
+      final var fields = struct.fields();
+      recordConsumer.startGroup();
+      for (int i = 0; i < fields; i++) {
+        recordConsumer.startField(fieldNames[i], i);
+        struct.next_field(fieldDe[i], recordConsumer);
+        recordConsumer.endField(fieldNames[i], i);
+      }
+      recordConsumer.endGroup();
+      return null;
+    }
+
+    @Override
+    public Void visitInvalid(RecordConsumer recordConsumer) {
+      return null;
     }
   }
 }

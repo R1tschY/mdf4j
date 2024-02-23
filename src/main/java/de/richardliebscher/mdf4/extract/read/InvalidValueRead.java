@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 public class InvalidValueRead implements ValueRead {
 
   @Override
-  public <T> T read(RecordBuffer ignore, Visitor<T> visitor) throws IOException {
-    return visitor.visitInvalid();
+  public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
+    return visitor.visitInvalid(param);
   }
 }

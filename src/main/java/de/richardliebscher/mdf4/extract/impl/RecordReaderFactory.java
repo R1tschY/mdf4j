@@ -47,6 +47,7 @@ import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.extract.read.ValueReadFactory;
 import de.richardliebscher.mdf4.internal.Arrays;
 import de.richardliebscher.mdf4.internal.FileContext;
+import de.richardliebscher.mdf4.internal.IntCell;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -205,7 +206,8 @@ public final class RecordReaderFactory {
 
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           return visitor.visitStruct(new StructAccess() {
             private int index = 0;
 
@@ -222,8 +224,9 @@ public final class RecordReaderFactory {
 
               return deserialize.deserialize(new Deserializer() {
                 @Override
-                public <R> R deserialize_value(Visitor<R> visitor) throws IOException {
-                  return fieldReaders[index++].read(input, visitor);
+                public <R, P2> R deserialize_value(Visitor<R, P2> visitor, P2 param)
+                    throws IOException {
+                  return fieldReaders[index++].read(input, visitor, param);
                 }
 
                 @Override
@@ -232,7 +235,7 @@ public final class RecordReaderFactory {
                 }
               });
             }
-          });
+          }, param);
         }
       };
     };
@@ -263,11 +266,12 @@ public final class RecordReaderFactory {
       final var valueRead = valueReadFactory.build(input);
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           if ((input.readU8(invalidationByteIndex) & invalidationBitMask) != 0) {
-            return visitor.visitInvalid();
+            return visitor.visitInvalid(param);
           } else {
-            return valueRead.read(input, visitor);
+            return valueRead.read(input, visitor, param);
           }
         }
       };
@@ -320,29 +324,33 @@ public final class RecordReaderFactory {
         case 8:
           return new ValueRead() {
             @Override
-            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-              return visitor.visitU8(input.readU8(byteOffset));
+            public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+                throws IOException {
+              return visitor.visitU8(input.readU8(byteOffset), param);
             }
           };
         case 16:
           return new ValueRead() {
             @Override
-            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-              return visitor.visitU16(input.readI16Le(byteOffset));
+            public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+                throws IOException {
+              return visitor.visitU16(input.readI16Le(byteOffset), param);
             }
           };
         case 32:
           return new ValueRead() {
             @Override
-            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-              return visitor.visitU32(input.readI32Le(byteOffset));
+            public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+                throws IOException {
+              return visitor.visitU32(input.readI32Le(byteOffset), param);
             }
           };
         case 64:
           return new ValueRead() {
             @Override
-            public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-              return visitor.visitU64(input.readI64Le(byteOffset));
+            public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+                throws IOException {
+              return visitor.visitU64(input.readI64Le(byteOffset), param);
             }
           };
         default:
@@ -358,24 +366,27 @@ public final class RecordReaderFactory {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU16((short) (input.readI16Le(byteOffset) & mask));
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU16((short) (input.readI16Le(byteOffset) & mask), param);
         }
       };
     } else if (channelBlock.getBitCount() < 32) {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU32(input.readI32Le(byteOffset) & mask);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU32(input.readI32Le(byteOffset) & mask, param);
         }
       };
     } else if (channelBlock.getBitCount() < 64) {
       final var mask = (1L << channelBlock.getBitCount()) - 1L;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU64(input.readI64Le(byteOffset) & mask);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU64(input.readI64Le(byteOffset) & mask, param);
         }
       };
     } else {
@@ -391,29 +402,33 @@ public final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU8(input.readU8(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitU8(input.readU8(byteOffset), param);
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU16(input.readI16Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitU16(input.readI16Be(byteOffset), param);
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU32(input.readI32Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitU32(input.readI32Be(byteOffset), param);
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitU64(input.readI64Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitU64(input.readI64Be(byteOffset), param);
           }
         };
       default:
@@ -428,24 +443,27 @@ public final class RecordReaderFactory {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU16((short) (input.readI16Be(byteOffset) & mask));
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU16((short) (input.readI16Be(byteOffset) & mask), param);
         }
       };
     } else if (channelBlock.getBitCount() < 32) {
       final var mask = (1 << channelBlock.getBitCount()) - 1;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU32(input.readI32Be(byteOffset) & mask);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU32(input.readI32Be(byteOffset) & mask, param);
         }
       };
     } else if (channelBlock.getBitCount() < 64) {
       final var mask = (1L << channelBlock.getBitCount()) - 1L;
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitU64(input.readI64Be(byteOffset) & mask);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitU64(input.readI64Be(byteOffset) & mask, param);
         }
       };
     } else {
@@ -459,8 +477,8 @@ public final class RecordReaderFactory {
     final var offset = channelBlock.getBitOffset();
     return new ValueRead() {
       @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        return visitor.visitU8((byte) ((input.readU8(byteOffset) >>> offset) & mask));
+      public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
+        return visitor.visitU8((byte) ((input.readU8(byteOffset) >>> offset) & mask), param);
       }
     };
   }
@@ -472,29 +490,33 @@ public final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI8(input.readU8(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI8(input.readU8(byteOffset), param);
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI16(input.readI16Le(byteOffset), param);
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI32(input.readI32Le(byteOffset), param);
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI64(input.readI64Le(byteOffset), param);
           }
         };
       default:
@@ -509,26 +531,29 @@ public final class RecordReaderFactory {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           return visitor.visitI16(
-              (short) (input.readI16Le(byteOffset) << unusedBits >> unusedBits));
+              (short) (input.readI16Le(byteOffset) << unusedBits >> unusedBits), param);
         }
       };
     } else if (channelBlock.getBitCount() < 32) {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitI32(input.readI32Le(byteOffset) << unusedBits >> unusedBits);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitI32(input.readI32Le(byteOffset) << unusedBits >> unusedBits, param);
         }
       };
     } else if (channelBlock.getBitCount() < 64) {
       final var unusedBits = 64 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           return visitor.visitI64(
-              input.readI64Le(byteOffset) << unusedBits >> unusedBits);
+              input.readI64Le(byteOffset) << unusedBits >> unusedBits, param);
         }
       };
     } else {
@@ -544,29 +569,33 @@ public final class RecordReaderFactory {
       case 8:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI8(input.readU8(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI8(input.readU8(byteOffset), param);
           }
         };
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI16(input.readI16Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI16(input.readI16Be(byteOffset), param);
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI32(input.readI32Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI32(input.readI32Be(byteOffset), param);
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitI64(input.readI64Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitI64(input.readI64Be(byteOffset), param);
           }
         };
       default:
@@ -581,26 +610,29 @@ public final class RecordReaderFactory {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           return visitor.visitI16(
-              (short) (input.readI16Be(byteOffset) << unusedBits >> unusedBits));
+              (short) (input.readI16Be(byteOffset) << unusedBits >> unusedBits), param);
         }
       };
     } else if (channelBlock.getBitCount() < 32) {
       final var unusedBits = 32 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-          return visitor.visitI32(input.readI32Be(byteOffset) << unusedBits >> unusedBits);
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
+          return visitor.visitI32(input.readI32Be(byteOffset) << unusedBits >> unusedBits, param);
         }
       };
     } else if (channelBlock.getBitCount() < 64) {
       final var unusedBits = 64 - channelBlock.getBitCount();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           return visitor.visitI64(
-              input.readI64Be(byteOffset) << unusedBits >> unusedBits);
+              input.readI64Be(byteOffset) << unusedBits >> unusedBits, param);
         }
       };
     } else {
@@ -614,9 +646,9 @@ public final class RecordReaderFactory {
     final var rightOffset = unusedBits - channelBlock.getBitOffset();
     return new ValueRead() {
       @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+      public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
         return visitor.visitI8(
-            (byte) (input.readU8(byteOffset) << rightOffset >> unusedBits));
+            (byte) (input.readU8(byteOffset) << rightOffset >> unusedBits), param);
       }
     };
   }
@@ -628,22 +660,25 @@ public final class RecordReaderFactory {
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF16(input.readI16Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF16(input.readI16Le(byteOffset), param);
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF32(input.readF32Le(byteOffset), param);
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64Le(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF64(input.readF64Le(byteOffset), param);
           }
         };
       default:
@@ -660,22 +695,25 @@ public final class RecordReaderFactory {
       case 16:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF16(input.readI16Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF16(input.readI16Be(byteOffset), param);
           }
         };
       case 32:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF32(input.readF32Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF32(input.readF32Be(byteOffset), param);
           }
         };
       case 64:
         return new ValueRead() {
           @Override
-          public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-            return visitor.visitF64(input.readF64Be(byteOffset));
+          public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+              throws IOException {
+            return visitor.visitF64(input.readF64Be(byteOffset), param);
           }
         };
       default:
@@ -703,7 +741,8 @@ public final class RecordReaderFactory {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           final var buf = buffer.get();
           input.readBytes(byteOffset, buf, 0, buf.length);
 
@@ -713,9 +752,9 @@ public final class RecordReaderFactory {
             if (size == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(new String(buf, 0, size, charset));
+            return visitor.visitString(new String(buf, 0, size, charset), param);
           } else {
-            return visitor.visitString(trimString(new String(buf, charset)));
+            return visitor.visitString(trimString(new String(buf, charset)), param);
           }
         }
       };
@@ -732,10 +771,11 @@ public final class RecordReaderFactory {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           final var dest = buffer.get();
           input.readBytes(byteOffset, dest, 0, dest.length);
-          return visitor.visitByteArray(dest);
+          return visitor.visitByteArray(dest, param);
         }
       };
     };
@@ -780,7 +820,8 @@ public final class RecordReaderFactory {
       final var sdInput = input.dup();
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           final var buf = buffer.get();
           input.readBytes(byteOffset, buf, 0, buf.length);
 
@@ -790,9 +831,9 @@ public final class RecordReaderFactory {
             if (size == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(new String(buf, 0, size, charset));
+            return visitor.visitString(new String(buf, 0, size, charset), param);
           } else {
-            return visitor.visitString(trimString(new String(buf, charset)));
+            return visitor.visitString(trimString(new String(buf, charset)), param);
           }
         }
       };
@@ -814,8 +855,8 @@ public final class RecordReaderFactory {
     // TODO: apply offset from HD block
     return ValueReadFactory.of(new ValueRead() {
       @Override
-      public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
-        return visitor.visitU64(input.getRecordIndex());
+      public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
+        return visitor.visitU64(input.getRecordIndex(), param);
       }
     });
   }
@@ -875,11 +916,11 @@ public final class RecordReaderFactory {
   }
 
   private static int readSize(
-      ValueRead valueRead, RecordBuffer input, SizeVisitor sizeVisitor, byte[] buf)
+      ValueRead valueRead, RecordBuffer input, IntCell intCell, byte[] buf)
       throws IOException {
-    valueRead.read(input, sizeVisitor);
+    valueRead.read(input, SizeVisitor.INSTANCE, intCell);
 
-    final var size = sizeVisitor.getValue();
+    final var size = intCell.get();
     if (size > buf.length) {
       throw new FormatException(
           "Size value bigger than maximum allowed size: " + size + " > " + buf.length);
@@ -897,14 +938,13 @@ public final class RecordReaderFactory {
 
     return in -> {
       final var buffer = ThreadLocal.withInitial(
-          () -> Pair.of(new byte[byteCount], new SizeVisitor()));
+          () -> Pair.of(new byte[byteCount], new IntCell()));
       final var sizeReader = sizeReaderFactory.build(in);
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           final var localCache = buffer.get();
-          sizeReader.read(input, localCache.getRight());
-
           final var buf = localCache.getLeft();
           final var size = readSize(sizeReader, input, localCache.getRight(), buf);
 
@@ -915,9 +955,9 @@ public final class RecordReaderFactory {
             if (trimmedSize == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(trimString(new String(buf, 0, trimmedSize, charset)));
+            return visitor.visitString(trimString(new String(buf, 0, trimmedSize, charset)), param);
           } else {
-            return visitor.visitString(trimString(new String(buf, charset)));
+            return visitor.visitString(trimString(new String(buf, charset)), param);
           }
         }
       };
@@ -933,18 +973,19 @@ public final class RecordReaderFactory {
 
     return in -> {
       final var buffer = ThreadLocal.withInitial(
-          () -> Pair.of(new byte[byteCount], new SizeVisitor()));
+          () -> Pair.of(new byte[byteCount], new IntCell()));
       final var sizeReader = sizeReaderFactory.build(in);
       return new ValueRead() {
         @Override
-        public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+            throws IOException {
           final var localCache = buffer.get();
           final var buf = localCache.getLeft();
 
           final var size = readSize(sizeReader, input, localCache.getRight(), buf);
 
           input.readBytes(byteOffset, buf, 0, size);
-          return visitor.visitByteArray(buf, 0, size);
+          return visitor.visitByteArray(buf, 0, size, param);
         }
       };
     };
@@ -1180,8 +1221,8 @@ public final class RecordReaderFactory {
     public void readInto(RecordBuffer recordBuffer, B destination) throws IOException {
       deserializeInto.deserializeInto(new Deserializer() {
         @Override
-        public <R2> R2 deserialize_value(Visitor<R2> visitor) throws IOException {
-          return channelReader.read(recordBuffer, visitor);
+        public <R2, P2> R2 deserialize_value(Visitor<R2, P2> visitor, P2 param) throws IOException {
+          return channelReader.read(recordBuffer, visitor, param);
         }
 
         @Override

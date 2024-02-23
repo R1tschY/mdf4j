@@ -97,7 +97,7 @@ public class TestBenchmark {
     int[] res = new int[values.values.length];
     final var deserializer = new IntArrayDeserializer(values.values);
     for (int i = 0; i < values.values.length; i++) {
-      res[i] = new IntCellDeserialize().deserialize(deserializer).getValue();
+      res[i] = new IntCellDeserialize2().deserialize(deserializer).getValue();
     }
     return res;
   }
@@ -108,7 +108,7 @@ public class TestBenchmark {
   @Measurement(iterations = 3)
   public int[] IntCellDeserialize2(F16State values) throws IOException {
     int[] res = new int[values.values.length];
-    final var intCellDeserialize = new IntCellDeserialize();
+    final var intCellDeserialize = new IntCellDeserialize2();
     final var deserializer = new IntArrayDeserializer(values.values);
     for (int i = 0; i < values.values.length; i++) {
       res[i] = intCellDeserialize.deserialize(deserializer).getValue();
@@ -137,6 +137,34 @@ public class TestBenchmark {
   public int[] IntCellDeserialize4(F16State values) throws IOException {
     int[] res = new int[values.values.length];
     final var intCellDeserialize = new IntCellDeserialize4();
+    final var deserializer = new IntArrayDeserializer(values.values);
+    for (int i = 0; i < values.values.length; i++) {
+      res[i] = intCellDeserialize.deserialize(deserializer).getValue();
+    }
+    return res;
+  }
+
+  @Benchmark
+  @Warmup(iterations = 1, time = 1, batchSize = 1)
+  @Fork(value = 1, warmups = 0)
+  @Measurement(iterations = 3)
+  public int[] IntCellDeserializeNew2(F16State values) throws IOException {
+    int[] res = new int[values.values.length];
+    final var intCellDeserialize = new IntCellDeserializeNew2();
+    final var deserializer = new IntArrayDeserializer(values.values);
+    for (int i = 0; i < values.values.length; i++) {
+      res[i] = intCellDeserialize.deserialize(deserializer).getValue();
+    }
+    return res;
+  }
+
+  @Benchmark
+  @Warmup(iterations = 1, time = 1, batchSize = 1)
+  @Fork(value = 1, warmups = 0)
+  @Measurement(iterations = 3)
+  public int[] IntCellDeserializeNew3(F16State values) throws IOException {
+    int[] res = new int[values.values.length];
+    final var intCellDeserialize = new IntCellDeserializeNew3();
     final var deserializer = new IntArrayDeserializer(values.values);
     for (int i = 0; i < values.values.length; i++) {
       res[i] = intCellDeserialize.deserialize(deserializer).getValue();
@@ -192,6 +220,20 @@ public class TestBenchmark {
   @Warmup(iterations = 1, time = 1, batchSize = 1)
   @Fork(value = 1, warmups = 0)
   @Measurement(iterations = 3)
+  public int[] IntDeserializeIntoNew(F16State values) throws IOException {
+    final var arrayBuilder = new IntArrayBuilder(values.values.length);
+    final var intDeserializeInto = new IntDeserializeIntoNew();
+    final var deserializer = new IntArrayDeserializer(values.values);
+    for (int i = 0; i < values.values.length; i++) {
+      intDeserializeInto.deserializeInto(deserializer, arrayBuilder);
+    }
+    return arrayBuilder.res;
+  }
+
+  @Benchmark
+  @Warmup(iterations = 1, time = 1, batchSize = 1)
+  @Fork(value = 1, warmups = 0)
+  @Measurement(iterations = 3)
   public int[] notBoxed(F16State values) {
     int[] res = new int[values.values.length];
     for (int i = 0; i < values.values.length; i++) {
@@ -226,8 +268,8 @@ public class TestBenchmark {
     private int index;
 
     @Override
-    public <R> R deserialize_value(Visitor<R> visitor) throws IOException {
-      return visitor.visitI32(values[index++]);
+    public <R, P> R deserialize_value(Visitor<R, P> visitor, P param) throws IOException {
+      return visitor.visitI32(values[index++], param);
     }
 
     @Override
@@ -257,18 +299,18 @@ public class TestBenchmark {
 
     @Override
     public Void deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(new Visitor<Void>() {
+      return deserializer.deserialize_value(new Visitor<>() {
         @Override
         public String expecting() {
           return "int";
         }
 
         @Override
-        public Void visitI32(int value) throws IOException {
+        public Void visitI32(int value, IntConsumer consumer) {
           consumer.accept(value + 1);
           return null;
         }
-      });
+      }, consumer);
     }
   }
 
@@ -277,18 +319,38 @@ public class TestBenchmark {
 
     @Override
     public void deserializeInto(Deserializer deserializer, IntConsumer dest) throws IOException {
-      deserializer.deserialize_value(new Visitor<Object>() {
+      deserializer.deserialize_value(new Visitor<Object, Void>() {
         @Override
         public String expecting() {
           return null;
         }
 
         @Override
-        public Object visitI32(int value) throws IOException {
+        public Object visitI32(int value, Void unused) {
           dest.accept(value + 1);
           return null;
         }
-      });
+      }, null);
+    }
+  }
+
+  @RequiredArgsConstructor
+  static final class IntDeserializeIntoNew implements DeserializeInto<IntConsumer> {
+
+    @Override
+    public void deserializeInto(Deserializer deserializer, IntConsumer dest) throws IOException {
+      deserializer.deserialize_value(new Visitor<Void, IntConsumer>() {
+        @Override
+        public String expecting() {
+          return null;
+        }
+
+        @Override
+        public Void visitI32(int value, IntConsumer dest) {
+          dest.accept(value + 1);
+          return null;
+        }
+      }, dest);
     }
   }
 
@@ -305,23 +367,23 @@ public class TestBenchmark {
   }
 
   @RequiredArgsConstructor
-  static final class IntCellDeserialize implements Deserialize<IntCell> {
+  static final class IntCellDeserialize2 implements Deserialize<IntCell> {
     private final IntCell cell = new IntCell();
 
     @Override
-    public final IntCell deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(new Visitor<IntCell>() {
+    public IntCell deserialize(Deserializer deserializer) throws IOException {
+      return deserializer.deserialize_value(new Visitor<IntCell, Void>() {
         @Override
         public String expecting() {
           return "int";
         }
 
         @Override
-        public IntCell visitI32(int value) throws IOException {
+        public IntCell visitI32(int value, Void unused) {
           cell.setValue(value + 1);
           return cell;
         }
-      });
+      }, null);
     }
   }
 
@@ -331,11 +393,11 @@ public class TestBenchmark {
     private final IntCellVisitor visitor = new IntCellVisitor();
 
     @Override
-    public final IntCell deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(visitor);
+    public IntCell deserialize(Deserializer deserializer) throws IOException {
+      return deserializer.deserialize_value(visitor, null);
     }
 
-    private class IntCellVisitor implements Visitor<IntCell> {
+    private class IntCellVisitor implements Visitor<IntCell, Void> {
 
       @Override
       public String expecting() {
@@ -343,7 +405,7 @@ public class TestBenchmark {
       }
 
       @Override
-      public IntCell visitI32(int value) throws IOException {
+      public IntCell visitI32(int value, Void unused) {
         cell.setValue(value + 1);
         return cell;
       }
@@ -352,12 +414,12 @@ public class TestBenchmark {
 
   @RequiredArgsConstructor
   @Getter
-  static final class IntCellDeserialize4 implements Deserialize<IntCellDeserialize4>, Visitor<IntCellDeserialize4> {
+  static final class IntCellDeserialize4 implements Deserialize<IntCellDeserialize4>, Visitor<IntCellDeserialize4, Void> {
     private int value;
 
     @Override
-    public final IntCellDeserialize4 deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(this);
+    public IntCellDeserialize4 deserialize(Deserializer deserializer) throws IOException {
+      return deserializer.deserialize_value(this, null);
     }
 
     @Override
@@ -366,9 +428,57 @@ public class TestBenchmark {
     }
 
     @Override
-    public IntCellDeserialize4 visitI32(int value) throws IOException {
+    public IntCellDeserialize4 visitI32(int value, Void unused) {
       this.value = value + 1;
       return this;
+    }
+  }
+
+  @RequiredArgsConstructor
+  static final class IntCellDeserializeNew2 implements Deserialize<IntCell> {
+    private final IntCell cell = new IntCell();
+
+    @Override
+    public IntCell deserialize(Deserializer deserializer) throws IOException {
+      deserializer.deserialize_value(new Visitor<Void, IntCell>() {
+        @Override
+        public String expecting() {
+          return "int";
+        }
+
+        @Override
+        public Void visitI32(int value, IntCell cell) {
+          cell.setValue(value + 1);
+          return null;
+        }
+      }, cell);
+      return cell;
+    }
+  }
+
+  @RequiredArgsConstructor
+  static final class IntCellDeserializeNew3 implements Deserialize<IntCell> {
+    private final IntCell cell = new IntCell();
+    private static final IntCellVisitor visitor = new IntCellVisitor();
+
+    @Override
+    public IntCell deserialize(Deserializer deserializer) throws IOException {
+      deserializer.deserialize_value(visitor, cell);
+      return cell;
+    }
+
+    private static class IntCellVisitor implements Visitor<Void, IntCell> {
+
+      @Override
+      public String expecting() {
+        return "int";
+      }
+
+      @Override
+      public Void visitI32(int value, IntCell cell) {
+        cell.setValue(value + 1);
+        return null;
+      }
     }
   }
 
@@ -380,10 +490,10 @@ public class TestBenchmark {
 
     @Override
     public IntCell deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(VISITOR);
+      return deserializer.deserialize_value(VISITOR, null);
     }
 
-    private static final class IntCellVisitor implements Visitor<IntCell> {
+    private static final class IntCellVisitor implements Visitor<IntCell, Void> {
 
       @Override
       public String expecting() {
@@ -391,7 +501,7 @@ public class TestBenchmark {
       }
 
       @Override
-      public IntCell visitI32(int value) throws IOException {
+      public IntCell visitI32(int value, Void unused) {
         final var intCell = cell.get();
         intCell.setValue(value + 1);
         return intCell;
@@ -403,17 +513,17 @@ public class TestBenchmark {
   static final class IntegerDeserialize implements Deserialize<Integer> {
     @Override
     public Integer deserialize(Deserializer deserializer) throws IOException {
-      return deserializer.deserialize_value(new Visitor<Integer>() {
+      return deserializer.deserialize_value(new Visitor<Integer, Void>() {
         @Override
         public String expecting() {
           return "integer";
         }
 
         @Override
-        public Integer visitI32(int value) throws IOException {
+        public Integer visitI32(int value, Void unused) {
           return value + 1;
         }
-      });
+      }, null);
     }
   }
 }

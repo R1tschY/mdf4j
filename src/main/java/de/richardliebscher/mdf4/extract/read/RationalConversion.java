@@ -32,7 +32,7 @@ public class RationalConversion implements ValueRead {
   }
 
   @Override
-  public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+  public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
     return inner.read(input, new Visitor<>() {
       @Override
       public String expecting() {
@@ -40,25 +40,25 @@ public class RationalConversion implements ValueRead {
       }
 
       @Override
-      public T visitU64(long value) throws IOException {
-        return visitF64(UnsignedLong.toDoubleValue(value));
+      public T visitU64(long value, P param) throws IOException {
+        return visitF64(UnsignedLong.toDoubleValue(value), param);
       }
 
       @Override
-      public T visitI64(long value) throws IOException {
-        return visitF64(value);
+      public T visitI64(long value, P param) throws IOException {
+        return visitF64(value, param);
       }
 
       @Override
-      public T visitF64(double value) throws IOException {
+      public T visitF64(double value, P param) throws IOException {
         return visitor.visitF64((p1 * value * value + p2 * value + p3)
-            / (p4 * value * value + p5 * value + p6));
+            / (p4 * value * value + p5 * value + p6), param);
       }
 
       @Override
-      public T visitInvalid() throws IOException {
-        return visitor.visitInvalid();
+      public T visitInvalid(P param) throws IOException {
+        return visitor.visitInvalid(param);
       }
-    });
+    }, param);
   }
 }

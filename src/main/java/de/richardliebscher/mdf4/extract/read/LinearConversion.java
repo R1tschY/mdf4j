@@ -23,7 +23,7 @@ public class LinearConversion implements ValueRead {
   }
 
   @Override
-  public <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException {
+  public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException {
     // TODO: add shortcut for p1 == 0.0 and p2 == 1.0
     return inner.read(input, new Visitor<>() {
       @Override
@@ -32,24 +32,24 @@ public class LinearConversion implements ValueRead {
       }
 
       @Override
-      public T visitU64(long value) throws IOException {
-        return visitF64(UnsignedLong.toDoubleValue(value));
+      public T visitU64(long value, P param) throws IOException {
+        return visitF64(UnsignedLong.toDoubleValue(value), param);
       }
 
       @Override
-      public T visitI64(long value) throws IOException {
-        return visitF64(value);
+      public T visitI64(long value, P param) throws IOException {
+        return visitF64(value, param);
       }
 
       @Override
-      public T visitF64(double value) throws IOException {
-        return visitor.visitF64(value * p2 + p1);
+      public T visitF64(double value, P param) throws IOException {
+        return visitor.visitF64(value * p2 + p1, param);
       }
 
       @Override
-      public T visitInvalid() throws IOException {
-        return visitor.visitInvalid();
+      public T visitInvalid(P param) throws IOException {
+        return visitor.visitInvalid(param);
       }
-    });
+    }, param);
   }
 }

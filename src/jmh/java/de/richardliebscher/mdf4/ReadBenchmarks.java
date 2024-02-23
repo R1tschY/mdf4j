@@ -343,65 +343,65 @@ class CsvColumnDeserialize implements Deserialize<String> {
       }
 
       @Override
-      public String visitU8(byte value) {
+      public String visitU8(byte value, Void unused) {
         return UnsignedByte.toString(value);
       }
 
       @Override
-      public String visitU16(short value) {
+      public String visitU16(short value, Void unused) {
         return UnsignedShort.toString(value);
       }
 
       @Override
-      public String visitU32(int value) {
+      public String visitU32(int value, Void unused) {
         return UnsignedInteger.toString(value);
       }
 
       @Override
-      public String visitU64(long value) {
+      public String visitU64(long value, Void unused) {
         return UnsignedLong.toString(value);
       }
 
       @Override
-      public String visitI8(byte value) {
+      public String visitI8(byte value, Void unused) {
         return Byte.toString(value);
       }
 
       @Override
-      public String visitI16(short value) {
+      public String visitI16(short value, Void unused) {
         return Short.toString(value);
       }
 
       @Override
-      public String visitI32(int value) {
+      public String visitI32(int value, Void unused) {
         return Integer.toString(value);
       }
 
       @Override
-      public String visitI64(long value) {
+      public String visitI64(long value, Void unused) {
         return Long.toString(value);
       }
 
       @Override
-      public String visitF16(short value) {
+      public String visitF16(short value, Void unused) {
         return Half.toString(value);
       }
 
       @Override
-      public String visitF32(float value) {
+      public String visitF32(float value, Void unused) {
         return Float.toString(value);
       }
 
       @Override
-      public String visitF64(double value) {
+      public String visitF64(double value, Void unused) {
         return Double.toString(value);
       }
 
       @Override
-      public String visitInvalid() {
+      public String visitInvalid(Void unused) {
         return "";
       }
-    });
+    }, (Void) null);
   }
 }
 

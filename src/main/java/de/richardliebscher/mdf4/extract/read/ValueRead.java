@@ -11,5 +11,5 @@ import java.io.Serializable;
 
 public interface ValueRead extends Serializable {
 
-  <T> T read(RecordBuffer input, Visitor<T> visitor) throws IOException;
+  <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException;
 }

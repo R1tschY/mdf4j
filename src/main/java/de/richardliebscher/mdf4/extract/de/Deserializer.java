@@ -20,11 +20,13 @@ public interface Deserializer {
    * Deserialize a value using visitor.
    *
    * @param visitor Visitor
+   * @param param   Parameter
    * @param <R>     Value type
+   * @param <P>     Parameter type
    * @return Value
    * @throws IOException Unable to deserialize
    */
-  <R> R deserialize_value(Visitor<R> visitor) throws IOException;
+  <R, P> R deserialize_value(Visitor<R, P> visitor, P param) throws IOException;
 
   /**
    * Ignore value.

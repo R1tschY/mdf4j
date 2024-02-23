@@ -119,82 +119,82 @@ class CsvColumnDeserialize implements Deserialize<String> {
 
   @Override
   public String deserialize(Deserializer deserializer) throws IOException {
-    return deserializer.deserialize_value(new Visitor<>() {
+    return deserializer.deserialize_value(new Visitor<String, Void>() {
       @Override
       public String expecting() {
         return "CSV value";
       }
 
       @Override
-      public String visitU8(byte value) {
+      public String visitU8(byte value, Void param) {
         return UnsignedByte.toString(value);
       }
 
       @Override
-      public String visitU16(short value) {
+      public String visitU16(short value, Void param) {
         return UnsignedShort.toString(value);
       }
 
       @Override
-      public String visitU32(int value) {
+      public String visitU32(int value, Void param) {
         return UnsignedInteger.toString(value);
       }
 
       @Override
-      public String visitU64(long value) {
+      public String visitU64(long value, Void param) {
         return UnsignedLong.toString(value);
       }
 
       @Override
-      public String visitI8(byte value) {
+      public String visitI8(byte value, Void param) {
         return Byte.toString(value);
       }
 
       @Override
-      public String visitI16(short value) {
+      public String visitI16(short value, Void param) {
         return Short.toString(value);
       }
 
       @Override
-      public String visitI32(int value) {
+      public String visitI32(int value, Void param) {
         return Integer.toString(value);
       }
 
       @Override
-      public String visitI64(long value) {
+      public String visitI64(long value, Void param) {
         return Long.toString(value);
       }
 
       @Override
-      public String visitF16(short value) {
+      public String visitF16(short value, Void param) {
         return Half.toString(value);
       }
 
       @Override
-      public String visitF32(float value) {
+      public String visitF32(float value, Void param) {
         return Float.toString(value);
       }
 
       @Override
-      public String visitF64(double value) {
+      public String visitF64(double value, Void param) {
         return Double.toString(value);
       }
 
       @Override
-      public String visitString(String value) {
+      public String visitString(String value, Void param) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
       }
 
       @Override
-      public String visitByteArray(byte[] bytes) {
+      public String visitByteArray(byte[] bytes, Void param) {
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.US_ASCII);
       }
 
       @Override
-      public String visitInvalid() {
+      public String visitInvalid(Void param) {
         return "";
       }
-    });
+    }, null);
   }
 }
 

@@ -5,17 +5,11 @@
 
 package de.richardliebscher.mdf4.internal;
 
-import java.lang.reflect.Array;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Arrays {
-
-  @SuppressWarnings("unchecked")
-  public static <T> T[] newArray(Class<T> clazz, int length) {
-    return (T[]) Array.newInstance(clazz, length);
-  }
 
   public static int indexOf(byte[] arr, byte elem) {
     return indexOf(arr, 0, arr.length, elem);

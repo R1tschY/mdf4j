@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 
 @Log
@@ -208,34 +209,7 @@ public final class RecordReaderFactory {
         @Override
         public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
             throws IOException {
-          return visitor.visitStruct(new StructAccess() {
-            private int index = 0;
-
-            @Override
-            public int fields() {
-              return fieldReaders.length;
-            }
-
-            @Override
-            public <T1> T1 next_field(Deserialize<T1> deserialize) throws IOException {
-              if (index >= fieldReaders.length) {
-                throw new NoSuchElementException();
-              }
-
-              return deserialize.deserialize(new Deserializer() {
-                @Override
-                public <R, P2> R deserialize_value(Visitor<R, P2> visitor, P2 param)
-                    throws IOException {
-                  return fieldReaders[index++].read(input, visitor, param);
-                }
-
-                @Override
-                public void ignore() {
-                  index++;
-                }
-              });
-            }
-          }, param);
+          return visitor.visitStruct(new StructAccessImpl(fieldReaders, input), param);
         }
       };
     };
@@ -1207,7 +1181,7 @@ public final class RecordReaderFactory {
     return channelReaders;
   }
 
-  private static class ReadIntoImpl<B> implements ReadInto<B> {
+  private static final class ReadIntoImpl<B> implements ReadInto<B> {
 
     private final DeserializeInto<B> deserializeInto;
     private final ValueRead channelReader;
@@ -1230,6 +1204,51 @@ public final class RecordReaderFactory {
           // noop
         }
       }, destination);
+    }
+  }
+
+  @RequiredArgsConstructor
+  private static final class StructAccessImpl implements StructAccess, Deserializer {
+    private final ValueRead[] fieldReaders;
+    private final RecordBuffer input;
+    private int index = 0;
+
+    // StructAccess
+
+    @Override
+    public int fields() {
+      return fieldReaders.length;
+    }
+
+    @Override
+    public <T1> T1 next_field(Deserialize<T1> deserialize) throws IOException {
+      if (index >= fieldReaders.length) {
+        throw new NoSuchElementException();
+      }
+
+      return deserialize.deserialize(this);
+    }
+
+    @Override
+    public <T1> void next_field(DeserializeInto<T1> deserialize, T1 dest) throws IOException {
+      if (index >= fieldReaders.length) {
+        throw new NoSuchElementException();
+      }
+
+      deserialize.deserializeInto(this, dest);
+    }
+
+    // Deserializer
+
+    @Override
+    public <R, P2> R deserialize_value(Visitor<R, P2> visitor, P2 param)
+        throws IOException {
+      return fieldReaders[index++].read(input, visitor, param);
+    }
+
+    @Override
+    public void ignore() {
+      index++;
     }
   }
 }

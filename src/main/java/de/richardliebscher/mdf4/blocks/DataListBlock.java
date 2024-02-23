@@ -5,8 +5,6 @@
 
 package de.richardliebscher.mdf4.blocks;
 
-import static de.richardliebscher.mdf4.internal.Arrays.newArray;
-
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -75,7 +73,7 @@ public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
 
   @SuppressWarnings("unchecked")
   private static <T extends Data<T>> List<Link<DataStorage<T>>> getDataLinks(long[] links) {
-    final var data = (Link<DataStorage<T>>[]) newArray(Link.class, links.length - 1);
+    final var data = (Link<DataStorage<T>>[]) new Link<?>[links.length - 1];
     for (int i = 1; i < links.length; i++) {
       data[i - 1] = Link.of(links[i]);
     }

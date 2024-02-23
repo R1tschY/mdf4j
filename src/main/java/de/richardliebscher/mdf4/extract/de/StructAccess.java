@@ -27,4 +27,13 @@ public interface StructAccess {
    * @return Deserialized value
    */
   <T> T next_field(Deserialize<T> deserialize) throws IOException;
+
+  /**
+   * Deserialize next field.
+   *
+   * @param deserialize {@link DeserializeInto} interface
+   * @param dest        Destination for deserialized value
+   * @param <T>         Type to deserialize
+   */
+  <T> void next_field(DeserializeInto<T> deserialize, T dest) throws IOException;
 }

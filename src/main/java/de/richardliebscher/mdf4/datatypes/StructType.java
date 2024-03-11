@@ -7,20 +7,19 @@ package de.richardliebscher.mdf4.datatypes;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Structure composition.
  */
 public final class StructType implements DataType {
 
-  private final List<Map.Entry<String, DataType>> fields;
+  private final List<StructField> fields;
 
-  public StructType(List<Map.Entry<String, DataType>> fields) {
+  public StructType(List<StructField> fields) {
     this.fields = Collections.unmodifiableList(fields);
   }
 
-  public List<Map.Entry<String, DataType>> fields() {
+  public List<StructField> fields() {
     return fields;
   }
 

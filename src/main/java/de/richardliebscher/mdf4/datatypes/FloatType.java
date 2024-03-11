@@ -16,7 +16,17 @@ public final class FloatType implements DataType {
   private final int bitCount;
   private final Integer precision;
 
+  /**
+   * Construct a float type.
+   *
+   * @param bitCount  Bit count
+   * @param precision Nullable precision
+   */
   public FloatType(int bitCount, Integer precision) {
+    if (bitCount <= 0) {
+      throw new IllegalArgumentException("bitCount <= 0");
+    }
+
     this.bitCount = bitCount;
     this.precision = precision;
   }

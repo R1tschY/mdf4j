@@ -11,6 +11,7 @@ import static de.richardliebscher.mdf4.blocks.ChannelFlag.INVALIDATION_BIT_VALID
 import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.ChannelBlock;
 import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
+import de.richardliebscher.mdf4.blocks.ChannelDataType;
 import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelType;
 import de.richardliebscher.mdf4.blocks.Composition;
@@ -21,6 +22,7 @@ import de.richardliebscher.mdf4.datatypes.DataType;
 import de.richardliebscher.mdf4.datatypes.FloatType;
 import de.richardliebscher.mdf4.datatypes.IntegerType;
 import de.richardliebscher.mdf4.datatypes.StringType;
+import de.richardliebscher.mdf4.datatypes.StructField;
 import de.richardliebscher.mdf4.datatypes.StructType;
 import de.richardliebscher.mdf4.datatypes.UnsignedIntegerType;
 import de.richardliebscher.mdf4.exceptions.FormatException;
@@ -106,24 +108,23 @@ public class Channel {
    *
    * @return Channel value data type
    */
-  public DataType getRawDataType() throws IOException {
-    // TODO: consider possible conversion
-    return getRawDataTypeFromBlock(block, ctx);
+  public DataType getDataType() throws IOException {
+    return getDataTypeFromBlock(block, ctx);
   }
 
-  private static DataType getRawDataTypeFromBlock(ChannelBlock block, FileContext ctx)
+  private static DataType getDataTypeFromBlock(ChannelBlock block, FileContext ctx)
       throws IOException {
     final var compositionOptional = block.getComposition()
         .resolve(Composition.TYPE, ctx.getInput());
     if (compositionOptional.isPresent()) {
       final var composition = compositionOptional.get();
       if (composition instanceof ChannelBlock) {
-        final var fields = new ArrayList<DataType>();
-        fields.add(getRawDataTypeFromBlock((ChannelBlock) composition, ctx));
+        final var fields = new ArrayList<StructField>();
+        fields.add(getStructField((ChannelBlock) composition, ctx));
         var iter = new ChannelBlock.Iterator(
             ((ChannelBlock) composition).getNextChannel(), ctx.getInput());
         while (iter.hasNext()) {
-          fields.add(getRawDataTypeFromBlock(iter.next(), ctx));
+          fields.add(getStructField(iter.next(), ctx));
         }
         return new StructType(fields);
       } else {
@@ -131,26 +132,69 @@ public class Channel {
       }
     }
 
-    switch (block.getDataType()) {
+    final ChannelDataType dataType;
+    final int bitCount;
+    final Integer precision;
+
+    final var conversion = block.getConversionRule()
+        .resolve(ChannelConversionBlock.TYPE, ctx.getInput());
+    if (conversion.isPresent()) {
+      final var conversionBlock = conversion.get();
+      switch (conversionBlock.getType()) {
+        case IDENTITY:
+          precision = block.getPrecision().orElse(null);
+          dataType = block.getDataType();
+          bitCount = block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
+              ? block.getBitCount() : -1;
+          break;
+        case LINEAR:
+        case RATIONAL:
+        case ALGEBRAIC:
+        case INTERPOLATED_VALUE_TABLE:
+        case VALUE_VALUE_TABLE:
+        case VALUE_RANGE_VALUE_TABLE:
+        case TEXT_VALUE_TABLE:
+          dataType = ChannelDataType.FLOAT_LE;
+          bitCount = 64;
+          precision = conversionBlock.getPrecision().orElse(null);
+          break;
+        case TEXT_TEXT_TABLE:
+        case BITFIELD_TEXT_TABLE:
+          dataType = ChannelDataType.STRING_LATIN1;
+          bitCount = -1;
+          precision = null;
+          break;
+        default:
+        case VALUE_TEXT_TABLE:
+        case VALUE_RANGE_TEXT_TABLE:
+          throw new NotImplementedFeatureException(
+              "Not implemented conversion with maybe mixed data type");
+      }
+
+    } else {
+      precision = block.getPrecision().orElse(null);
+      dataType = block.getDataType();
+      bitCount = block.getType() != ChannelType.VARIABLE_LENGTH_DATA_CHANNEL
+          ? block.getBitCount() : -1;
+    }
+
+    switch (dataType) {
       case UINT_LE:
       case UINT_BE:
-        return new UnsignedIntegerType(block.getBitCount());
+        return new UnsignedIntegerType(bitCount);
       case INT_LE:
       case INT_BE:
-        return new IntegerType(block.getBitCount());
+        return new IntegerType(bitCount);
       case FLOAT_LE:
       case FLOAT_BE:
-        return new FloatType(
-            block.getBitCount(), block.getPrecision().orElse(null));
+        return new FloatType(bitCount, precision);
       case STRING_LATIN1:
       case STRING_UTF8:
       case STRING_UTF16LE:
       case STRING_UTF16BE:
-        return new StringType(block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
-            ? block.getBitCount() / 8 : null);
+        return new StringType(bitCount >= 0 ? bitCount / 8 : null);
       case BYTE_ARRAY:
-        return new ByteArrayType(block.getType().equals(ChannelType.FIXED_LENGTH_DATA_CHANNEL)
-            ? block.getBitCount() / 8 : null);
+        return new ByteArrayType(bitCount >= 0 ? bitCount / 8 : null);
       case MIME_SAMPLE:
       case MIME_STREAM:
       case CANOPEN_DATE:
@@ -158,8 +202,15 @@ public class Channel {
       case COMPLEX_LE:
       case COMPLEX_BE:
       default:
-        throw new IllegalStateException("Data type " + block.getDataType() + " not implemented");
+        throw new IllegalStateException("Data type " + dataType + " not implemented");
     }
+  }
+
+  private static StructField getStructField(ChannelBlock block, FileContext ctx)
+      throws IOException {
+    final var dataType = getDataTypeFromBlock(block, ctx);
+    final var channel = new Channel(block, ctx);
+    return new StructField(channel.getName(), dataType);
   }
 
   /**

@@ -1028,7 +1028,7 @@ public final class RecordReaderFactory {
 
     return new DefaultRecordReader<>(
         channelReaders.getRight(), channelReaders.getLeft(), factory, source,
-        channelGroup.getBlock());
+        dataGroup, channelGroup);
   }
 
   public static <B, R> ParallelRecordReader<B, R> createParallelFor(
@@ -1247,6 +1247,7 @@ public final class RecordReaderFactory {
 
   @RequiredArgsConstructor
   private static final class StructAccessImpl implements StructAccess, Deserializer {
+
     private final ValueRead[] fieldReaders;
     private final RecordBuffer input;
     private int index = 0;

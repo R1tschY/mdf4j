@@ -6,10 +6,12 @@
 package de.richardliebscher.mdf4.extract.impl;
 
 import de.richardliebscher.mdf4.Channel;
+import de.richardliebscher.mdf4.ChannelGroup;
+import de.richardliebscher.mdf4.DataGroup;
 import de.richardliebscher.mdf4.Result;
 import de.richardliebscher.mdf4.Result.Err;
 import de.richardliebscher.mdf4.Result.Ok;
-import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
+import de.richardliebscher.mdf4.blocks.DataBlock;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
@@ -37,35 +39,38 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   private final List<Channel> channels;
   private final List<ReadInto<B>> channelReaders;
   private final RecordFactory<B, R> factory;
-  private final DataRead dataSource;
+  private final DataRead<DataBlock> dataSource;
   private final ByteBuffer buffer;
-  private final ChannelGroupBlock group;
+  private final DataGroup dataGroup;
+  private final ChannelGroup channelGroup;
   private final RecordBuffer input;
   private long cycle = 0;
 
   DefaultRecordReader(
       List<Channel> channels, List<ReadInto<B>> channelReaders,
-      RecordFactory<B, R> factory, DataRead dataSource,
-      ChannelGroupBlock group) {
+      RecordFactory<B, R> factory, DataRead<DataBlock> dataSource,
+      DataGroup dataGroup, ChannelGroup channelGroup) {
     this.channels = Collections.unmodifiableList(channels);
     this.channelReaders = channelReaders;
     this.factory = factory;
     this.dataSource = dataSource;
-    this.buffer = ByteBuffer.allocate(group.getDataBytes() + group.getInvalidationBytes());
+    this.buffer = ByteBuffer.allocate(
+        channelGroup.getBlock().getDataBytes() + channelGroup.getBlock().getInvalidationBytes());
     this.input = new RecordByteBuffer(buffer, 0);
-    this.group = group;
+    this.dataGroup = dataGroup;
+    this.channelGroup = channelGroup;
   }
 
   // PUBLIC
 
   @Override
   public long size() {
-    return group.getCycleCount();
+    return channelGroup.getBlock().getCycleCount();
   }
 
   @Override
   public long remaining() {
-    return group.getCycleCount() - cycle;
+    return size() - cycle;
   }
 
   @Override
@@ -92,13 +97,23 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   }
 
   @Override
+  public DataGroup getDataGroup() {
+    return dataGroup;
+  }
+
+  @Override
+  public ChannelGroup getChannelGroup() {
+    return channelGroup;
+  }
+
+  @Override
   public List<Channel> getChannels() {
     return channels;
   }
 
   @Override
   public boolean hasNext() {
-    return cycle < group.getCycleCount();
+    return cycle < size();
   }
 
   @Override
@@ -126,7 +141,7 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   }
 
   private void prepareRead() throws IOException {
-    if (cycle >= group.getCycleCount()) {
+    if (cycle >= size()) {
       throw new NoSuchElementException();
     }
 
@@ -135,7 +150,7 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
     final var bytes = dataSource.read(buffer);
     if (bytes != buffer.capacity()) {
       throw new FormatException(
-          "Early end of data at cycle " + cycle + " of " + group.getCycleCount());
+          "Early end of data at cycle " + cycle + " of " + size());
     }
   }
 

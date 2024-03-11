@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 
 public class DataStorageRead<T extends Data<T>> implements DataRead<T> {
 
@@ -53,6 +54,21 @@ public class DataStorageRead<T extends Data<T>> implements DataRead<T> {
       remainingDataLength -= bytes;
     }
     return bytes;
+  }
+
+  @Override
+  public long position() throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public SeekableByteChannel position(long newPosition) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long size() throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

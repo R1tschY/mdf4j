@@ -11,6 +11,7 @@ import static de.richardliebscher.mdf4.blocks.ChannelConversionFlag.PRECISION_VA
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -60,6 +61,10 @@ public class ChannelConversionBlock {
         Link.of(links[2]),
         Link.of(links[3]),
         type, precision, flags, physicalRange, vals);
+  }
+
+  public Optional<Integer> getPrecision() {
+    return Optional.ofNullable(precision);
   }
 
   public static final Type TYPE = new Type();

@@ -15,9 +15,21 @@ import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.ByteBuffer;
+import java.nio.channels.NonWritableChannelException;
+import java.nio.channels.SeekableByteChannel;
 
-public interface DataRead<T extends Data<T>> extends ReadableByteChannel {
+public interface DataRead<T extends Data<T>> extends SeekableByteChannel {
+
+  @Override
+  default int write(ByteBuffer src) throws IOException {
+    throw new NonWritableChannelException();
+  }
+
+  @Override
+  default SeekableByteChannel truncate(long size) throws IOException {
+    throw new NonWritableChannelException();
+  }
 
   @SuppressWarnings("unchecked")
   static <T extends Data<T>> DataRead<T> of(DataContainer<T> dataRoot, ByteInput input,

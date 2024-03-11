@@ -5,6 +5,8 @@
 
 package de.richardliebscher.mdf4.extract.impl;
 
+import static de.richardliebscher.mdf4.extract.impl.SizeVisitor.MAX_ARRAY_LENGTH;
+
 import de.richardliebscher.mdf4.Channel;
 import de.richardliebscher.mdf4.ChannelGroup;
 import de.richardliebscher.mdf4.DataGroup;
@@ -18,10 +20,13 @@ import de.richardliebscher.mdf4.blocks.ChannelFlag;
 import de.richardliebscher.mdf4.blocks.ChannelGroupBlock;
 import de.richardliebscher.mdf4.blocks.Composition;
 import de.richardliebscher.mdf4.blocks.DataBlock;
+import de.richardliebscher.mdf4.blocks.DataContainer;
 import de.richardliebscher.mdf4.blocks.DataGroupBlock;
 import de.richardliebscher.mdf4.blocks.DataListBlock;
 import de.richardliebscher.mdf4.blocks.DataStorage;
 import de.richardliebscher.mdf4.blocks.HeaderListBlock;
+import de.richardliebscher.mdf4.blocks.Offsets;
+import de.richardliebscher.mdf4.blocks.SignalDataBlock;
 import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -36,6 +41,7 @@ import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.StructAccess;
 import de.richardliebscher.mdf4.extract.de.Visitor;
+import de.richardliebscher.mdf4.extract.read.DataList;
 import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.InvalidValueRead;
 import de.richardliebscher.mdf4.extract.read.LinearConversion;
@@ -43,14 +49,18 @@ import de.richardliebscher.mdf4.extract.read.RationalConversion;
 import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.ReadIntoFactory;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
+import de.richardliebscher.mdf4.extract.read.SeekableDataListRead;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.extract.read.ValueReadFactory;
 import de.richardliebscher.mdf4.internal.Arrays;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.internal.IntCell;
+import de.richardliebscher.mdf4.internal.LongCell;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -92,7 +102,7 @@ public final class RecordReaderFactory {
         rawValue = createFixedLengthDataReader(channelBlock);
         break;
       case VARIABLE_LENGTH_DATA_CHANNEL:
-        rawValue = createVariableLengthDataReader(channelBlock);
+        rawValue = createVariableLengthDataReader(channelBlock, input);
         break;
       case VIRTUAL_DATA_CHANNEL:
       case VIRTUAL_MASTER_CHANNEL:
@@ -763,19 +773,18 @@ public final class RecordReaderFactory {
     return data.substring(0, size);
   }
 
-  private static ValueReadFactory createVariableLengthDataReader(ChannelBlock channelBlock)
-      throws IOException {
+  private static ValueReadFactory createVariableLengthDataReader(
+      ChannelBlock channelBlock, ByteInput input) throws IOException {
     switch (channelBlock.getDataType()) {
       case STRING_LATIN1:
-        return createStringRead(channelBlock, StandardCharsets.ISO_8859_1);
+        return createVarcharRead(channelBlock, StandardCharsets.ISO_8859_1, input);
       case STRING_UTF8:
-        return createStringRead(channelBlock, StandardCharsets.UTF_8);
+        return createVarcharRead(channelBlock, StandardCharsets.UTF_8, input);
       case STRING_UTF16LE:
-        return createStringRead(channelBlock, StandardCharsets.UTF_16LE);
+        return createVarcharRead(channelBlock, StandardCharsets.UTF_16LE, input);
       case STRING_UTF16BE:
-        return createStringRead(channelBlock, StandardCharsets.UTF_16BE);
+        return createVarcharRead(channelBlock, StandardCharsets.UTF_16BE, input);
       case BYTE_ARRAY:
-        return createByteArrayRead(channelBlock);
       default:
         throw new NotImplementedFeatureException(
             "Reading data type " + channelBlock.getDataType()
@@ -783,31 +792,62 @@ public final class RecordReaderFactory {
     }
   }
 
-  private static ValueReadFactory createVarcharRead(ChannelBlock channelBlock, Charset charset)
-      throws FormatException {
+  @SuppressWarnings("unchecked")
+  private static ValueReadFactory createVarcharRead(
+      ChannelBlock channelBlock, Charset charset, ByteInput input) throws IOException {
     final var byteOffset = channelBlock.getByteOffset();
     final var byteCount = getByteCount(channelBlock,
         "Bit count must be a multiple of 8 for string channels");
 
-    return input -> {
-      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      final var sdInput = input.dup();
+    final var dataList = DataList.from(
+        (Link<DataContainer<SignalDataBlock>>) channelBlock.getSignalData(),
+        SignalDataBlock.CONTAINER_TYPE,
+        input);
+
+    final var offsetRead = createUintLeRead(channelBlock);
+
+    return in -> {
+      final var dlRead = ThreadLocal.withInitial(() -> {
+        try {
+          return Pair.of(
+              new SeekableDataListRead<>(in.dup(), dataList, SignalDataBlock.STORAGE_TYPE),
+              new LongCell()
+          );
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      });
       return new ValueRead() {
         @Override
         public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
             throws IOException {
-          final var buf = buffer.get();
-          input.readBytes(byteOffset, buf, 0, buf.length);
+          final var sdRead = dlRead.get().getLeft();
+          final var offset = dlRead.get().getRight();
 
-          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
-              StandardCharsets.ISO_8859_1)) {
-            final var size = Arrays.indexOf(buf, (byte) 0);
-            if (size == -1) {
+          offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offset);
+
+          final var buffer = ByteBuffer.allocate(4);
+          sdRead.read(buffer); // TODO: read fully
+          buffer.position(0);
+          final var size = buffer.getInt();
+          if (size < 0 || size > MAX_ARRAY_LENGTH) {
+            // TODO: exception
+          }
+
+          final var contentBuffer = ByteBuffer.allocate(size);
+          sdRead.read(contentBuffer); // TODO: read fully
+
+          if (charset.equals(StandardCharsets.UTF_8)
+              || charset.equals(StandardCharsets.ISO_8859_1)) {
+            final var trimmedSize = Arrays.indexOf(contentBuffer.array(), 0, size, (byte) 0);
+            if (trimmedSize == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(new String(buf, 0, size, charset), param);
+            return visitor.visitString(new String(contentBuffer.array(), 0, trimmedSize, charset),
+                param);
           } else {
-            return visitor.visitString(trimString(new String(buf, charset)), param);
+            return visitor.visitString(
+                trimString(new String(contentBuffer.array(), 0, size, charset)), param);
           }
         }
       };
@@ -1090,29 +1130,27 @@ public final class RecordReaderFactory {
   }
 
   private static void addOffsets(List<Long> offsetsList, DataListBlock<DataBlock> dataList) {
-    dataList.getOffsetInfo().accept(
-        new de.richardliebscher.mdf4.blocks.LengthOrOffsets.Visitor<
-            List<Long>, RuntimeException>() {
-          @Override
-          public List<Long> visitLength(long length) {
-            for (int i = 0; i < dataList.getData().size(); i++) {
-              if (offsetsList.isEmpty()) {
-                offsetsList.add(0L);
-              } else {
-                offsetsList.add(offsetsList.get(offsetsList.size() - 1) + length);
-              }
-            }
-            return null;
+    dataList.getOffsets().accept(new Offsets.Visitor<List<Long>, RuntimeException>() {
+      @Override
+      public List<Long> visitLength(int number, long length) throws RuntimeException {
+        for (int i = 0; i < dataList.getData().size(); i++) {
+          if (offsetsList.isEmpty()) {
+            offsetsList.add(0L);
+          } else {
+            offsetsList.add(offsetsList.get(offsetsList.size() - 1) + length);
           }
+        }
+        return null;
+      }
 
-          @Override
-          public List<Long> visitOffsets(long[] offsets) {
-            for (long offset : offsets) {
-              offsetsList.add(offset);
-            }
-            return null;
-          }
-        });
+      @Override
+      public List<Long> visitOffsets(long[] offsets) {
+        for (long offset : offsets) {
+          offsetsList.add(offset);
+        }
+        return null;
+      }
+    });
   }
 
   private static <B, R> Pair<List<ReadInto<B>>, List<Channel>> buildExtractors(

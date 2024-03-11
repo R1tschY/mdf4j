@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.util.Iterator;
 
 public class DataListRead<T extends Data<T>> implements DataRead<T> {
@@ -53,6 +54,21 @@ public class DataListRead<T extends Data<T>> implements DataRead<T> {
       remainingDataLength -= bytes;
     }
     return bytes;
+  }
+
+  @Override
+  public long position() throws IOException {
+    throw new IOException("Unsupported");
+  }
+
+  @Override
+  public SeekableByteChannel position(long newPosition) throws IOException {
+    throw new IOException("Unsupported");
+  }
+
+  @Override
+  public long size() throws IOException {
+    throw new IOException("Unsupported");
   }
 
   private boolean ensureDataStream() throws IOException {

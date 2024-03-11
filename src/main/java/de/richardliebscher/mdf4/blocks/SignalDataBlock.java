@@ -14,6 +14,7 @@ import lombok.Value;
 
 @Value
 public class SignalDataBlock implements Data<SignalDataBlock> {
+
   long dataPos;
   long dataLength;
 
@@ -33,10 +34,14 @@ public class SignalDataBlock implements Data<SignalDataBlock> {
   }
 
   public static final Type TYPE = new Type();
+  public static final DataContainerType<SignalDataBlock, DataContainer<SignalDataBlock>>
+      CONTAINER_TYPE = new Type.ContainerType<>(TYPE);
+  public static final BlockType<DataStorage<SignalDataBlock>>
+      STORAGE_TYPE = new Type.StorageType<>(TYPE);
   public static final BlockTypeId ID = BlockTypeId.of('S', 'D');
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class Type implements BlockType<SignalDataBlock> {
+  public static class Type implements DataType<SignalDataBlock> {
 
     @Override
     public BlockTypeId id() {

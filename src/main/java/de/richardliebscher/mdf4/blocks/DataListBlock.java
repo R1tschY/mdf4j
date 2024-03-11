@@ -21,7 +21,7 @@ public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
   Link<DataListBlock<T>> nextDataList;
   @ToString.Exclude
   List<Link<DataStorage<T>>> data; // DT,SD,RD,DZ
-  LengthOrOffsets offsetInfo;
+  Offsets offsets;
 
   BitFlags<DataListFlag> flags;
 
@@ -33,21 +33,21 @@ public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
 
     final var flags = BitFlags.of(input.readU8(), DataListFlag.class);
     input.skip(3);
-    final var count = input.readI32();
+    final int count = input.readI32();
     if (count != data.size()) {
       throw new FormatException(
           "Count attribute in DL block is inconsistent: " + count + " vs. " + data.size());
     }
 
-    final LengthOrOffsets offsetInfo;
+    final Offsets offsetInfo;
     if (flags.isSet(DataListFlag.EQUAL_LENGTH)) {
-      offsetInfo = new LengthOrOffsets.Length(input.readI64());
+      offsetInfo = new Offsets.EqualLength(count, input.readI64());
     } else {
-      final var offsets = new long[count];
+      final var offsets = new long[(int) count];
       for (int i = 0; i < count; i++) {
         offsets[i] = input.readI64();
       }
-      offsetInfo = new LengthOrOffsets.Offsets(offsets);
+      offsetInfo = new Offsets.Values(offsets);
     }
 
     //if (flags.test(DataListFlags.TIME_VALUES)) {

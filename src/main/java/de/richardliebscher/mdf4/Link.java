@@ -8,6 +8,7 @@ package de.richardliebscher.mdf4;
 import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 
@@ -17,7 +18,7 @@ import lombok.EqualsAndHashCode;
  * @param <T> Block type
  */
 @EqualsAndHashCode
-public final class Link<T> {
+public final class Link<T> implements Serializable {
 
   private static final Link<?> NIL = new Link<>(0);
 

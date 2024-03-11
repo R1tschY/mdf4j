@@ -45,11 +45,12 @@ dependencies {
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
 
     "cliImplementation"(project)
+    "cliImplementation"("org.apache.parquet:parquet-common:1.13.1")
+    "cliImplementation"("org.apache.parquet:parquet-encoding:1.13.1")
+    "cliImplementation"("org.apache.parquet:parquet-column:1.13.1")
     "cliImplementation"("org.apache.parquet:parquet-hadoop:1.13.1")
-//    "cliImplementation"("org.apache.hadoop:hadoop-client:3.3.6")
     "cliImplementation"("org.apache.hadoop:hadoop-common:3.3.6")
-//    "cliImplementation"("org.apache.hadoop:hadoop-annotations:3.3.6")
-
+    "cliImplementation"("org.apache.hadoop:hadoop-mapreduce-client-core:3.3.6")
     //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }
 

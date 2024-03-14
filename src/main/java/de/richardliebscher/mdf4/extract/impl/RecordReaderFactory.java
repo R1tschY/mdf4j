@@ -61,6 +61,7 @@ import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public final class RecordReaderFactory {
         rawValue = createFixedLengthDataReader(channelBlock);
         break;
       case VARIABLE_LENGTH_DATA_CHANNEL:
-        rawValue = createVariableLengthDataReader(channelBlock, input);
+        rawValue = createVlsdReader(channelBlock, input);
         break;
       case VIRTUAL_DATA_CHANNEL:
       case VIRTUAL_MASTER_CHANNEL:
@@ -773,7 +774,7 @@ public final class RecordReaderFactory {
     return data.substring(0, size);
   }
 
-  private static ValueReadFactory createVariableLengthDataReader(
+  private static ValueReadFactory createVlsdReader(
       ChannelBlock channelBlock, ByteInput input) throws IOException {
     switch (channelBlock.getDataType()) {
       case STRING_LATIN1:
@@ -795,10 +796,6 @@ public final class RecordReaderFactory {
   @SuppressWarnings("unchecked")
   private static ValueReadFactory createVarcharRead(
       ChannelBlock channelBlock, Charset charset, ByteInput input) throws IOException {
-    final var byteOffset = channelBlock.getByteOffset();
-    final var byteCount = getByteCount(channelBlock,
-        "Bit count must be a multiple of 8 for string channels");
-
     final var dataList = DataList.from(
         (Link<DataContainer<SignalDataBlock>>) channelBlock.getSignalData(),
         SignalDataBlock.CONTAINER_TYPE,
@@ -826,24 +823,26 @@ public final class RecordReaderFactory {
 
           offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offset);
 
-          final var buffer = ByteBuffer.allocate(4);
-          sdRead.read(buffer); // TODO: read fully
+          final var buffer = ByteBuffer.allocate(4)
+              .order(ByteOrder.LITTLE_ENDIAN);
+          sdRead.position(offset.get());
+          sdRead.readFully(buffer);
           buffer.position(0);
           final var size = buffer.getInt();
           if (size < 0 || size > MAX_ARRAY_LENGTH) {
             // TODO: exception
           }
 
+          System.out.printf("OFFSET: %d LEN: %d%n", offset.get(), size);
           final var contentBuffer = ByteBuffer.allocate(size);
-          sdRead.read(contentBuffer); // TODO: read fully
+          sdRead.readFully(contentBuffer);
 
           if (charset.equals(StandardCharsets.UTF_8)
               || charset.equals(StandardCharsets.ISO_8859_1)) {
             final var trimmedSize = Arrays.indexOf(contentBuffer.array(), 0, size, (byte) 0);
-            if (trimmedSize == -1) {
-              throw new FormatException("Missing zero termination of string value");
-            }
-            return visitor.visitString(new String(contentBuffer.array(), 0, trimmedSize, charset),
+            return visitor.visitString(
+                new String(contentBuffer.array(), 0, trimmedSize == -1 ? size : trimmedSize,
+                    charset),
                 param);
           } else {
             return visitor.visitString(

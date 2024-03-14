@@ -36,11 +36,8 @@ public class SeekableDataListRead<T extends Data<T>> implements DataRead<T> {
   }
 
   private void setBlockChannel(DataStorage<T> storage) throws IOException {
-    if (blockChannel != null) {
-      blockChannel.close();
-    }
-    this.blockChannel = storage.getChannel(input);
-    this.remainingDataLength = storage.getChannelLength();
+    blockChannel = storage.getChannel(input);
+    remainingDataLength = storage.getChannelLength();
   }
 
   @Override
@@ -100,9 +97,11 @@ public class SeekableDataListRead<T extends Data<T>> implements DataRead<T> {
         toSkip = Math.toIntExact(newPosition - oldPosition);
       }
 
-      // TODO: better skip
-      blockChannel.read(ByteBuffer.allocate(toSkip));
-      remainingDataLength -= toSkip;
+      if (toSkip != 0) {
+        // TODO: better skip
+        blockChannel.read(ByteBuffer.allocate(toSkip));
+        remainingDataLength -= toSkip;
+      }
     }
 
     return this;

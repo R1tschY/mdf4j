@@ -5,9 +5,10 @@
 
 package de.richardliebscher.mdf4.internal;
 
+import java.util.Objects;
 import java.util.function.LongUnaryOperator;
 
-public class LongCell {
+public final class LongCell {
   private long value;
 
   public LongCell(long value) {
@@ -45,5 +46,27 @@ public class LongCell {
     final var tmp = this.value;
     this.value = other.value;
     other.value = tmp;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    LongCell longCell = (LongCell) o;
+    return value == longCell.value;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value);
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(value);
   }
 }

@@ -14,12 +14,22 @@ import de.richardliebscher.mdf4.blocks.HeaderListBlock;
 import de.richardliebscher.mdf4.blocks.ZipType;
 import de.richardliebscher.mdf4.exceptions.NotImplementedFeatureException;
 import de.richardliebscher.mdf4.io.ByteInput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 
 public interface DataRead<T extends Data<T>> extends SeekableByteChannel {
+
+  default void readFully(ByteBuffer dest) throws IOException {
+    do {
+      final var read = read(dest);
+      if (read < 0) {
+        throw new EOFException();
+      }
+    } while (dest.remaining() > 0);
+  }
 
   @Override
   default int write(ByteBuffer src) throws IOException {

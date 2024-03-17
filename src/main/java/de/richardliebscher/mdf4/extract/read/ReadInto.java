@@ -9,4 +9,6 @@ import java.io.IOException;
 
 public interface ReadInto<T> {
   void readInto(RecordBuffer input, T destination) throws IOException;
+
+  ReadInto<T> dup() throws IOException;
 }

@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4.io;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.ReadableByteChannel;
@@ -13,7 +14,7 @@ import java.nio.charset.Charset;
 /**
  * Read MDF4 input file.
  */
-public interface ByteInput {
+public interface ByteInput extends Closeable {
 
   byte readU8() throws IOException;
 

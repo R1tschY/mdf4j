@@ -37,56 +37,57 @@ public class Main {
     final var sourcePath = Path.of(args[0]);
     final var targetPath = new org.apache.hadoop.fs.Path(args[1]);
 
-    final var reader = Mdf4File.open(sourcePath);
+    try (var reader = Mdf4File.open(sourcePath)) {
 
-    final var channelIndex = new IntCell();
-    final var recordReader = reader.newRecordReader(new RecordFactory<RecordConsumer, Void>() {
-      @Override
-      public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
-        return true;
+      final var channelIndex = new IntCell();
+      final var recordReader = reader.newRecordReader(new RecordFactory<RecordConsumer, Void>() {
+        @Override
+        public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) {
+          return true;
+        }
+
+        @Override
+        public DeserializeInto<RecordConsumer> selectChannel(DataGroup dataGroup,
+            ChannelGroup group, Channel channel) throws IOException {
+          final var deserializeInto = DeserializeIntoParquet.forType(
+              channel.getDataType());
+          final var fieldName = channel.getName();
+          final var fieldIndex = channelIndex.replace(channelIndex.get() + 1);
+          return (deserializer, dest) -> {
+            dest.startField(fieldName, fieldIndex);
+            deserializeInto.deserializeInto(deserializer, dest);
+            dest.endField(fieldName, fieldIndex);
+          };
+        }
+
+        @Override
+        public RecordConsumer createRecordBuilder() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Void finishRecord(RecordConsumer unfinishedRecord) {
+          throw new UnsupportedOperationException();
+        }
+      });
+
+      final var schema = new ParquetSchemaGenerator(
+          recordReader.getDataGroup(),
+          recordReader.getChannelGroup(),
+          recordReader.getChannels()
+      ).generateSchema();
+
+      try (final var writer = new ParquetWriterBuilder(targetPath)
+          .withWriteMode(Mode.OVERWRITE)
+          .withValidation(true)
+          .withType(schema)
+          .build()) {
+        System.out.printf("%s%n", recordReader.size());
+        while (recordReader.hasNext()) {
+          writer.write(recordReader::nextInto);
+        }
+        System.out.printf("%s%n", writer.getDataSize());
       }
-
-      @Override
-      public DeserializeInto<RecordConsumer> selectChannel(DataGroup dataGroup,
-          ChannelGroup group, Channel channel) throws IOException {
-        final var deserializeInto = DeserializeIntoParquet.forType(
-            channel.getDataType());
-        final var fieldName = channel.getName();
-        final var fieldIndex = channelIndex.replace(channelIndex.get() + 1);
-        return (deserializer, dest) -> {
-          dest.startField(fieldName, fieldIndex);
-          deserializeInto.deserializeInto(deserializer, dest);
-          dest.endField(fieldName, fieldIndex);
-        };
-      }
-
-      @Override
-      public RecordConsumer createRecordBuilder() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Void finishRecord(RecordConsumer unfinishedRecord) {
-        throw new UnsupportedOperationException();
-      }
-    });
-
-    final var schema = new ParquetSchemaGenerator(
-        recordReader.getDataGroup(),
-        recordReader.getChannelGroup(),
-        recordReader.getChannels()
-    ).generateSchema();
-
-    try (final var writer = new ParquetWriterBuilder(targetPath)
-        .withWriteMode(Mode.OVERWRITE)
-        .withValidation(true)
-        .withType(schema)
-        .build()) {
-      System.out.printf("%s%n", recordReader.size());
-      while (recordReader.hasNext()) {
-        writer.write(recordReader::nextInto);
-      }
-      System.out.printf("%s%n", writer.getDataSize());
     }
   }
 }

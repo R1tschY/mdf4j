@@ -36,45 +36,46 @@ public class DeserializeToValueObjectExample {
     final var source = Path.of(args[0]);
 
     // Open file
-    final var mdf4File = Mdf4File.open(source);
+    try (final var mdf4File = Mdf4File.open(source)) {
 
-    final var reader = mdf4File.newRecordReader(new RecordFactory<Record, Record>() {
-      @Override
-      public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-        // Select first channel group
-        return true;
-      }
-
-      @Override
-      public DeserializeInto<Record> selectChannel(DataGroup dg, ChannelGroup group,
-          Channel channel)
-          throws IOException {
-        switch (channel.getName()) {
-          case "signal1":
-            return (deserializer, dest) -> dest.signal1 = (Integer) new ObjectDeserialize().deserialize(
-                deserializer);
-          case "signal2":
-            return (deserializer, dest) -> dest.signal2 = (Integer) new ObjectDeserialize().deserialize(
-                deserializer);
-          default:
-            return null;
+      final var reader = mdf4File.newRecordReader(new RecordFactory<Record, Record>() {
+        @Override
+        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
+          // Select first channel group
+          return true;
         }
-      }
 
-      @Override
-      public Record createRecordBuilder() {
-        return new Record();
-      }
+        @Override
+        public DeserializeInto<Record> selectChannel(DataGroup dg, ChannelGroup group,
+            Channel channel)
+            throws IOException {
+          switch (channel.getName()) {
+            case "signal1":
+              return (deserializer, dest) -> dest.signal1 = (Integer) new ObjectDeserialize().deserialize(
+                  deserializer);
+            case "signal2":
+              return (deserializer, dest) -> dest.signal2 = (Integer) new ObjectDeserialize().deserialize(
+                  deserializer);
+            default:
+              return null;
+          }
+        }
 
-      @Override
-      public Record finishRecord(Record record) {
-        return record;
-      }
-    });
+        @Override
+        public Record createRecordBuilder() {
+          return new Record();
+        }
 
-    // Write values
-    for (int i = 0; i < reader.size(); i++) {
-      System.out.println(reader.next());
+        @Override
+        public Record finishRecord(Record record) {
+          return record;
+        }
+      });
+
+      // Write values
+      for (int i = 0; i < reader.size(); i++) {
+        System.out.println(reader.next());
+      }
     }
   }
 }

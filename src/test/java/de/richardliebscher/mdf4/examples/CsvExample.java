@@ -38,13 +38,12 @@ public class CsvExample {
     final var source = Path.of(args[0]);
     final var target = Path.of(args[1]);
 
-    // Open file
-    final var mdf4File = Mdf4File.open(source);
+    // Open files
+    try (final var mdf4File = Mdf4File.open(source);
+        var writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
 
-
-    // Select channel group and channels
-    final var de = new CsvColumnDeserialize();
-    try (var writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
+      // Select channel group and channels
+      final var de = new CsvColumnDeserialize();
 
       final var reader = mdf4File.newRecordReader(new RecordFactory<Writer, Void>() {
         private int channelIndex;

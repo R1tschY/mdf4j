@@ -149,4 +149,7 @@ public class SeekableDataListRead<T extends Data<T>> implements DataRead<T> {
     closed = true;
   }
 
+  public SeekableDataListRead<T> dup() throws IOException {
+    return new SeekableDataListRead<>(input.dup(), dataList, storageBlockType);
+  }
 }

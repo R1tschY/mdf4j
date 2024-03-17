@@ -49,6 +49,7 @@ import de.richardliebscher.mdf4.extract.read.RationalConversion;
 import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.ReadIntoFactory;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
+import de.richardliebscher.mdf4.extract.read.Scope;
 import de.richardliebscher.mdf4.extract.read.SeekableDataListRead;
 import de.richardliebscher.mdf4.extract.read.ValueRead;
 import de.richardliebscher.mdf4.extract.read.ValueReadFactory;
@@ -59,7 +60,6 @@ import de.richardliebscher.mdf4.internal.LongCell;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -127,10 +127,10 @@ public final class RecordReaderFactory {
           converted = rawValue;
           break;
         case LINEAR:
-          converted = in -> new LinearConversion(cc, rawValue.build(in));
+          converted = (in, scope) -> new LinearConversion(cc, rawValue.build(in, scope));
           break;
         case RATIONAL:
-          converted = in -> new RationalConversion(cc, rawValue.build(in));
+          converted = (in, scope) -> new RationalConversion(cc, rawValue.build(in, scope));
           break;
         case ALGEBRAIC:
         case INTERPOLATED_VALUE_TABLE:
@@ -210,10 +210,10 @@ public final class RecordReaderFactory {
       }
     }
 
-    return in -> {
+    return (in, scope) -> {
       final var fieldReaders = new ValueRead[readFieldFactories.size()];
       for (int i = 0; i < readFieldFactories.size(); i++) {
-        fieldReaders[i] = readFieldFactories.get(i).build(input);
+        fieldReaders[i] = readFieldFactories.get(i).build(input, scope);
       }
 
       return new ValueRead() {
@@ -247,8 +247,8 @@ public final class RecordReaderFactory {
     final var invalidationByteIndex =
         dataGroup.getRecordIdSize() + group.getDataBytes() + (invalidationBit >>> 3);
     final var invalidationBitMask = 1 << (invalidationBit & 0x07);
-    return input -> {
-      final var valueRead = valueReadFactory.build(input);
+    return (input, scope) -> {
+      final var valueRead = valueReadFactory.build(input, scope);
       return new ValueRead() {
         @Override
         public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
@@ -722,7 +722,7 @@ public final class RecordReaderFactory {
     final var byteCount = getByteCount(channelBlock,
         "Bit count must be a multiple of 8 for string channels");
 
-    return input -> {
+    return (input, scope) -> {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
       return new ValueRead() {
         @Override
@@ -752,17 +752,9 @@ public final class RecordReaderFactory {
     final var byteCount = getByteCount(channelBlock,
         "Bit count must be a multiple of 8 for byte array channels");
 
-    return input -> {
+    return (input, scope) -> {
       final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      return new ValueRead() {
-        @Override
-        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
-            throws IOException {
-          final var dest = buffer.get();
-          input.readBytes(byteOffset, dest, 0, dest.length);
-          return visitor.visitByteArray(dest, param);
-        }
-      };
+      return new ByteArrayRead(buffer, byteOffset);
     };
   }
 
@@ -802,54 +794,10 @@ public final class RecordReaderFactory {
         input);
 
     final var offsetRead = createUintLeRead(channelBlock);
-
-    return in -> {
-      final var dlRead = ThreadLocal.withInitial(() -> {
-        try {
-          return Pair.of(
-              new SeekableDataListRead<>(in.dup(), dataList, SignalDataBlock.STORAGE_TYPE),
-              new LongCell()
-          );
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
-      });
-      return new ValueRead() {
-        @Override
-        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
-            throws IOException {
-          final var sdRead = dlRead.get().getLeft();
-          final var offset = dlRead.get().getRight();
-
-          offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offset);
-
-          final var buffer = ByteBuffer.allocate(4)
-              .order(ByteOrder.LITTLE_ENDIAN);
-          sdRead.position(offset.get());
-          sdRead.readFully(buffer);
-          buffer.position(0);
-          final var size = buffer.getInt();
-          if (size < 0 || size > MAX_ARRAY_LENGTH) {
-            // TODO: exception
-          }
-
-          System.out.printf("OFFSET: %d LEN: %d%n", offset.get(), size);
-          final var contentBuffer = ByteBuffer.allocate(size);
-          sdRead.readFully(contentBuffer);
-
-          if (charset.equals(StandardCharsets.UTF_8)
-              || charset.equals(StandardCharsets.ISO_8859_1)) {
-            final var trimmedSize = Arrays.indexOf(contentBuffer.array(), 0, size, (byte) 0);
-            return visitor.visitString(
-                new String(contentBuffer.array(), 0, trimmedSize == -1 ? size : trimmedSize,
-                    charset),
-                param);
-          } else {
-            return visitor.visitString(
-                trimString(new String(contentBuffer.array(), 0, size, charset)), param);
-          }
-        }
-      };
+    return (in, scope) -> {
+      final var read = new SeekableDataListRead<>(
+          in.dup(), dataList, SignalDataBlock.STORAGE_TYPE);
+      return new VlsdStringRead(read, offsetRead, charset, scope);
     };
   }
 
@@ -949,10 +897,10 @@ public final class RecordReaderFactory {
 
     final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
 
-    return in -> {
+    return (in, scope) -> {
       final var buffer = ThreadLocal.withInitial(
           () -> Pair.of(new byte[byteCount], new IntCell()));
-      final var sizeReader = sizeReaderFactory.build(in);
+      final var sizeReader = sizeReaderFactory.build(in, scope);
       return new ValueRead() {
         @Override
         public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
@@ -984,10 +932,10 @@ public final class RecordReaderFactory {
         "Bit count must be a multiple of 8 for byte array channels");
     final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
 
-    return in -> {
+    return (in, scope) -> {
       final var buffer = ThreadLocal.withInitial(
           () -> Pair.of(new byte[byteCount], new IntCell()));
-      final var sizeReader = sizeReaderFactory.build(in);
+      final var sizeReader = sizeReaderFactory.build(in, scope);
       return new ValueRead() {
         @Override
         public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
@@ -1023,11 +971,13 @@ public final class RecordReaderFactory {
     final var source = createSource(ctx, dataGroup.getBlock());
 
     // build extractor
+    final var scope = ctx.newScope();
     final var channelReaders = buildExtractors(factory, input, dataGroup, channelGroup);
+    final var readIntos = ReadIntoFactory.buildAll(channelReaders.getLeft(), input, scope);
 
     return new DefaultRecordReader<>(
-        channelReaders.getRight(), channelReaders.getLeft(), factory, source,
-        dataGroup, channelGroup);
+        channelReaders.getRight(), readIntos, factory, source,
+        dataGroup, channelGroup, scope);
   }
 
   public static <B, R> ParallelRecordReader<B, R> createParallelFor(
@@ -1048,7 +998,7 @@ public final class RecordReaderFactory {
     final var channelReaders = buildExtractors(recordFactory, input, dataGroup, channelGroup);
 
     return new DefaultParallelRecordReader<>(
-        ctx, channelReaders, recordFactory,
+        ctx, channelReaders.getLeft(), recordFactory,
         dataListAndOffsets.getLeft(), dataListAndOffsets.getRight(),
         channelGroup.getBlock());
   }
@@ -1152,7 +1102,7 @@ public final class RecordReaderFactory {
     });
   }
 
-  private static <B, R> Pair<List<ReadInto<B>>, List<Channel>> buildExtractors(
+  private static <B, R> Pair<List<ReadIntoFactory<B>>, List<Channel>> buildExtractors(
       RecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
       ChannelGroup channelGroup) throws IOException {
     final var dataGroupBlock = dataGroup.getBlock();
@@ -1165,39 +1115,6 @@ public final class RecordReaderFactory {
             + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
 
     final var channels = new ArrayList<Channel>();
-    final var channelReaders = new ArrayList<ReadInto<B>>();
-    final var iter = channelGroup.getChannels().iter();
-    Channel ch;
-    while ((ch = iter.next()) != null) {
-      try {
-        final var deserializeInto = selector.selectChannel(dataGroup, channelGroup, ch);
-        if (deserializeInto != null) {
-          final var channelReaderFactory = createChannelReaderFactory(
-              dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
-          final var channelReader = channelReaderFactory.build(input);
-          channels.add(ch);
-          channelReaders.add(new ReadIntoImpl<>(deserializeInto, channelReader));
-        }
-      } catch (NotImplementedFeatureException exception) {
-        log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
-      }
-    }
-
-    return Pair.of(channelReaders, channels);
-  }
-
-  private static <B, R> List<ReadIntoFactory<B>> buildExtractors(
-      SerializableRecordFactory<B, R> selector, ByteInput input, DataGroup dataGroup,
-      ChannelGroup channelGroup) throws IOException {
-    final var dataGroupBlock = dataGroup.getBlock();
-    final var channelGroupBlock = channelGroup.getBlock();
-    log.finest(() ->
-        "Record size: " + (dataGroupBlock.getRecordIdSize() + channelGroupBlock.getDataBytes()
-            + channelGroupBlock.getInvalidationBytes())
-            + " (RecordId: " + dataGroupBlock.getRecordIdSize() + ", Data: "
-            + channelGroupBlock.getDataBytes()
-            + ", InvalidationBytes: " + channelGroupBlock.getInvalidationBytes() + ")");
-
     final var channelReaders = new ArrayList<ReadIntoFactory<B>>();
     final var iter = channelGroup.getChannels().iter();
     de.richardliebscher.mdf4.Channel ch;
@@ -1207,15 +1124,16 @@ public final class RecordReaderFactory {
         if (deserializeInto != null) {
           final var channelReaderFactory = createChannelReaderFactory(
               dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
-          channelReaders.add(
-              in -> new ReadIntoImpl<>(deserializeInto, channelReaderFactory.build(input)));
+          channels.add(ch);
+          channelReaders.add((in, scope) ->
+              new ReadIntoImpl<>(deserializeInto, channelReaderFactory.build(input, scope)));
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());
       }
     }
 
-    return channelReaders;
+    return Pair.of(channelReaders, channels);
   }
 
   private static final class ReadIntoImpl<B> implements ReadInto<B> {
@@ -1241,6 +1159,11 @@ public final class RecordReaderFactory {
           // noop
         }
       }, destination);
+    }
+
+    @Override
+    public ReadInto<B> dup() throws IOException {
+      return new ReadIntoImpl<>(deserializeInto, channelReader.dup());
     }
   }
 
@@ -1287,6 +1210,80 @@ public final class RecordReaderFactory {
     @Override
     public void ignore() {
       index++;
+    }
+  }
+
+  private static class VlsdStringRead implements ValueRead {
+
+    private final SeekableDataListRead<SignalDataBlock> sdRead;
+    private final LongCell offsetCell;
+    private final ValueRead offsetRead;
+    private final Charset charset;
+    private final Scope scope;
+
+    public VlsdStringRead(SeekableDataListRead<SignalDataBlock> read, ValueRead offsetRead,
+        Charset charset, Scope scope) {
+      this.offsetRead = offsetRead;
+      this.charset = charset;
+      this.sdRead = read;
+      this.scope = scope;
+      this.offsetCell = new LongCell();
+
+      scope.add(sdRead);
+    }
+
+    @Override
+    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        throws IOException {
+      offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offsetCell);
+
+      final var buffer = ByteBuffer.allocate(4)
+          .order(ByteOrder.LITTLE_ENDIAN);
+      sdRead.position(offsetCell.get());
+      sdRead.readFully(buffer);
+      buffer.position(0);
+      final var size = buffer.getInt();
+      if (size < 0 || size > MAX_ARRAY_LENGTH) {
+        throw new NotImplementedFeatureException("Unable to read data with size " + size);
+      }
+
+      final var contentBuffer = ByteBuffer.allocate(size);
+      sdRead.readFully(contentBuffer);
+
+      if (charset.equals(StandardCharsets.UTF_8) || charset.equals(StandardCharsets.ISO_8859_1)) {
+        final var trimmedSize = Arrays.indexOf(contentBuffer.array(), 0, size, (byte) 0);
+        return visitor.visitString(
+            new String(contentBuffer.array(), 0, trimmedSize == -1 ? size : trimmedSize,
+                charset),
+            param);
+      } else {
+        return visitor.visitString(
+            trimString(new String(contentBuffer.array(), 0, size, charset)), param);
+      }
+    }
+
+    @Override
+    public ValueRead dup() throws IOException {
+      return new VlsdStringRead(sdRead.dup(), offsetRead.dup(), charset, scope);
+    }
+  }
+
+  private static class ByteArrayRead implements ValueRead {
+
+    private final ThreadLocal<byte[]> buffer;
+    private final int byteOffset;
+
+    public ByteArrayRead(ThreadLocal<byte[]> buffer, int byteOffset) {
+      this.buffer = buffer;
+      this.byteOffset = byteOffset;
+    }
+
+    @Override
+    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        throws IOException {
+      final var dest = buffer.get();
+      input.readBytes(byteOffset, dest, 0, dest.length);
+      return visitor.visitByteArray(dest, param);
     }
   }
 }

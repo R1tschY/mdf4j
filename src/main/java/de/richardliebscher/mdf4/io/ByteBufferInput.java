@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -110,4 +111,8 @@ public class ByteBufferInput implements ByteInput {
     return new ByteBufferInput(buffer.duplicate());
   }
 
+  @Override
+  public void close() throws IOException {
+    /* do nothong */
+  }
 }

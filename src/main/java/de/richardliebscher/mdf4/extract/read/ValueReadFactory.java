@@ -12,9 +12,9 @@ import java.io.Serializable;
 @FunctionalInterface
 public interface ValueReadFactory extends Serializable {
 
-  ValueRead build(ByteInput input) throws IOException;
+  ValueRead build(ByteInput input, Scope scope) throws IOException;
 
   static ValueReadFactory of(ValueRead valueRead) {
-    return input -> valueRead;
+    return (ignore1, ignore2) -> valueRead;
   }
 }

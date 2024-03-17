@@ -21,6 +21,7 @@ import de.richardliebscher.mdf4.extract.impl.RecordReaderFactory;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FileInput;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -32,7 +33,7 @@ import lombok.extern.java.Log;
  * MDF4 file.
  */
 @Log
-public class Mdf4File {
+public class Mdf4File implements Closeable {
 
   /**
    * Supported MDF4 version.
@@ -77,21 +78,26 @@ public class Mdf4File {
    * @throws IOException Failed to read MDF4 header
    */
   public static Mdf4File open(ByteInput input) throws IOException {
-    final var idBlock = IdBlock.parse(input);
-    if (idBlock.isUnfinalized()) {
-      throw new FormatException("MDF file is unfinalized");
+    try {
+      final var idBlock = IdBlock.parse(input);
+      if (idBlock.isUnfinalized()) {
+        throw new FormatException("MDF file is unfinalized");
+      }
+
+      final var formatId = idBlock.getFormatId();
+      if (formatId.getMajor() != TOOL_VERSION.getMajor()) {
+        throw new UnsupportedVersionException(formatId);
+      }
+
+      input.seek(HD_BLOCK_OFFSET);
+      final var hdBlock = HeaderBlock.parse(input);
+
+      //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
+      return new Mdf4File(idBlock, hdBlock, input);
+    } catch (Throwable throwable) {
+      input.close();
+      throw throwable;
     }
-
-    final var formatId = idBlock.getFormatId();
-    if (formatId.getMajor() != TOOL_VERSION.getMajor()) {
-      throw new UnsupportedVersionException(formatId);
-    }
-
-    input.seek(HD_BLOCK_OFFSET);
-    final var hdBlock = HeaderBlock.parse(input);
-
-    //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
-    return new Mdf4File(idBlock, hdBlock, input);
   }
 
   /**
@@ -180,5 +186,10 @@ public class Mdf4File {
   public <B, R> RecordReader<B, R> attachRecordReader(DetachedRecordReader<B, R> reader)
       throws IOException {
     return reader.attach(ctx);
+  }
+
+  @Override
+  public void close() throws IOException {
+    ctx.close();
   }
 }

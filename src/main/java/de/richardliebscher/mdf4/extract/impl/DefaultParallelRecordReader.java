@@ -22,6 +22,7 @@ import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.ReadIntoFactory;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
+import de.richardliebscher.mdf4.extract.read.Scope;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
@@ -52,17 +53,14 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
 
   @Override
   public Stream<Result<R, IOException>> stream() throws IOException {
+    final var scope = ctx.newScope();
     final var input = ctx.getInput();
-    final var channelReaders = new ArrayList<ReadInto<B>>();
-    for (ReadIntoFactory<B> channelReaderFactory : this.channelReaderFactories) {
-      ReadInto<B> build = channelReaderFactory.build(input);
-      channelReaders.add(build);
-    }
 
     return StreamSupport.stream(new RecordSpliterator<>(
-        channelReaders, factory,
-        input, channelGroup.getDataBytes() + channelGroup.getInvalidationBytes(),
-        dataList, offsets, channelGroup.getCycleCount()), false);
+            ReadIntoFactory.buildAll(channelReaderFactories, input, scope), factory,
+            input, channelGroup.getDataBytes() + channelGroup.getInvalidationBytes(),
+            dataList, offsets, channelGroup.getCycleCount()), false)
+        .onClose(scope::closeUnchecked);
   }
 
   @AllArgsConstructor
@@ -107,7 +105,11 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     }
 
     public RecordSpliterator(RecordSpliterator<B, R> origin, int splitPos) throws IOException {
-      this.channelReaders = origin.channelReaders;
+      final var channelReaders = new ArrayList<ReadInto<B>>(origin.channelReaders.size());
+      for (final var x : origin.channelReaders) {
+        channelReaders.add(x.dup());
+      }
+      this.channelReaders = channelReaders;
       this.recordFactory = origin.recordFactory;
       this.dataList = origin.dataList;
       this.offsets = origin.offsets;
@@ -253,6 +255,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     private final SerializableRecordFactory<B, R> recordFactory;
     private final long[] dataList;
     private final int recordSize;
+    private final Scope scope;
     private final RecordBuffer recordInput;
     private int index;
     private ReadableByteChannel currentBlock;
@@ -261,12 +264,13 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     public MyRecordReader(
         ByteInput input, List<ReadInto<B>> channelReaders,
         SerializableRecordFactory<B, R> recordFactory, int recordSize, long[] dataListPart,
-        long[] offsets) {
+        long[] offsets, Scope scope) {
       this.input = input;
       this.channelReaders = channelReaders;
       this.recordFactory = recordFactory;
       this.dataList = dataListPart;
       this.recordSize = recordSize;
+      this.scope = scope;
       this.index = 0;
       this.recordInput = new RecordByteBuffer(
           ByteBuffer.allocate(recordSize), offsets[index] / recordSize);
@@ -333,6 +337,11 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     private void finishRead() {
       recordInput.incRecordIndex();
     }
+
+    @Override
+    public void close() throws IOException {
+      scope.close();
+    }
   }
 
   @RequiredArgsConstructor
@@ -346,17 +355,17 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
 
     @Override
     public RecordReader<B, R> attach(FileContext ctx) throws IOException {
-      final var channelReaders = new ArrayList<ReadInto<B>>();
-      for (ReadIntoFactory<B> channelReaderFactory : channelReaderFactories) {
-        channelReaders.add(channelReaderFactory.build(ctx.getInput()));
-      }
+      final var scope = ctx.newScope();
+      final var channelReaders =
+          ReadIntoFactory.buildAll(channelReaderFactories, ctx.getInput(), scope);
 
       return new MyRecordReader<>(
           ctx.getInput(),
           channelReaders,
           recordDeserializer,
           recordSize,
-          dataListPart, offsets);
+          dataListPart, offsets,
+          scope);
     }
   }
 }

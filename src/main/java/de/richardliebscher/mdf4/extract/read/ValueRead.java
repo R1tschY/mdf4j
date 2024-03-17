@@ -12,4 +12,8 @@ import java.io.Serializable;
 public interface ValueRead extends Serializable {
 
   <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param) throws IOException;
+
+  default ValueRead dup() throws IOException {
+    return this;
+  }
 }

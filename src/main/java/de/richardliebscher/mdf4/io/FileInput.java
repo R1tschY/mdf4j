@@ -128,4 +128,9 @@ public class FileInput implements ByteInput {
   public FileInput dup() throws IOException {
     return new FileInput(path);
   }
+
+  @Override
+  public void close() throws IOException {
+    byteChannel.close();
+  }
 }

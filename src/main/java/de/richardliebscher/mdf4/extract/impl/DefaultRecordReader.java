@@ -19,6 +19,7 @@ import de.richardliebscher.mdf4.extract.read.DataRead;
 import de.richardliebscher.mdf4.extract.read.ReadInto;
 import de.richardliebscher.mdf4.extract.read.RecordBuffer;
 import de.richardliebscher.mdf4.extract.read.RecordByteBuffer;
+import de.richardliebscher.mdf4.extract.read.Scope;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -41,6 +42,7 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   private final RecordFactory<B, R> factory;
   private final DataRead<DataBlock> dataSource;
   private final ByteBuffer buffer;
+  private final Scope scope;
   private final DataGroup dataGroup;
   private final ChannelGroup channelGroup;
   private final RecordBuffer input;
@@ -49,13 +51,14 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
   DefaultRecordReader(
       List<Channel> channels, List<ReadInto<B>> channelReaders,
       RecordFactory<B, R> factory, DataRead<DataBlock> dataSource,
-      DataGroup dataGroup, ChannelGroup channelGroup) {
+      DataGroup dataGroup, ChannelGroup channelGroup, Scope scope) {
     this.channels = Collections.unmodifiableList(channels);
     this.channelReaders = channelReaders;
     this.factory = factory;
     this.dataSource = dataSource;
     this.buffer = ByteBuffer.allocate(
         channelGroup.getBlock().getDataBytes() + channelGroup.getBlock().getInvalidationBytes());
+    this.scope = scope;
     this.input = new RecordByteBuffer(buffer, 0);
     this.dataGroup = dataGroup;
     this.channelGroup = channelGroup;
@@ -156,5 +159,10 @@ public class DefaultRecordReader<B, R> implements SizedRecordReader<B, R> {
 
   private void finishRead() {
     input.incRecordIndex();
+  }
+
+  @Override
+  public void close() throws IOException {
+    scope.close();
   }
 }

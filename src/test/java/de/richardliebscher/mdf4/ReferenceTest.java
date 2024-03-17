@@ -74,44 +74,46 @@ public class ReferenceTest {
 
   @Test
   void testSimpleRecordReader() throws Exception {
-    final var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"));
+    try (var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"))) {
+      final var records = new ArrayList<String>();
+      mdf4File.newRecordReader(new TestReprRecordFactory())
+          .forEachRemaining(records::add);
 
-    var records = new ArrayList<String>();
-    mdf4File.newRecordReader(new TestReprRecordFactory())
-        .forEachRemaining(records::add);
-
-    assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+      assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+    }
   }
 
   @Test
   void testSimpleRecordReaderFromBytes() throws Exception {
-    final var mdf4File = openFileByByteBuffer();
+    try (final var mdf4File = openFileByByteBuffer()){
 
-    var records = new ArrayList<String>();
-    mdf4File.newRecordReader(new TestReprRecordFactory())
-        .forEachRemaining(records::add);
+      var records = new ArrayList<String>();
+      mdf4File.newRecordReader(new TestReprRecordFactory())
+          .forEachRemaining(records::add);
 
-    assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+      assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+    }
   }
 
   @Test
   void checkIterDataGroups() throws IOException {
-    final Mdf4File mdf4File = openFileByByteBuffer();
+    try (final Mdf4File mdf4File = openFileByByteBuffer()) {
 
-    final var iterator = mdf4File.getDataGroups().iter();
-    DataGroup dataGroup;
-    while ((dataGroup = iterator.next()) != null) {
-      System.out.printf("DG: %s%n", dataGroup.getName());
+      final var iterator = mdf4File.getDataGroups().iter();
+      DataGroup dataGroup;
+      while ((dataGroup = iterator.next()) != null) {
+        System.out.printf("DG: %s%n", dataGroup.getName());
 
-      final var cgIterator = dataGroup.getChannelGroups().iter();
-      ChannelGroup channelGroup;
-      while ((channelGroup = cgIterator.next()) != null) {
-        System.out.printf("  CG: %s%n", channelGroup.getName());
+        final var cgIterator = dataGroup.getChannelGroups().iter();
+        ChannelGroup channelGroup;
+        while ((channelGroup = cgIterator.next()) != null) {
+          System.out.printf("  CG: %s%n", channelGroup.getName());
 
-        final var cnIterator = channelGroup.getChannels().iter();
-        Channel channel;
-        while ((channel = cnIterator.next()) != null) {
-          System.out.printf("    CN: %s%n", channel.getName());
+          final var cnIterator = channelGroup.getChannels().iter();
+          Channel channel;
+          while ((channel = cnIterator.next()) != null) {
+            System.out.printf("    CN: %s%n", channel.getName());
+          }
         }
       }
     }
@@ -119,36 +121,38 @@ public class ReferenceTest {
 
   @Test
   void testParallelRecordReader() throws Exception {
-    final var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"));
+    try (final var mdf4File = Mdf4File.open(getResourcePath("/KonvektionKalt1-20140123-143636.mf4"))) {
 
-    final var threadIds = new HashSet<Long>();
-    final var records = mdf4File.streamRecords(new TestReprRecordFactory())
-        .parallel()
-        .peek(ignored -> threadIds.add(Thread.currentThread().getId()))
-        .map(Result::unwrap)
-        .collect(Collectors.toList());
+      final var threadIds = new HashSet<Long>();
+      final var records = mdf4File.streamRecords(new TestReprRecordFactory())
+          .parallel()
+          .peek(ignored -> threadIds.add(Thread.currentThread().getId()))
+          .map(Result::unwrap)
+          .collect(Collectors.toList());
 
-    assertThat(threadIds.size()).isGreaterThan(1);
-    assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+      assertThat(threadIds.size()).isGreaterThan(1);
+      assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+    }
   }
 
   @SuppressWarnings("unchecked")
   @Test
   void testDistributedRecordReader() throws Exception {
-    final Mdf4File mdf4File = openFileByByteBuffer();
+    try (final Mdf4File mdf4File = openFileByByteBuffer()) {
 
-    final var factory = new TestReprRecordFactory();
+      final var factory = new TestReprRecordFactory();
 
-    final var records = mdf4File.splitRecordReaders(42, factory)
-        .stream()
-        .map(rr -> (DetachedRecordReader<?, String>) JavaSerde.de(JavaSerde.ser(rr)))
-        .map(wrapIOException(mdf4File::attachRecordReader))
-        .flatMap(recordReader -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-            recordReader.iterator(), Spliterator.SIZED), false))
-        .map(Result::unwrap)
-        .collect(Collectors.toList());
+      final var records = mdf4File.splitRecordReaders(42, factory)
+          .stream()
+          .map(rr -> (DetachedRecordReader<?, String>) JavaSerde.de(JavaSerde.ser(rr)))
+          .map(wrapIOException(mdf4File::attachRecordReader))
+          .flatMap(recordReader -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+              recordReader.iterator(), Spliterator.SIZED), false))
+          .map(Result::unwrap)
+          .collect(Collectors.toList());
 
-    assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+      assertSameLines("/KonvektionKalt1-20140123-143636.csv", records);
+    }
   }
 
   private static class TestReprRecordFactory implements

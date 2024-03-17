@@ -12,7 +12,9 @@ import de.richardliebscher.mdf4.blocks.MetadataBlock;
 import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.cache.Cache;
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import de.richardliebscher.mdf4.extract.read.Scope;
 import de.richardliebscher.mdf4.io.ByteInput;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Optional;
@@ -21,16 +23,23 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public class FileContext {
+public class FileContext implements Closeable {
 
   @Getter
   private final ByteInput input;
   @Getter
   private final Cache cache;
   private final XMLInputFactory xmlParserFactory;
+  private final Scope fileScope = new Scope();
+
+  public FileContext(ByteInput input, Cache cache, XMLInputFactory xmlParserFactory) {
+    this.input = input;
+    this.cache = cache;
+    this.xmlParserFactory = xmlParserFactory;
+
+    this.fileScope.add(input);
+  }
 
   public XMLStreamReader newXmlParser(String content) {
     try {
@@ -77,5 +86,16 @@ public class FileContext {
         }
       }
     });
+  }
+
+  public Scope newScope() {
+    final var scope = new Scope();
+    this.fileScope.add(scope);
+    return scope;
+  }
+
+  @Override
+  public void close() throws IOException {
+    fileScope.close();
   }
 }

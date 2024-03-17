@@ -17,7 +17,7 @@ import java.util.NoSuchElementException;
  *
  * @param <R> Deserialized record type
  */
-public interface RecordReader<B, R> {
+public interface RecordReader<B, R> extends AutoCloseable {
 
   /**
    * Create an iterator for deserializing all elements the same way.

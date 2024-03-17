@@ -1279,6 +1279,8 @@ public final class RecordReaderFactory {
     private final ValueRead offsetRead;
     private final RawDataMapper rawDataMapper;
     private final Scope scope;
+    private final ByteBuffer buffer = ByteBuffer.allocate(1024)
+        .order(ByteOrder.LITTLE_ENDIAN);
 
     public VlsdRead(SeekableDataListRead<SignalDataBlock> read, ValueRead offsetRead,
         RawDataMapper rawDataMapper, Scope scope) {
@@ -1296,20 +1298,27 @@ public final class RecordReaderFactory {
         throws IOException {
       offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offsetCell);
 
-      final var buffer = ByteBuffer.allocate(4)
-          .order(ByteOrder.LITTLE_ENDIAN);
+      buffer.clear();
+      buffer.limit(4);
       sdRead.position(offsetCell.get());
       sdRead.readFully(buffer);
-      buffer.position(0);
+
+      buffer.rewind();
       final var size = buffer.getInt();
       if (size < 0 || size > MAX_ARRAY_LENGTH) {
         throw new NotImplementedFeatureException("Unable to read data with size " + size);
       }
 
-      final var contentBuffer = ByteBuffer.allocate(size);
-      sdRead.readFully(contentBuffer);
-
-      return rawDataMapper.map(visitor, param, contentBuffer.array(), size);
+      if (size <= buffer.capacity()) {
+        buffer.clear();
+        buffer.limit(size);
+        sdRead.readFully(buffer);
+        return rawDataMapper.map(visitor, param, buffer.array(), size);
+      } else {
+        final var contentBuffer = ByteBuffer.allocate(size);
+        sdRead.readFully(contentBuffer);
+        return rawDataMapper.map(visitor, param, contentBuffer.array(), size);
+      }
     }
 
     @Override

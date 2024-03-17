@@ -746,14 +746,16 @@ public final class RecordReaderFactory {
       ChannelBlock channelBlock, ByteInput input) throws IOException {
     switch (channelBlock.getDataType()) {
       case STRING_LATIN1:
-        return createVarcharRead(channelBlock, StandardCharsets.ISO_8859_1, input);
+        return createVlsdRead(channelBlock, input,
+            new ToStringMapper(StandardCharsets.ISO_8859_1));
       case STRING_UTF8:
-        return createVarcharRead(channelBlock, StandardCharsets.UTF_8, input);
+        return createVlsdRead(channelBlock, input, new ToStringMapper(StandardCharsets.UTF_8));
       case STRING_UTF16LE:
-        return createVarcharRead(channelBlock, StandardCharsets.UTF_16LE, input);
+        return createVlsdRead(channelBlock, input, new ToStringMapper(StandardCharsets.UTF_16LE));
       case STRING_UTF16BE:
-        return createVarcharRead(channelBlock, StandardCharsets.UTF_16BE, input);
+        return createVlsdRead(channelBlock, input, new ToStringMapper(StandardCharsets.UTF_16BE));
       case BYTE_ARRAY:
+        return createVlsdRead(channelBlock, input, new ToByteArrayMapper());
       default:
         throw new NotImplementedFeatureException(
             "Reading data type " + channelBlock.getDataType()
@@ -762,8 +764,8 @@ public final class RecordReaderFactory {
   }
 
   @SuppressWarnings("unchecked")
-  private static ValueReadFactory createVarcharRead(
-      ChannelBlock channelBlock, Charset charset, ByteInput input) throws IOException {
+  private static ValueReadFactory createVlsdRead(
+      ChannelBlock channelBlock, ByteInput input, RawDataMapper rawDataMapper) throws IOException {
     final var dataList = DataList.from(
         (Link<DataContainer<SignalDataBlock>>) channelBlock.getSignalData(),
         SignalDataBlock.CONTAINER_TYPE,
@@ -773,7 +775,7 @@ public final class RecordReaderFactory {
     return (in, scope) -> {
       final var read = new SeekableDataListRead<>(
           in.dup(), dataList, SignalDataBlock.STORAGE_TYPE);
-      return new VlsdStringRead(read, offsetRead, charset, scope);
+      return new VlsdRead(read, offsetRead, rawDataMapper, scope);
     };
   }
 
@@ -862,23 +864,7 @@ public final class RecordReaderFactory {
 
     return (in, scope) -> {
       final var sizeReader = sizeReaderFactory.build(in, scope);
-      return new MaxLenByteArrayRead(byteOffset, byteCount, sizeReader, new ByteArrayMapper() {
-        @Override
-        public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
-            throws IOException {
-          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
-              StandardCharsets.ISO_8859_1)) {
-            final var trimmedSize = Arrays.indexOf(array, 0, length, (byte) 0);
-            if (trimmedSize == -1) {
-              throw new FormatException("Missing zero termination of string value");
-            }
-            return visitor.visitString(trimString(new String(array, 0, trimmedSize, charset)),
-                param);
-          } else {
-            return visitor.visitString(trimString(new String(array, charset)), param);
-          }
-        }
-      });
+      return new MaxLenRead(byteOffset, byteCount, sizeReader, new ToStringMapper(charset));
     };
   }
 
@@ -891,13 +877,7 @@ public final class RecordReaderFactory {
 
     return (in, scope) -> {
       final var sizeReader = sizeReaderFactory.build(in, scope);
-      return new MaxLenByteArrayRead(byteOffset, byteCount, sizeReader, new ByteArrayMapper() {
-        @Override
-        public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
-            throws IOException {
-          return visitor.visitByteArray(array, 0, length, param);
-        }
-      });
+      return new MaxLenRead(byteOffset, byteCount, sizeReader, new ToByteArrayMapper());
     };
   }
 
@@ -1162,62 +1142,41 @@ public final class RecordReaderFactory {
     }
   }
 
-  private static class VlsdStringRead implements ValueRead {
+  interface RawDataMapper {
 
-    private final SeekableDataListRead<SignalDataBlock> sdRead;
-    private final LongCell offsetCell;
-    private final ValueRead offsetRead;
+    <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length) throws IOException;
+  }
+
+  @RequiredArgsConstructor
+  private static class ToStringMapper implements RawDataMapper {
+
     private final Charset charset;
-    private final Scope scope;
-
-    public VlsdStringRead(SeekableDataListRead<SignalDataBlock> read, ValueRead offsetRead,
-        Charset charset, Scope scope) {
-      this.offsetRead = offsetRead;
-      this.charset = charset;
-      this.sdRead = read;
-      this.scope = scope;
-      this.offsetCell = new LongCell();
-
-      scope.add(sdRead);
-    }
 
     @Override
-    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+    public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
         throws IOException {
-      offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offsetCell);
-
-      final var buffer = ByteBuffer.allocate(4)
-          .order(ByteOrder.LITTLE_ENDIAN);
-      sdRead.position(offsetCell.get());
-      sdRead.readFully(buffer);
-      buffer.position(0);
-      final var size = buffer.getInt();
-      if (size < 0 || size > MAX_ARRAY_LENGTH) {
-        throw new NotImplementedFeatureException("Unable to read data with size " + size);
-      }
-
-      final var contentBuffer = ByteBuffer.allocate(size);
-      sdRead.readFully(contentBuffer);
-
-      if (charset.equals(StandardCharsets.UTF_8) || charset.equals(StandardCharsets.ISO_8859_1)) {
-        final var trimmedSize = Arrays.indexOf(contentBuffer.array(), 0, size, (byte) 0);
-        return visitor.visitString(
-            new String(contentBuffer.array(), 0, trimmedSize == -1 ? size : trimmedSize,
-                charset),
-            param);
+      if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
+          StandardCharsets.ISO_8859_1)) {
+        var nulPos = Arrays.indexOf(array, 0, length, (byte) 0);
+        var size = nulPos < 0 ? length : nulPos;
+        return visitor.visitString(trimString(new String(array, 0, size, charset)), param);
       } else {
-        return visitor.visitString(
-            trimString(new String(contentBuffer.array(), 0, size, charset)), param);
+        return visitor.visitString(trimString(new String(array, charset)), param);
       }
     }
+  }
+
+  private static class ToByteArrayMapper implements RawDataMapper {
 
     @Override
-    public ValueRead dup() throws IOException {
-      return new VlsdStringRead(sdRead.dup(), offsetRead.dup(), charset, scope);
+    public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
+        throws IOException {
+      return visitor.visitByteArray(array, 0, length, param);
     }
   }
 
   private static class ByteArrayRead implements ValueRead {
+
     private final byte[] buffer;
     private final int byteOffset;
 
@@ -1240,6 +1199,7 @@ public final class RecordReaderFactory {
   }
 
   private static class StringRead implements ValueRead {
+
     private final byte[] buffer;
     private final int byteOffset;
     private final Charset charset;
@@ -1273,23 +1233,20 @@ public final class RecordReaderFactory {
     }
   }
 
-  interface ByteArrayMapper {
-    <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length) throws IOException;
-  }
+  private static class MaxLenRead implements ValueRead {
 
-  private static class MaxLenByteArrayRead implements ValueRead {
     private final byte[] buf;
     private final IntCell sizeCell;
     private final ValueRead sizeReader;
     private final int byteOffset;
-    private final ByteArrayMapper byteArrayMapper;
+    private final RawDataMapper rawDataMapper;
 
-    public MaxLenByteArrayRead(int byteOffset, int byteCount, ValueRead sizeReader,
-        ByteArrayMapper byteArrayMapper) {
+    public MaxLenRead(int byteOffset, int byteCount, ValueRead sizeReader,
+        RawDataMapper rawDataMapper) {
       this.sizeReader = sizeReader;
       this.byteOffset = byteOffset;
       this.buf = new byte[byteCount];
-      this.byteArrayMapper = byteArrayMapper;
+      this.rawDataMapper = rawDataMapper;
       this.sizeCell = new IntCell();
     }
 
@@ -1306,12 +1263,58 @@ public final class RecordReaderFactory {
 
       input.readBytes(byteOffset, buf, 0, size);
 
-      return byteArrayMapper.map(visitor, param, buf, size);
+      return rawDataMapper.map(visitor, param, buf, size);
     }
 
     @Override
     public ValueRead dup() {
-      return new MaxLenByteArrayRead(byteOffset, buf.length, sizeReader, byteArrayMapper);
+      return new MaxLenRead(byteOffset, buf.length, sizeReader, rawDataMapper);
+    }
+  }
+
+  private static class VlsdRead implements ValueRead {
+
+    private final SeekableDataListRead<SignalDataBlock> sdRead;
+    private final LongCell offsetCell;
+    private final ValueRead offsetRead;
+    private final RawDataMapper rawDataMapper;
+    private final Scope scope;
+
+    public VlsdRead(SeekableDataListRead<SignalDataBlock> read, ValueRead offsetRead,
+        RawDataMapper rawDataMapper, Scope scope) {
+      this.offsetRead = offsetRead;
+      this.rawDataMapper = rawDataMapper;
+      this.sdRead = read;
+      this.scope = scope;
+      this.offsetCell = new LongCell();
+
+      scope.add(sdRead);
+    }
+
+    @Override
+    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        throws IOException {
+      offsetRead.read(input, UnsignedLongVisitor.INSTANCE, offsetCell);
+
+      final var buffer = ByteBuffer.allocate(4)
+          .order(ByteOrder.LITTLE_ENDIAN);
+      sdRead.position(offsetCell.get());
+      sdRead.readFully(buffer);
+      buffer.position(0);
+      final var size = buffer.getInt();
+      if (size < 0 || size > MAX_ARRAY_LENGTH) {
+        throw new NotImplementedFeatureException("Unable to read data with size " + size);
+      }
+
+      final var contentBuffer = ByteBuffer.allocate(size);
+      sdRead.readFully(contentBuffer);
+
+      return rawDataMapper.map(visitor, param, contentBuffer.array(), size);
+    }
+
+    @Override
+    public ValueRead dup() throws IOException {
+      return new VlsdRead(sdRead.dup(), offsetRead.dup(), rawDataMapper, scope);
     }
   }
 }

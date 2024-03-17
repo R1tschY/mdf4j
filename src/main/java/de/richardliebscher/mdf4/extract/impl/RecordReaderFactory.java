@@ -722,28 +722,7 @@ public final class RecordReaderFactory {
     final var byteCount = getByteCount(channelBlock,
         "Bit count must be a multiple of 8 for string channels");
 
-    return (input, scope) -> {
-      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      return new ValueRead() {
-        @Override
-        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
-            throws IOException {
-          final var buf = buffer.get();
-          input.readBytes(byteOffset, buf, 0, buf.length);
-
-          if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
-              StandardCharsets.ISO_8859_1)) {
-            final var size = Arrays.indexOf(buf, (byte) 0);
-            if (size == -1) {
-              throw new FormatException("Missing zero termination of string value");
-            }
-            return visitor.visitString(new String(buf, 0, size, charset), param);
-          } else {
-            return visitor.visitString(trimString(new String(buf, charset)), param);
-          }
-        }
-      };
-    };
+    return (input, scope) -> new StringRead(byteOffset, byteCount, charset);
   }
 
   private static ValueReadFactory createByteArrayRead(ChannelBlock channelBlock)
@@ -752,10 +731,7 @@ public final class RecordReaderFactory {
     final var byteCount = getByteCount(channelBlock,
         "Bit count must be a multiple of 8 for byte array channels");
 
-    return (input, scope) -> {
-      final var buffer = ThreadLocal.withInitial(() -> new byte[byteCount]);
-      return new ByteArrayRead(buffer, byteOffset);
-    };
+    return (input, scope) -> new ByteArrayRead(byteCount, byteOffset);
   }
 
   private static String trimString(String data) throws IOException {
@@ -876,19 +852,6 @@ public final class RecordReaderFactory {
     }
   }
 
-  private static int readSize(
-      ValueRead valueRead, RecordBuffer input, IntCell intCell, byte[] buf)
-      throws IOException {
-    valueRead.read(input, SizeVisitor.INSTANCE, intCell);
-
-    final var size = intCell.get();
-    if (size > buf.length) {
-      throw new FormatException(
-          "Size value bigger than maximum allowed size: " + size + " > " + buf.length);
-    }
-    return size;
-  }
-
   private static ValueReadFactory createMaxLenStringRead(ChannelBlock channelBlock, Charset charset,
       ByteInput input) throws IOException {
     final var byteOffset = channelBlock.getByteOffset();
@@ -898,30 +861,24 @@ public final class RecordReaderFactory {
     final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
 
     return (in, scope) -> {
-      final var buffer = ThreadLocal.withInitial(
-          () -> Pair.of(new byte[byteCount], new IntCell()));
       final var sizeReader = sizeReaderFactory.build(in, scope);
-      return new ValueRead() {
+      return new MaxLenByteArrayRead(byteOffset, byteCount, sizeReader, new ByteArrayMapper() {
         @Override
-        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
             throws IOException {
-          final var localCache = buffer.get();
-          final var buf = localCache.getLeft();
-          final var size = readSize(sizeReader, input, localCache.getRight(), buf);
-
-          input.readBytes(byteOffset, buf, 0, size);
           if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
               StandardCharsets.ISO_8859_1)) {
-            final var trimmedSize = Arrays.indexOf(buf, 0, size, (byte) 0);
+            final var trimmedSize = Arrays.indexOf(array, 0, length, (byte) 0);
             if (trimmedSize == -1) {
               throw new FormatException("Missing zero termination of string value");
             }
-            return visitor.visitString(trimString(new String(buf, 0, trimmedSize, charset)), param);
+            return visitor.visitString(trimString(new String(array, 0, trimmedSize, charset)),
+                param);
           } else {
-            return visitor.visitString(trimString(new String(buf, charset)), param);
+            return visitor.visitString(trimString(new String(array, charset)), param);
           }
         }
-      };
+      });
     };
   }
 
@@ -933,22 +890,14 @@ public final class RecordReaderFactory {
     final var sizeReaderFactory = createSizeDataReader(channelBlock, input);
 
     return (in, scope) -> {
-      final var buffer = ThreadLocal.withInitial(
-          () -> Pair.of(new byte[byteCount], new IntCell()));
       final var sizeReader = sizeReaderFactory.build(in, scope);
-      return new ValueRead() {
+      return new MaxLenByteArrayRead(byteOffset, byteCount, sizeReader, new ByteArrayMapper() {
         @Override
-        public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        public <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length)
             throws IOException {
-          final var localCache = buffer.get();
-          final var buf = localCache.getLeft();
-
-          final var size = readSize(sizeReader, input, localCache.getRight(), buf);
-
-          input.readBytes(byteOffset, buf, 0, size);
-          return visitor.visitByteArray(buf, 0, size, param);
+          return visitor.visitByteArray(array, 0, length, param);
         }
-      };
+      });
     };
   }
 
@@ -1269,21 +1218,100 @@ public final class RecordReaderFactory {
   }
 
   private static class ByteArrayRead implements ValueRead {
-
-    private final ThreadLocal<byte[]> buffer;
+    private final byte[] buffer;
     private final int byteOffset;
 
-    public ByteArrayRead(ThreadLocal<byte[]> buffer, int byteOffset) {
-      this.buffer = buffer;
+    public ByteArrayRead(int byteLength, int byteOffset) {
+      this.buffer = new byte[byteLength];
       this.byteOffset = byteOffset;
     }
 
     @Override
     public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
         throws IOException {
-      final var dest = buffer.get();
-      input.readBytes(byteOffset, dest, 0, dest.length);
-      return visitor.visitByteArray(dest, param);
+      input.readBytes(byteOffset, buffer, 0, buffer.length);
+      return visitor.visitByteArray(buffer, param);
+    }
+
+    @Override
+    public ValueRead dup() {
+      return new ByteArrayRead(buffer.length, byteOffset);
+    }
+  }
+
+  private static class StringRead implements ValueRead {
+    private final byte[] buffer;
+    private final int byteOffset;
+    private final Charset charset;
+
+    public StringRead(int byteOffset, int byteCount, Charset charset) {
+      this.byteOffset = byteOffset;
+      this.charset = charset;
+      this.buffer = new byte[byteCount];
+    }
+
+    @Override
+    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        throws IOException {
+      input.readBytes(byteOffset, buffer, 0, buffer.length);
+
+      if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
+          StandardCharsets.ISO_8859_1)) {
+        final var size = Arrays.indexOf(buffer, (byte) 0);
+        if (size == -1) {
+          throw new FormatException("Missing zero termination of string value");
+        }
+        return visitor.visitString(new String(buffer, 0, size, charset), param);
+      } else {
+        return visitor.visitString(trimString(new String(buffer, charset)), param);
+      }
+    }
+
+    @Override
+    public ValueRead dup() {
+      return new StringRead(byteOffset, buffer.length, charset);
+    }
+  }
+
+  interface ByteArrayMapper {
+    <T, P> T map(Visitor<T, P> visitor, P param, byte[] array, int length) throws IOException;
+  }
+
+  private static class MaxLenByteArrayRead implements ValueRead {
+    private final byte[] buf;
+    private final IntCell sizeCell;
+    private final ValueRead sizeReader;
+    private final int byteOffset;
+    private final ByteArrayMapper byteArrayMapper;
+
+    public MaxLenByteArrayRead(int byteOffset, int byteCount, ValueRead sizeReader,
+        ByteArrayMapper byteArrayMapper) {
+      this.sizeReader = sizeReader;
+      this.byteOffset = byteOffset;
+      this.buf = new byte[byteCount];
+      this.byteArrayMapper = byteArrayMapper;
+      this.sizeCell = new IntCell();
+    }
+
+    @Override
+    public <T, P> T read(RecordBuffer input, Visitor<T, P> visitor, P param)
+        throws IOException {
+      sizeReader.read(input, SizeVisitor.INSTANCE, sizeCell);
+
+      final var size = sizeCell.get();
+      if (size > buf.length) {
+        throw new FormatException(
+            "Size value bigger than maximum allowed size: " + size + " > " + buf.length);
+      }
+
+      input.readBytes(byteOffset, buf, 0, size);
+
+      return byteArrayMapper.map(visitor, param, buf, size);
+    }
+
+    @Override
+    public ValueRead dup() {
+      return new MaxLenByteArrayRead(byteOffset, buf.length, sizeReader, byteArrayMapper);
     }
   }
 }

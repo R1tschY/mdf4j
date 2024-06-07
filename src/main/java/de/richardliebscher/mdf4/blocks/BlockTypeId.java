@@ -39,13 +39,20 @@ public final class BlockTypeId {
     return new BlockTypeId('#' | ('#' << 8) | (a << 16) | (b << 24));
   }
 
-  public static BlockTypeId parse(ByteInput input) throws IOException {
+  public static BlockTypeId peekParse(ByteInput input) throws IOException {
     final var backup = input.pos();
+    try {
+      return parse(input);
+    } finally {
+      input.seek(backup);
+    }
+  }
+
+  public static BlockTypeId parse(ByteInput input) throws IOException {
     final var hash1 = input.readU8();
     final var hash2 = input.readU8();
     final var first = input.readU8();
     final var second = input.readU8();
-    input.seek(backup);
     if (hash1 != '#' || hash2 != '#') {
       throw new FormatException(
           "Not a block: prefix: " + hash1 + "," + hash2);

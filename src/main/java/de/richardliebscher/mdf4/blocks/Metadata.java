@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public interface Metadata {
 
   static Metadata parse(ByteInput input) throws IOException {
-    final var blockId = BlockTypeId.parse(input);
+    final var blockId = BlockTypeId.peekParse(input);
     if (MetadataBlock.ID.equals(blockId)) {
       return MetadataBlock.parse(input);
     } else if (TextBlock.ID.equals(blockId)) {

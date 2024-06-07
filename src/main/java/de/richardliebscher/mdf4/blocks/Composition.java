@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public interface Composition {
 
   static Composition parse(ByteInput input) throws IOException {
-    final var blockId = BlockTypeId.parse(input);
+    final var blockId = BlockTypeId.peekParse(input);
     if (ChannelBlock.ID.equals(blockId)) {
       return ChannelBlock.parse(input);
       //} else if (ChannelArrayBlock.ID.equals(blockId)) {

@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 public interface DataType<T extends Data<T>> extends DataContainerType<T, T> {
 
   default DataContainer<T> parseDataContainer(ByteInput input) throws IOException {
-    final var blockId = BlockTypeId.parse(input);
+    final var blockId = BlockTypeId.peekParse(input);
     if (blockId.equals(DataListBlock.ID)) {
       return DataListBlock.parse(input);
     } else if (blockId.equals(DataZippedBlock.ID)) {
@@ -35,7 +35,7 @@ public interface DataType<T extends Data<T>> extends DataContainerType<T, T> {
   }
 
   default DataStorage<T> parseStorage(ByteInput input) throws IOException {
-    final var blockId = BlockTypeId.parse(input);
+    final var blockId = BlockTypeId.peekParse(input);
     if (blockId.equals(id())) {
       return parse(input);
     } else if (blockId.equals(DataZippedBlock.ID)) {

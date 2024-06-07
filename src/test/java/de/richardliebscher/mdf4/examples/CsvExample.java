@@ -14,6 +14,7 @@ import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
 import de.richardliebscher.mdf4.extract.de.Half;
+import de.richardliebscher.mdf4.extract.de.StructAccess;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
@@ -21,6 +22,7 @@ import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +33,8 @@ import java.util.Base64;
  */
 public class CsvExample {
 
-  private static final String SEP = ",";
-  private static final String LINE_SEP = "\n";
+  static final String SEP = ",";
+  static final String LINE_SEP = "\n";
 
   public static void main(String[] args) throws Exception {
     final var source = Path.of(args[0]);
@@ -187,6 +189,30 @@ class CsvColumnDeserialize implements Deserialize<String> {
       @Override
       public String visitByteArray(byte[] bytes, Void param) {
         return new String(Base64.getEncoder().encode(bytes), StandardCharsets.US_ASCII);
+      }
+
+      @Override
+      public String visitByteArray(ByteBuffer bytes, Void param) {
+        final var encoded = Base64.getEncoder().encode(bytes);
+        return new String(
+            encoded.array(), encoded.position(), encoded.remaining(), StandardCharsets.ISO_8859_1);
+      }
+
+      @Override
+      public String visitByteArray(byte[] bytes, int offset, int length, Void param) {
+        return visitByteArray(ByteBuffer.wrap(bytes, offset, length), param);
+      }
+
+      @Override
+      public String visitStruct(StructAccess access, Void param) throws IOException {
+        final var sb = new StringBuilder();
+        for (int i = 0; i < access.fields(); i++) {
+          if (i != 0) {
+            sb.append(CsvExample.SEP);
+          }
+          sb.append(access.next_field(CsvColumnDeserialize.this));
+        }
+        return sb.toString();
       }
 
       @Override

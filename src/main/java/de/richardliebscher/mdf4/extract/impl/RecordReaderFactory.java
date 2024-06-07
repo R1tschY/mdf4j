@@ -122,15 +122,16 @@ public final class RecordReaderFactory {
         .resolve(ChannelConversionBlock.TYPE, input);
     if (channelConversion.isPresent()) {
       final var cc = channelConversion.get();
+      final var vals = cc.getVals();
       switch (cc.getType()) {
         case IDENTITY:
           converted = rawValue;
           break;
         case LINEAR:
-          converted = (in, scope) -> new LinearConversion(cc, rawValue.build(in, scope));
+          converted = (in, scope) -> new LinearConversion(vals, rawValue.build(in, scope));
           break;
         case RATIONAL:
-          converted = (in, scope) -> new RationalConversion(cc, rawValue.build(in, scope));
+          converted = (in, scope) -> new RationalConversion(vals, rawValue.build(in, scope));
           break;
         case ALGEBRAIC:
         case INTERPOLATED_VALUE_TABLE:
@@ -1055,7 +1056,7 @@ public final class RecordReaderFactory {
               dataGroupBlock, channelGroupBlock, ch.getBlock(), input);
           channels.add(ch);
           channelReaders.add((in, scope) ->
-              new ReadIntoImpl<>(deserializeInto, channelReaderFactory.build(input, scope)));
+              new ReadIntoImpl<>(deserializeInto, channelReaderFactory.build(in, scope)));
         }
       } catch (NotImplementedFeatureException exception) {
         log.warning("Ignoring channel '" + ch.getName() + "': " + exception.getMessage());

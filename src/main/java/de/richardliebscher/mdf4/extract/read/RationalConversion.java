@@ -5,7 +5,6 @@
 
 package de.richardliebscher.mdf4.extract.read;
 
-import de.richardliebscher.mdf4.blocks.ChannelConversionBlock;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.Visitor;
 import java.io.IOException;
@@ -20,8 +19,7 @@ public class RationalConversion implements ValueRead {
   private final double p6;
   private final ValueRead inner;
 
-  public RationalConversion(ChannelConversionBlock cc, ValueRead valueRead) {
-    final var vals = cc.getVals();
+  public RationalConversion(long[] vals, ValueRead valueRead) {
     this.p1 = Double.longBitsToDouble(vals[0]);
     this.p2 = Double.longBitsToDouble(vals[1]);
     this.p3 = Double.longBitsToDouble(vals[2]);

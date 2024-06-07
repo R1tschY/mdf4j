@@ -43,7 +43,7 @@ public class DataListBlock<T extends Data<T>> implements DataContainer<T> {
     if (flags.isSet(DataListFlag.EQUAL_LENGTH)) {
       offsetInfo = new Offsets.EqualLength(count, input.readI64());
     } else {
-      final var offsets = new long[(int) count];
+      final var offsets = new long[count];
       for (int i = 0; i < count; i++) {
         offsets[i] = input.readI64();
       }

@@ -80,10 +80,6 @@ public abstract class Offsets implements Serializable {
     private final long[] offsets;
 
     public Values(long[] offsets) throws FormatException {
-      if (offsets.length > 0 && offsets[0] != 0) {
-        throw new FormatException("First offset must be 0");
-      }
-
       this.offsets = offsets;
     }
 

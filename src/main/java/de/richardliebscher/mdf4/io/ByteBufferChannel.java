@@ -30,7 +30,7 @@ class ByteBufferChannel implements SeekableByteChannel {
       throw new ClosedChannelException();
     }
 
-    if (byteBuffer.remaining() == 0 || outOfStreamPosition != null) {
+    if (!byteBuffer.hasRemaining() || outOfStreamPosition != null) {
       return -1;
     }
 
@@ -47,14 +47,20 @@ class ByteBufferChannel implements SeekableByteChannel {
   }
 
   @Override
-  public long position() {
+  public long position() throws IOException {
+    if (closed) {
+      throw new ClosedChannelException();
+    }
     return outOfStreamPosition != null ? outOfStreamPosition : byteBuffer.position();
   }
 
   @Override
-  public SeekableByteChannel position(long newPosition) {
+  public SeekableByteChannel position(long newPosition) throws IOException {
     if (newPosition < 0) {
       throw new IllegalArgumentException("New position should not be negative");
+    }
+    if (closed) {
+      throw new ClosedChannelException();
     }
     if (newPosition > byteBuffer.limit()) {
       outOfStreamPosition = newPosition;
@@ -65,11 +71,17 @@ class ByteBufferChannel implements SeekableByteChannel {
 
   @Override
   public long size() throws IOException {
+    if (closed) {
+      throw new ClosedChannelException();
+    }
     return byteBuffer.limit();
   }
 
   @Override
-  public SeekableByteChannel truncate(long size) {
+  public SeekableByteChannel truncate(long size) throws IOException {
+    if (closed) {
+      throw new ClosedChannelException();
+    }
     throw new NonWritableChannelException();
   }
 

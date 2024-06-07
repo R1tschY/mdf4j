@@ -46,7 +46,19 @@ public final class Links<E> implements Serializable, List<Link<E>> {
 
   @Override
   public @NonNull Iterator<Link<E>> iterator() {
-    throw new UnsupportedOperationException();
+    return new Iterator<>() {
+      private int index = 0;
+
+      @Override
+      public boolean hasNext() {
+        return index < links.length;
+      }
+
+      @Override
+      public Link<E> next() {
+        return Link.of(links[index++]);
+      }
+    };
   }
 
   @Override

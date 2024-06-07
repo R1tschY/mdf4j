@@ -59,6 +59,7 @@ public class SeekableDataListRead<T extends Data<T>> implements DataRead<T> {
       if (bytes < 0) {
         throw new IllegalStateException("Unexpected end of stream");
       }
+      pos += bytes;
       remainingDataLength -= bytes;
       return bytes;
     } finally {
@@ -86,10 +87,9 @@ public class SeekableDataListRead<T extends Data<T>> implements DataRead<T> {
       blockIndex = -1;
       remainingDataLength = 0;
     } else {
-      final var offset = dataList.getOffsets().get(blockIndex);
-
       final int toSkip;
       if (blockIndex != oldBlockIndex || newPosition < oldPosition) {
+        final var offset = dataList.getOffsets().get(blockIndex);
         toSkip = Math.toIntExact(newPosition - offset);
         setBlockChannel(dataList.getDataBlocks().get(blockIndex).resolve(storageBlockType, input)
             .orElseThrow());

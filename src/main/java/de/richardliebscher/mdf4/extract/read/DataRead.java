@@ -28,7 +28,7 @@ public interface DataRead<T extends Data<T>> extends SeekableByteChannel {
       if (read < 0) {
         throw new EOFException();
       }
-    } while (dest.remaining() > 0);
+    } while (dest.hasRemaining());
   }
 
   @Override

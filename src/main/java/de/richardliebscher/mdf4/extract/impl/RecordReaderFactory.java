@@ -1160,7 +1160,7 @@ public final class RecordReaderFactory {
           StandardCharsets.ISO_8859_1)) {
         var nulPos = Arrays.indexOf(array, 0, length, (byte) 0);
         var size = nulPos < 0 ? length : nulPos;
-        return visitor.visitString(trimString(new String(array, 0, size, charset)), param);
+        return visitor.visitString(new String(array, 0, size, charset), param);
       } else {
         return visitor.visitString(trimString(new String(array, charset)), param);
       }

@@ -735,14 +735,6 @@ public final class RecordReaderFactory {
     return (input, scope) -> new ByteArrayRead(byteCount, byteOffset);
   }
 
-  private static String trimString(String data) throws IOException {
-    final var size = data.indexOf('\0');
-    if (size == -1) {
-      throw new FormatException("Missing zero termination of string value");
-    }
-    return data.substring(0, size);
-  }
-
   private static ValueReadFactory createVlsdReader(
       ChannelBlock channelBlock, ByteInput input) throws IOException {
     switch (channelBlock.getDataType()) {
@@ -1158,11 +1150,13 @@ public final class RecordReaderFactory {
         throws IOException {
       if (charset.equals(StandardCharsets.UTF_8) || charset.equals(
           StandardCharsets.ISO_8859_1)) {
-        var nulPos = Arrays.indexOf(array, 0, length, (byte) 0);
-        var size = nulPos < 0 ? length : nulPos;
+        final var nulPos = Arrays.indexOf(array, 0, length, (byte) 0);
+        final var size = nulPos < 0 ? length : nulPos;
         return visitor.visitString(new String(array, 0, size, charset), param);
       } else {
-        return visitor.visitString(trimString(new String(array, charset)), param);
+        final var data = new String(array, 0, length, charset);
+        final var nulPos = data.indexOf('\0');
+        return visitor.visitString(nulPos < 0 ? data : data.substring(0, nulPos), param);
       }
     }
   }
@@ -1224,7 +1218,12 @@ public final class RecordReaderFactory {
         }
         return visitor.visitString(new String(buffer, 0, size, charset), param);
       } else {
-        return visitor.visitString(trimString(new String(buffer, charset)), param);
+        final var data = new String(buffer, charset);
+        final var size = data.indexOf('\0');
+        if (size == -1) {
+          throw new FormatException("Missing zero termination of string value");
+        }
+        return visitor.visitString(data.substring(0, size), param);
       }
     }
 

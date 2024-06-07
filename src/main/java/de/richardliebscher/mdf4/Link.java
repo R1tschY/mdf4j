@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.EqualsAndHashCode;
 
@@ -125,6 +126,6 @@ public final class Link<T> implements Serializable {
 
   @Override
   public String toString() {
-    return "Link{" + link + '}';
+    return "Link{0x" + Long.toHexString(link).toUpperCase(Locale.ROOT) + '}';
   }
 }

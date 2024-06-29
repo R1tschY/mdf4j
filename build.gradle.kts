@@ -30,6 +30,10 @@ sourceSets.create("cli") {
     java.setSrcDirs(listOf("src/cli/java"))
 }
 
+sourceSets.create("example") {
+    java.setSrcDirs(listOf("src/example/java"))
+}
+
 repositories {
     mavenCentral()
 }
@@ -40,6 +44,9 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.24.2")
     testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.9")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
+
+    "exampleImplementation"(project)
+
     "jmhImplementation"(project)
     "jmhImplementation"("org.openjdk.jmh:jmh-core:1.37")
     "jmhAnnotationProcessor"("org.openjdk.jmh:jmh-generator-annprocess:1.37")
@@ -118,11 +125,11 @@ publishing {
     }
 }
 
-signing {
-    useInMemoryPgpKeys(System.getenv("SIGNING_KEY"), System.getenv("SIGNING_PASSWORD"))
-
-    sign(publishing.publications["mavenJava"])
-}
+//signing {
+//    useInMemoryPgpKeys(System.getenv("SIGNING_KEY"), System.getenv("SIGNING_PASSWORD"))
+//
+//    sign(publishing.publications["mavenJava"])
+//}
 
 //javadoc {
 //    if (JavaVersion.current().isJava9Compatible()) {

@@ -3,12 +3,8 @@
  * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
  */
 
-package de.richardliebscher.mdf4.examples;
+package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.Channel;
-import de.richardliebscher.mdf4.ChannelGroup;
-import de.richardliebscher.mdf4.DataGroup;
-import de.richardliebscher.mdf4.Mdf4File;
 import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;

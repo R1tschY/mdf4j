@@ -64,7 +64,7 @@ dependencies {
 </dependency>
 ```
 
-## Examples
+### Examples
 
-Look at [src/test/java/de/richardliebscher/mdf4/examples](src/test/java/de/richardliebscher/mdf4/examples).
+For examples for how to use this library, look at [src/example/java/de/richardliebscher/mdf4](src/example/java/de/richardliebscher/mdf4).
 

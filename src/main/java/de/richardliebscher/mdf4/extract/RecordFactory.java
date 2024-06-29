@@ -38,7 +38,7 @@ public interface RecordFactory<B, R> {
    * @param dataGroup Data group
    * @param group     Channel group
    * @param channel   Channel
-   * @return {@code true}, when channel should be used
+   * @return Deserialization for channel or {@code null}, when channel should be ignored
    */
   DeserializeInto<B> selectChannel(DataGroup dataGroup, ChannelGroup group, Channel channel)
       throws IOException;

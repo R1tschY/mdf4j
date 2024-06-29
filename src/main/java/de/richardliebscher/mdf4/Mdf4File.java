@@ -12,11 +12,14 @@ import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
+import de.richardliebscher.mdf4.extract.ChannelDeFactory;
 import de.richardliebscher.mdf4.extract.DetachedRecordReader;
+import de.richardliebscher.mdf4.extract.GroupPredicate;
 import de.richardliebscher.mdf4.extract.RecordFactory;
 import de.richardliebscher.mdf4.extract.RecordReader;
 import de.richardliebscher.mdf4.extract.SerializableRecordFactory;
 import de.richardliebscher.mdf4.extract.SizedRecordReader;
+import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.impl.RecordReaderFactory;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
@@ -25,8 +28,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
+import lombok.NonNull;
 import lombok.extern.java.Log;
 
 /**
@@ -115,14 +120,102 @@ public class Mdf4File implements Closeable {
    * Create a record reader to read channels in a channel group.
    *
    * @param factory Factory for records
+   * @param <B>     Builder for user-defined record type
    * @param <R>     Deserialized user-defined record type
    * @return Reader for deserialized records
    * @throws ChannelGroupNotFoundException No channel group selected
    * @throws IOException                   Unable to create record reader
+   * @deprecated Please use {@link #newRecordReader(GroupPredicate, ChannelDeFactory, Supplier)}
    */
+  @Deprecated(since = "0.3", forRemoval = true)
   public <B, R> SizedRecordReader<B, R> newRecordReader(
       RecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createFor(ctx, getDataGroups(), factory);
+  }
+
+  /**
+   * Create a record reader to read channels in a channel group.
+   *
+   * @param predicate     Predicate to select channel group to read
+   * @param deFactory     Factory for create channel deserializations
+   * @param recordFactory Factory to create records in which deserialization writes
+   * @param <R>           Deserialized user-defined record type
+   * @return Reader for deserialized records
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   */
+  public <R> SizedRecordReader<R, R> newRecordReader(
+      GroupPredicate predicate,
+      @NonNull ChannelDeFactory<R> deFactory,
+      @NonNull Supplier<R> recordFactory)
+      throws ChannelGroupNotFoundException, IOException {
+    return RecordReaderFactory.createFor(ctx, getDataGroups(), new RecordFactory<>() {
+      @Override
+      public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) throws IOException {
+        return predicate.test(dataGroup, group);
+      }
+
+      @Override
+      public DeserializeInto<R> selectChannel(DataGroup dataGroup, ChannelGroup group,
+          Channel channel) throws IOException {
+        return deFactory.createDeserialization(dataGroup, group, channel);
+      }
+
+      @Override
+      public R createRecordBuilder() {
+        return recordFactory.get();
+      }
+
+      @Override
+      public R finishRecord(R unfinishedRecord) {
+        return unfinishedRecord;
+      }
+    });
+  }
+
+  /**
+   * Create a record reader to read channels in a channel group.
+   *
+   * @param channelGroupName Name of channel group to read
+   * @param deFactory        Factory for create channel deserializations
+   * @param recordFactory    Factory to create records in which deserialization writes
+   * @param <R>              Deserialized user-defined record type
+   * @return Reader for deserialized records
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   */
+  public <R> SizedRecordReader<R, R> newRecordReader(
+      @NonNull String channelGroupName, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
+      throws ChannelGroupNotFoundException, IOException {
+    return newRecordReader(
+        (dg, cg) -> channelGroupName.equals(cg.getName().orElse(null)),
+        deFactory, recordFactory);
+  }
+
+  /**
+   * Create a record reader to read channels in a channel group.
+   *
+   * @param channelGroupIndex Index of channel group to read
+   * @param deFactory         Factory for create channel deserializations
+   * @param recordFactory     Factory to create records in which deserialization writes
+   * @param <R>               Deserialized user-defined record type
+   * @return Reader for deserialized records
+   * @throws ChannelGroupNotFoundException No channel group selected
+   * @throws IOException                   Unable to create record reader
+   */
+  public <R> SizedRecordReader<R, R> newRecordReader(
+      int channelGroupIndex, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
+      throws ChannelGroupNotFoundException, IOException {
+    return newRecordReader(
+        new GroupPredicate() {
+          private int index = 0;
+
+          @Override
+          public boolean test(DataGroup dataGroup, ChannelGroup channelGroup) {
+            return channelGroupIndex == ++index;
+          }
+        },
+        deFactory, recordFactory);
   }
 
   /**

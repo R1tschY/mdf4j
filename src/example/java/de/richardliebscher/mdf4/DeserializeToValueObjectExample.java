@@ -5,26 +5,22 @@
 
 package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.extract.RecordFactory;
-import de.richardliebscher.mdf4.extract.de.DeserializeInto;
-import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
-import java.io.IOException;
+import de.richardliebscher.mdf4.extract.de.utils.DeserializeIntoIntProperty;
 import java.nio.file.Path;
 
 
 public class DeserializeToValueObjectExample {
 
   private static class Record {
-
     public int signal1;
     public int signal2;
 
     @Override
     public String toString() {
-      return "Record{" +
-          "signal1=" + signal1 +
-          ", signal2=" + signal2 +
-          '}';
+      return "Record{"
+          + "signal1=" + signal1
+          + ", signal2=" + signal2
+          + '}';
     }
   }
 
@@ -33,40 +29,20 @@ public class DeserializeToValueObjectExample {
 
     // Open file
     try (final var mdf4File = Mdf4File.open(source)) {
-
-      final var reader = mdf4File.newRecordReader(new RecordFactory<Record, Record>() {
-        @Override
-        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-          // Select first channel group
-          return true;
-        }
-
-        @Override
-        public DeserializeInto<Record> selectChannel(DataGroup dg, ChannelGroup group,
-            Channel channel)
-            throws IOException {
-          switch (channel.getName()) {
-            case "signal1":
-              return (deserializer, dest) -> dest.signal1 = (Integer) new ObjectDeserialize().deserialize(
-                  deserializer);
-            case "signal2":
-              return (deserializer, dest) -> dest.signal2 = (Integer) new ObjectDeserialize().deserialize(
-                  deserializer);
-            default:
-              return null;
-          }
-        }
-
-        @Override
-        public Record createRecordBuilder() {
-          return new Record();
-        }
-
-        @Override
-        public Record finishRecord(Record record) {
-          return record;
-        }
-      });
+      final var reader = mdf4File.newRecordReader(
+          0,
+          (dg, group, channel) -> {
+            switch (channel.getName()) {
+              case "signal1":
+                return new DeserializeIntoIntProperty<>((rec, val) -> rec.signal1 = val);
+              case "signal2":
+                return new DeserializeIntoIntProperty<>((rec, val) -> rec.signal2 = val);
+              default:
+                return null;
+            }
+          },
+          Record::new
+      );
 
       // Write values
       for (int i = 0; i < reader.size(); i++) {

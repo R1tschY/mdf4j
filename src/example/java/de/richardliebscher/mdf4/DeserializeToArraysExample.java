@@ -5,10 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.extract.RecordFactory;
-import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.ObjectDeserialize;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -22,10 +19,10 @@ public class DeserializeToArraysExample {
 
     @Override
     public String toString() {
-      return "Records{" +
-          "signal1=" + signal1 +
-          ", signal2=" + signal2 +
-          '}';
+      return "Records{"
+          + "signal1=" + signal1
+          + ", signal2=" + signal2
+          + '}';
     }
   }
 
@@ -34,42 +31,24 @@ public class DeserializeToArraysExample {
 
     // Open file
     try (var mdf4File = Mdf4File.open(source)) {
-
       final var records = new Records();
 
-      final var reader = mdf4File.newRecordReader(new RecordFactory<Records, Void>() {
-        @Override
-        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-          // Select first channel group
-          return true;
-        }
-
-        @Override
-        public DeserializeInto<Records> selectChannel(DataGroup dg, ChannelGroup group,
-            Channel channel)
-            throws IOException {
-          switch (channel.getName()) {
-            case "signal1":
-              return (deserializer, dest) -> dest.signal1.add(
-                  (Integer) new ObjectDeserialize().deserialize(deserializer));
-            case "signal2":
-              return (deserializer, dest) -> dest.signal2.add(
-                  (Integer) new ObjectDeserialize().deserialize(deserializer));
-            default:
-              return null;
-          }
-        }
-
-        @Override
-        public Records createRecordBuilder() {
-          return records;
-        }
-
-        @Override
-        public Void finishRecord(Records record) {
-          return null;
-        }
-      });
+      final var reader = mdf4File.newRecordReader(
+          0,
+          (dg, group, channel) -> {
+            switch (channel.getName()) {
+              case "signal1":
+                return (deserializer, dest) -> dest.signal1.add(
+                    (Integer) new ObjectDeserialize().deserialize(deserializer));
+              case "signal2":
+                return (deserializer, dest) -> dest.signal2.add(
+                    (Integer) new ObjectDeserialize().deserialize(deserializer));
+              default:
+                return null;
+            }
+          },
+          () -> records
+      );
 
       // Write values
       for (int i = 0; i < reader.size(); i++) {

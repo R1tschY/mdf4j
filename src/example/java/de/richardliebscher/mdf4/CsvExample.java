@@ -5,7 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.extract.RecordFactory;
+import de.richardliebscher.mdf4.extract.ChannelDeFactory;
 import de.richardliebscher.mdf4.extract.de.Deserialize;
 import de.richardliebscher.mdf4.extract.de.DeserializeInto;
 import de.richardliebscher.mdf4.extract.de.Deserializer;
@@ -16,8 +16,8 @@ import de.richardliebscher.mdf4.extract.de.UnsignedInteger;
 import de.richardliebscher.mdf4.extract.de.UnsignedLong;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import de.richardliebscher.mdf4.extract.de.Visitor;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -43,38 +43,23 @@ public class CsvExample {
       // Select channel group and channels
       final var de = new CsvColumnDeserialize();
 
-      final var reader = mdf4File.newRecordReader(new RecordFactory<Writer, Void>() {
-        private int channelIndex;
+      final var reader = mdf4File.newRecordReader(0,
+          new ChannelDeFactory<>() {
+            private int channelIndex = 0;
 
-        @Override
-        public boolean selectGroup(DataGroup dg, ChannelGroup group) {
-          // Select first channel group
-          return true;
-        }
-
-        @Override
-        public DeserializeInto<Writer> selectChannel(
-            DataGroup dg, ChannelGroup group, Channel channel1) {
-          if (channelIndex++ == 0) {
-            return (deserializer, writer) -> writer.write(de.deserialize(deserializer));
-          } else {
-            return (deserializer, writer) -> {
-              writer.write(SEP);
-              writer.write(de.deserialize(deserializer));
-            };
-          }
-        }
-
-        @Override
-        public Writer createRecordBuilder() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Void finishRecord(Writer unfinishedRecord) {
-          throw new UnsupportedOperationException();
-        }
-      });
+            @Override
+            public DeserializeInto<BufferedWriter> createDeserialization(DataGroup dg,
+                ChannelGroup group, Channel channel1) {
+              if (channelIndex++ == 0) {
+                return (deserializer, writer) -> writer.write(de.deserialize(deserializer));
+              } else {
+                return (deserializer, writer) -> {
+                  writer.write(SEP);
+                  writer.write(de.deserialize(deserializer));
+                };
+              }
+            }
+          }, () -> writer);
 
       // Write header
       boolean firstColumn = true;

@@ -3,30 +3,19 @@
 
 ## Goals
 
-* Reading channel data using Java
+* Reading channels using pure Java
 * Do lazy loading as much as possible to reduce initial loading time
 
 ## Supported
 
-* Blocks
-  * CC
-  * CG
-  * CN
-  * DG
-  * DL
-  * DT
-  * DZ
-  * HD
-  * HL
-  * ID
-  * SI
+* Reading channels
+  * [including bus events](src/example/java/de/richardliebscher/mdf4/BusEventsExample.java)
+* Reading channel information
 * Versions
   * \>=4.00,<=4.20 Supported
   * \>4.20,<5.00 Supported when no new features for reading are needed
 
 ## Unsupported
-* MLC (maximum length channel)
-* VLDC (variable length data channel)
 * Non-byte-aligned integer
 * Integer bit sizes bigger than 64
 * Unsupported data types:
@@ -34,14 +23,13 @@
   * CANOpen Time
   * Complex
   * MIME Sample/Stream
-  * Structure
   * Array
 * Conversion apart from Identity and Linear
 * Unsorted channel data
 * Unfinished files
 * Events
-* Bus logging
 * Column storage
+* Sample reduction
 
 ## Usage
 

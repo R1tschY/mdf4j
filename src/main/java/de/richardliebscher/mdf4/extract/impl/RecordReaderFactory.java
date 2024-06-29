@@ -895,7 +895,7 @@ public final class RecordReaderFactory {
     // build extractor
     final var scope = ctx.newScope();
     final var channelReaders = buildExtractors(factory, input, dataGroup, channelGroup);
-    final var readIntos = ReadIntoFactory.buildAll(channelReaders.getLeft(), input, scope);
+    final var readIntos = ReadIntoFactory.buildAll(channelReaders.getLeft(), input.dup(), scope);
 
     return new DefaultRecordReader<>(
         channelReaders.getRight(), readIntos, factory, source,

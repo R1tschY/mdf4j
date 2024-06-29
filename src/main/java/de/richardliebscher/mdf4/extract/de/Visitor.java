@@ -24,7 +24,7 @@ public interface Visitor<T, P> extends Expected {
    * @param param Parameter
    * @return Deserialized value
    */
-  default T visitU8(byte value, P param) throws IOException {
+  default T visitU8(@Unsigned byte value, P param) throws IOException {
     return visitU32(UnsignedByte.toInt(value), param);
   }
 
@@ -34,7 +34,7 @@ public interface Visitor<T, P> extends Expected {
    * @param value Value
    * @return Deserialized value
    */
-  default T visitU16(short value, P param) throws IOException {
+  default T visitU16(@Unsigned short value, P param) throws IOException {
     return visitU32(UnsignedShort.toInt(value), param);
   }
 
@@ -45,7 +45,7 @@ public interface Visitor<T, P> extends Expected {
    * @param param Parameter
    * @return Deserialized value
    */
-  default T visitU32(int value, P param) throws IOException {
+  default T visitU32(@Unsigned int value, P param) throws IOException {
     return visitU64(UnsignedInteger.toLong(value), param);
   }
 

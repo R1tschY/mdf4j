@@ -30,6 +30,11 @@ public class IdBlock {
 
   public static IdBlock parse(ByteInput input) throws IOException {
     final var fileId = input.readString(8, StandardCharsets.ISO_8859_1);
+    if (!fileId.equals(FILE_MAGIC) && !fileId.equals(UNFINISHED_FILE_MAGIC)) {
+      throw new FormatException(
+          "File not a MDF file: file does not start with '" + FILE_MAGIC + "'");
+    }
+
     final var version = MdfFormatVersion.parse(input);
     var program = input.readString(8, StandardCharsets.ISO_8859_1);
     final var programSize = program.indexOf('\0');
@@ -52,11 +57,6 @@ public class IdBlock {
       customUnfinalizedFlags = null;
     }
 
-    if (!fileId.equals(FILE_MAGIC) && !fileId.equals(UNFINISHED_FILE_MAGIC)) {
-      throw new FormatException(
-          "File not a MDF file: file does not start with '" + FILE_MAGIC + "'");
-    }
-
     if (version.asInt() != versionNumber) {
       throw new FormatException(
           "File MDF versions do not match " + version.asInt() + " vs " + versionNumber);
@@ -77,7 +77,7 @@ public class IdBlock {
     return new IdBlock(version, program, unfinalizedFlags, customUnfinalizedFlags);
   }
 
-  public static class Meta implements FromBytesInput<IdBlock> {
+  public static class Type implements FromBytesInput<IdBlock> {
 
     @Override
     public IdBlock parse(ByteInput input) throws IOException {

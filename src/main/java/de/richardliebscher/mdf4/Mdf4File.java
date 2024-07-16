@@ -5,8 +5,6 @@
 
 package de.richardliebscher.mdf4;
 
-import static de.richardliebscher.mdf4.blocks.Consts.HD_BLOCK_OFFSET;
-
 import de.richardliebscher.mdf4.blocks.HeaderBlock;
 import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -28,6 +26,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
@@ -94,7 +93,6 @@ public class Mdf4File implements Closeable {
         throw new UnsupportedVersionException(formatId);
       }
 
-      input.seek(HD_BLOCK_OFFSET);
       final var hdBlock = HeaderBlock.parse(input);
 
       //log.info("Opened MDF4: Version=" + formatId + " Program=" + idBlock.getProgramId());
@@ -114,6 +112,43 @@ public class Mdf4File implements Closeable {
    */
   public static Mdf4File open(Path input) throws IOException {
     return Mdf4File.open(new FileInput(input));
+  }
+
+  /**
+   * Read measurement file comment.
+   *
+   * @return measurement file comment, iff it exists
+   * @throws IOException Failed to read comment
+   */
+  public Optional<String> readComment() throws IOException {
+    return ctx.readText(headerBlock.getComment(), "HDcomment");
+  }
+
+  /**
+   * Get measurement start time.
+   *
+   * @return measurement start time
+   */
+  public TimeStamp getStartTime() {
+    return headerBlock.getStartTime();
+  }
+
+  /**
+   * Get start angle.
+   *
+   * @return start distance, iff it exists
+   */
+  public Optional<Double> getStartAngle() {
+    return headerBlock.getStartAngle();
+  }
+
+  /**
+   * Get start distance.
+   *
+   * @return start distance, iff it exists
+   */
+  public Optional<Double> getStartDistance() {
+    return headerBlock.getStartDistance();
   }
 
   /**

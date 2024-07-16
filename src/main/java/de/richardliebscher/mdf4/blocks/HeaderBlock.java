@@ -5,57 +5,42 @@
 
 package de.richardliebscher.mdf4.blocks;
 
-import static de.richardliebscher.mdf4.blocks.ParseUtils.flagsSet;
-
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
+import de.richardliebscher.mdf4.TimeStamp;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Value;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Header/HD-Block.
  */
-@Value
+@Getter
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class HeaderBlock {
 
-  // Time flags
-  private static final byte OFFSET_VALID = 1 << 1;
-  // Time quality class
-  private static final byte TIME_SRC_PC = 0;
+  private final Link<DataGroupBlock> firstDataGroup;
+  private final long firstFileHistory;
+  private final long firstChannelHierarchy;
+  private final long firstAttachment;
+  private final long firstEventBlock;
+  private final Link<Metadata> comment;
 
-  Link<DataGroupBlock> firstDataGroup;
-  long firstFileHistory;
-  long firstChannelHierarchy;
-  long firstAttachment;
-  long firstEventBlock;
-  Link<Metadata> comment;
+  private final TimeStamp startTime;
 
-  /**
-   * Absolute start time in nanoseconds since midnight Jan 1st, 1970.
-   */
-  Instant startTime;
-  /**
-   * Time zone offset in minutes.
-   */
-  ZoneOffset timeZoneOffset;
-  /**
-   * Daylight saving time (DST) offset in minutes.
-   */
-  ZoneOffset dstOffset;
+  @Getter
+  private final Value<TimeClass> timeClass;
 
-  byte timeClass;
+  @Getter
+  private final BitFlags<HeaderFlag> headerFlags;
 
-  byte flags;
+  private final double startAngleRad;
 
-  float startAngleRad;
-
-  float startDistanceM;
+  private final double startDistanceM;
 
   public LazyIoList<DataGroupBlock> getDataGroups(ByteInput input) {
     return () -> new DataGroupBlock.Iterator(firstDataGroup, input);
@@ -65,17 +50,31 @@ public class HeaderBlock {
     return comment.resolve(Metadata.TYPE, input);
   }
 
+  public TimeStamp getStartTime() {
+    return startTime;
+  }
+
+  public Optional<Double> getStartAngle() {
+    return headerFlags.isSet(HeaderFlag.START_ANGLE_VALID) ? Optional.of(startAngleRad)
+        : Optional.empty();
+  }
+
+  public Optional<Double> getStartDistance() {
+    return headerFlags.isSet(HeaderFlag.START_DISTANCE_VALID) ? Optional.of(startDistanceM)
+        : Optional.empty();
+  }
+
   public static HeaderBlock parse(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(ID, input, 6, 24);
-    final var startTime = ParseUtils.toInstant(input.readI64());
+    final var startTime = input.readI64();
     final var tzOffsetMin = input.readI16();
     final var dstOffsetMin = input.readI16();
     final var timeFlags = input.readU8();
     final var timeClass = input.readU8();
     final var flags = input.readU8();
     input.skip(1);
-    final var startAngleRad = input.readF32();
-    final var startDistanceM = input.readF32();
+    final var startAngleRad = input.readF64();
+    final var startDistanceM = input.readF64();
 
     final var links = blockHeader.getLinks();
     return new HeaderBlock(
@@ -85,11 +84,9 @@ public class HeaderBlock {
         links[3],
         links[4],
         Link.of(links[5]),
-        startTime,
-        flagsSet(timeFlags, OFFSET_VALID) ? ZoneOffset.ofTotalSeconds(tzOffsetMin * 60) : null,
-        flagsSet(timeFlags, OFFSET_VALID) ? ZoneOffset.ofTotalSeconds(dstOffsetMin * 60) : null,
-        timeClass,
-        flags,
+        new TimeStamp(startTime, tzOffsetMin, dstOffsetMin, BitFlags.of(timeFlags, TimeFlag.class)),
+        Value.of(timeClass, TimeClass.class),
+        BitFlags.of(flags, HeaderFlag.class),
         startAngleRad,
         startDistanceM
     );

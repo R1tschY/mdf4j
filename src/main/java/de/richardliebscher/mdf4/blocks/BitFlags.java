@@ -5,15 +5,26 @@
 
 package de.richardliebscher.mdf4.blocks;
 
+import de.richardliebscher.mdf4.extract.de.Unsigned;
+import de.richardliebscher.mdf4.extract.de.UnsignedByte;
+import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 public class BitFlags<T extends Enum<T> & BitFlag> {
-  private final int value;
+  private final @Unsigned int value;
   private final Class<T> cls;
 
-  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(int value, Class<T> cls) {
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(@Unsigned byte value, Class<T> cls) {
+    return new BitFlags<>(UnsignedByte.toInt(value), cls);
+  }
+
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(@Unsigned short value, Class<T> cls) {
+    return new BitFlags<>(UnsignedShort.toInt(value), cls);
+  }
+
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(@Unsigned int value, Class<T> cls) {
     return new BitFlags<>(value, cls);
   }
 
@@ -24,7 +35,7 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
         .reduce(0, (x, y) -> x | y), cls);
   }
 
-  private BitFlags(int value, Class<T> cls) {
+  private BitFlags(@Unsigned int value, Class<T> cls) {
     this.value = value;
     this.cls = cls;
   }
@@ -41,7 +52,7 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
     return (value & 1 << bit.bitNumber()) != 0;
   }
 
-  public boolean isSet(int bit) {
+  public boolean isSet(@Unsigned int bit) {
     return (value & 1 << bit) != 0;
   }
 
@@ -58,7 +69,7 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
     for (var flag : cls.getEnumConstants()) {
       value |= flag.bitNumber();
     }
-    return of(value, cls);
+    return new BitFlags<>(value, cls);
   }
 
   public boolean hasUnknown() {

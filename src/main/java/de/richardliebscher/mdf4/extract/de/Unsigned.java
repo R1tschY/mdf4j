@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 /**
  * Mark a type with a built-in integer to contain an unsigned value.
  */
-@Target({ElementType.LOCAL_VARIABLE, ElementType.PARAMETER, ElementType.METHOD})
+@Target({ElementType.LOCAL_VARIABLE, ElementType.PARAMETER, ElementType.METHOD, ElementType.FIELD})
 public @interface Unsigned {
 
 }

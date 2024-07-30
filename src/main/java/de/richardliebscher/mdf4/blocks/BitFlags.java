@@ -9,12 +9,25 @@ import de.richardliebscher.mdf4.extract.de.Unsigned;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
 import java.util.Arrays;
+import java.util.Collection;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 public class BitFlags<T extends Enum<T> & BitFlag> {
+
   private final @Unsigned int value;
   private final Class<T> cls;
+
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> empty(Class<T> cls) {
+    return new BitFlags<>(0, cls);
+  }
+
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(Class<T> cls,
+      Collection<T> collection) {
+    return new BitFlags<>(collection.stream()
+        .mapToInt(x -> 1 << x.bitNumber())
+        .reduce(0, (x, y) -> x | y), cls);
+  }
 
   public static <T extends Enum<T> & BitFlag> BitFlags<T> of(@Unsigned byte value, Class<T> cls) {
     return new BitFlags<>(UnsignedByte.toInt(value), cls);
@@ -44,6 +57,10 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
     return new BitFlags<>(this.value | other.value, cls);
   }
 
+  public BitFlags<T> add(T flag) {
+    return new BitFlags<>(this.value | (1 << flag.bitNumber()), cls);
+  }
+
   public boolean allOf(BitFlags<T> test) {
     return (value & test.value) == test.value;
   }
@@ -62,6 +79,18 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
 
   public boolean isEmpty() {
     return value == 0;
+  }
+
+  public int asInt() {
+    return value;
+  }
+
+  public short asShort() {
+    return (short) value;
+  }
+
+  public byte asByte() {
+    return (byte) value;
   }
 
   private BitFlags<T> allSet() {

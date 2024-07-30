@@ -7,10 +7,14 @@ package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.TimeFlag;
+import de.richardliebscher.mdf4.blocks.WriteData;
 import de.richardliebscher.mdf4.extract.de.Unsigned;
+import de.richardliebscher.mdf4.io.ReadWrite;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +23,7 @@ import lombok.Getter;
 /**
  * Time stamp in nanoseconds since midnight Jan 1st, 1970 (UTC time or local time).
  */
-public final class TimeStamp {
+public final class TimeStamp implements WriteData {
 
   /**
    * Absolute time in nanoseconds since midnight Jan 1st, 1970.
@@ -38,9 +42,18 @@ public final class TimeStamp {
   private final BitFlags<TimeFlag> timeFlags;
 
   /**
+   * Construct empty timestamp.
+   *
+   * <p>Pointing at midnight Jan 1st, 1970 UTC.
+   */
+  public static TimeStamp empty() {
+    return new TimeStamp(0, 0, 0, BitFlags.empty(TimeFlag.class));
+  }
+
+  /**
    * Construct from raw values.
    *
-   * @param time         Absolute time in nanoseconds since midnight Jan 1st, 1970.
+   * @param time              Absolute time in nanoseconds since midnight Jan 1st, 1970.
    * @param timeZoneOffsetMin Time zone offset in minutes
    * @param dstOffsetMin      DST offset in minutes
    * @param timeFlags         Time flags
@@ -51,6 +64,35 @@ public final class TimeStamp {
     this.timeZoneOffsetMin = timeZoneOffsetMin;
     this.dstOffsetMin = dstOffsetMin;
     this.timeFlags = timeFlags;
+  }
+
+  /**
+   * Get current timestamp.
+   *
+   * @return Now as timestamp
+   */
+  public static TimeStamp now() {
+    final var now = Instant.now();
+    final var ns = TimeUnit.SECONDS.toNanos(now.getEpochSecond()) + now.getNano();
+    final var tz = ZoneId.systemDefault();
+    final var rules = tz.getRules();
+    final var stdOffset = rules.getStandardOffset(now).getTotalSeconds();
+    final var offset = rules.getOffset(now).getTotalSeconds();
+    return new TimeStamp(
+        ns,
+        (int) TimeUnit.SECONDS.toMinutes(stdOffset),
+        (int) TimeUnit.SECONDS.toMinutes(offset - stdOffset),
+        BitFlags.of(TimeFlag.class, TimeFlag.TIME_OFFSET_VALID));
+  }
+
+  /**
+   * Get amount of nanoseconds since midnight Jan 1st, 1970 in local time or UTC, depending on
+   * {@link #isLocalTime}.
+   *
+   * @return amount of nanoseconds since midnight Jan 1st, 1970
+   */
+  public long getNanoseconds() {
+    return time;
   }
 
   /**
@@ -133,5 +175,26 @@ public final class TimeStamp {
    */
   public boolean isDaylightSavingTime() {
     return timeFlags.isSet(TimeFlag.TIME_OFFSET_VALID) && dstOffsetMin != 0;
+  }
+
+  /**
+   * Get time zone offset only resulting from daylight saving.
+   *
+   * @return Daylight saving offset or {@code Optional.empty()} if local time.
+   */
+  public Optional<ZoneOffset> getDaylightSavingOffset() {
+    if (timeFlags.isSet(TimeFlag.LOCAL_TIME)) {
+      return Optional.empty();
+    } else {
+      return Optional.of(ZoneOffset.ofTotalSeconds((int) TimeUnit.MINUTES.toSeconds(dstOffsetMin)));
+    }
+  }
+
+  @Override
+  public void write(ReadWrite input) throws IOException {
+    input.write(time);
+    input.write((short) timeZoneOffsetMin);
+    input.write((short) dstOffsetMin);
+    input.write(timeFlags.asByte());
   }
 }

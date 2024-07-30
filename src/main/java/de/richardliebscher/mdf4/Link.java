@@ -6,7 +6,9 @@
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.BlockType;
+import de.richardliebscher.mdf4.blocks.WriteData;
 import de.richardliebscher.mdf4.io.ByteInput;
+import de.richardliebscher.mdf4.io.ReadWrite;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
@@ -19,7 +21,7 @@ import lombok.EqualsAndHashCode;
  * @param <T> Block type
  */
 @EqualsAndHashCode
-public final class Link<T> implements Serializable {
+public final class Link<T> implements Serializable, WriteData {
 
   private static final Link<?> NIL = new Link<>(0);
 
@@ -127,5 +129,10 @@ public final class Link<T> implements Serializable {
   @Override
   public String toString() {
     return "Link{0x" + Long.toHexString(link).toUpperCase(Locale.ROOT) + '}';
+  }
+
+  @Override
+  public void write(ReadWrite input) throws IOException {
+    input.write(link);
   }
 }

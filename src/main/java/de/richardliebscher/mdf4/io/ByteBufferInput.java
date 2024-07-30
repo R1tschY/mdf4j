@@ -6,7 +6,6 @@
 package de.richardliebscher.mdf4.io;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -16,7 +15,7 @@ import java.nio.charset.Charset;
 /**
  * Input file as byte buffer.
  */
-public class ByteBufferInput implements ByteInput {
+public class ByteBufferInput implements ReadWrite {
 
   private final ByteBuffer buffer;
 
@@ -37,31 +36,26 @@ public class ByteBufferInput implements ByteInput {
 
   @Override
   public short readI16() {
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getShort();
   }
 
   @Override
   public int readI32() {
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getInt();
   }
 
   @Override
   public long readI64() {
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getLong();
   }
 
   @Override
   public float readF32() {
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getFloat();
   }
 
   @Override
   public double readF64() {
-    buffer.order(ByteOrder.LITTLE_ENDIAN);
     return buffer.getDouble();
   }
 
@@ -112,7 +106,54 @@ public class ByteBufferInput implements ByteInput {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     /* do nothong */
+  }
+
+  @Override
+  public void writePadding(int size) {
+    for (int i = 0; i < size; i++) {
+      buffer.put((byte) 0);
+    }
+  }
+
+  @Override
+  public void write(byte value) {
+    buffer.put(value);
+  }
+
+  @Override
+  public void write(short value) {
+    buffer.putShort(value);
+  }
+
+  @Override
+  public void write(int value) {
+    buffer.putInt(value);
+  }
+
+  @Override
+  public void write(long value) {
+    buffer.putLong(value);
+  }
+
+  @Override
+  public void write(float value) {
+    buffer.putFloat(value);
+  }
+
+  @Override
+  public void write(double value) {
+    buffer.putDouble(value);
+  }
+
+  @Override
+  public void write(String value, Charset charset) {
+    buffer.put(value.getBytes(charset));
+  }
+
+  @Override
+  public void write(byte[] value, int offset, int length) {
+    buffer.put(value, offset, length);
   }
 }

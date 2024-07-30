@@ -28,6 +28,10 @@ public class Value<T extends Enum<T> & KnownValue> {
         .orElse(null);
   }
 
+  public static <T extends Enum<T> & KnownValue> Value<T> empty(Class<T> type) {
+    return new Value<>((byte) 0, type);
+  }
+
   public static <T extends Enum<T> & KnownValue> Value<T> of(byte intValue, Class<T> type) {
     return new Value<>(intValue, type);
   }
@@ -35,6 +39,18 @@ public class Value<T extends Enum<T> & KnownValue> {
   @SuppressWarnings("unchecked")
   public static <T extends Enum<T> & KnownValue> Value<T> of(T value) {
     return new Value<>(value.intValue(), value, (Class<T>) value.getClass());
+  }
+
+  public int asInt() {
+    return intValue;
+  }
+
+  public short asShort() {
+    return (short) intValue;
+  }
+
+  public byte asByte() {
+    return (byte) intValue;
   }
 
   public boolean isKnown() {

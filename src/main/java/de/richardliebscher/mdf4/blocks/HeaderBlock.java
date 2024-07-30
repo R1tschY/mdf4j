@@ -14,6 +14,7 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -90,6 +91,70 @@ public class HeaderBlock {
         startAngleRad,
         startDistanceM
     );
+  }
+
+  public static Builder build() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private Link<DataGroupBlock> firstDataGroup = Link.nil();
+    private long firstFileHistory = 0;
+    private long firstChannelHierarchy = 0;
+    private long firstAttachment = 0;
+    private long firstEventBlock = 0;
+    private Link<Metadata> comment = Link.nil();
+
+    private TimeStamp startTime = TimeStamp.empty();
+
+    @Getter
+    private Value<TimeClass> timeClass = Value.empty(TimeClass.class);
+
+    @Getter
+    private BitFlags<HeaderFlag> headerFlags = BitFlags.empty(HeaderFlag.class);
+
+    private double startAngleRad;
+
+    private double startDistanceM;
+
+    public Builder firstDataGroup(@NonNull Link<DataGroupBlock> firstDataGroup) {
+      this.firstDataGroup = firstDataGroup;
+      return this;
+    }
+
+    public Builder comment(@NonNull Link<Metadata> comment) {
+      this.comment = comment;
+      return this;
+    }
+
+    public Builder startTime(@NonNull TimeStamp startTime) {
+      this.startTime = startTime;
+      return this;
+    }
+
+    public Builder timeClass(TimeClass timeClass) {
+      this.timeClass = timeClass == null ? Value.empty(TimeClass.class) : Value.of(timeClass);
+      return this;
+    }
+
+    public Builder startAngleRad(double startAngleRad) {
+      this.headerFlags = headerFlags.add(HeaderFlag.START_ANGLE_VALID);
+      this.startAngleRad = startAngleRad;
+      return this;
+    }
+
+    public Builder startDistanceM(double startDistanceM) {
+      this.headerFlags = headerFlags.add(HeaderFlag.START_DISTANCE_VALID);
+      this.startDistanceM = startDistanceM;
+      return this;
+    }
+
+    public HeaderBlock build() {
+      return new HeaderBlock(
+          firstDataGroup, firstFileHistory, firstChannelHierarchy, firstAttachment, firstEventBlock,
+          comment, startTime, timeClass, headerFlags, startAngleRad, startDistanceM);
+    }
   }
 
   public static final Type TYPE = new Type();

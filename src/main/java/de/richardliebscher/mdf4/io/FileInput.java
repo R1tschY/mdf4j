@@ -15,18 +15,22 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * File as input.
  */
-public class FileInput implements ByteInput {
+public class FileInput implements ReadWrite {
 
   private final Path path;
   private final FileChannel byteChannel;
   private final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES)
       .order(ByteOrder.LITTLE_ENDIAN);
+  private final List<OpenOption> options;
 
   /**
    * Construct from path.
@@ -34,9 +38,10 @@ public class FileInput implements ByteInput {
    * @param path Path
    * @throws IOException Unable to open file
    */
-  public FileInput(Path path) throws IOException {
+  public FileInput(Path path, OpenOption... options) throws IOException {
     this.path = path;
-    this.byteChannel = FileChannel.open(path, StandardOpenOption.READ);
+    this.options = List.of(options);
+    this.byteChannel = FileChannel.open(path, options);
   }
 
   @Override
@@ -126,11 +131,105 @@ public class FileInput implements ByteInput {
 
   @Override
   public FileInput dup() throws IOException {
-    return new FileInput(path);
+    final var options = new ArrayList<OpenOption>();
+    if (this.options.contains(StandardOpenOption.READ)) {
+      options.add(StandardOpenOption.READ);
+    }
+    if (this.options.contains(StandardOpenOption.WRITE)) {
+      options.add(StandardOpenOption.WRITE);
+    }
+    return new FileInput(path, options.toArray(new OpenOption[0]));
   }
 
   @Override
   public void close() throws IOException {
     byteChannel.close();
+  }
+
+  @Override
+  public void writePadding(int size) throws IOException {
+    buffer.clear();
+    for (int i = 0; i < size; i++) {
+      buffer.put((byte) 0);
+    }
+    buffer.flip();
+    if (byteChannel.write(buffer) != size) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(byte value) throws IOException {
+    buffer.clear();
+    buffer.put(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Byte.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(short value) throws IOException {
+    buffer.clear();
+    buffer.putShort(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Short.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(int value) throws IOException {
+    buffer.clear();
+    buffer.putInt(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Integer.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(long value) throws IOException {
+    buffer.clear();
+    buffer.putLong(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Long.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(float value) throws IOException {
+    buffer.clear();
+    buffer.putFloat(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Float.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(double value) throws IOException {
+    buffer.clear();
+    buffer.putDouble(value);
+    buffer.flip();
+    if (byteChannel.write(buffer) != Double.BYTES) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(String value, Charset charset) throws IOException {
+    final var bytes = value.getBytes(charset);
+    if (byteChannel.write(ByteBuffer.wrap(bytes)) != bytes.length) {
+      throw new IOException("Incomplete write");
+    }
+  }
+
+  @Override
+  public void write(byte[] value, int offset, int length) throws IOException {
+    if (byteChannel.write(ByteBuffer.wrap(value, offset, length)) != length) {
+      throw new IOException("Incomplete write");
+    }
   }
 }

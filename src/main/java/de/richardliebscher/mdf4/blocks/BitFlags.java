@@ -8,7 +8,6 @@ package de.richardliebscher.mdf4.blocks;
 import de.richardliebscher.mdf4.extract.de.Unsigned;
 import de.richardliebscher.mdf4.extract.de.UnsignedByte;
 import de.richardliebscher.mdf4.extract.de.UnsignedShort;
-import java.util.Arrays;
 import java.util.Collection;
 import lombok.EqualsAndHashCode;
 
@@ -41,11 +40,14 @@ public class BitFlags<T extends Enum<T> & BitFlag> {
     return new BitFlags<>(value, cls);
   }
 
+  @SuppressWarnings("unchecked")
   @SafeVarargs
-  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(Class<T> cls, T... values) {
-    return new BitFlags<>(Arrays.stream(values)
-        .mapToInt(x -> 1 << x.bitNumber())
-        .reduce(0, (x, y) -> x | y), cls);
+  public static <T extends Enum<T> & BitFlag> BitFlags<T> of(T head, T... tail) {
+    int res = 1 << head.bitNumber();
+    for (T t : tail) {
+      res |= 1 << t.bitNumber();
+    }
+    return new BitFlags<>(res, (Class<T>) head.getClass());
   }
 
   private BitFlags(@Unsigned int value, Class<T> cls) {

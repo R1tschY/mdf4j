@@ -21,8 +21,8 @@ public class Mdf4FileTest {
     final var now = TimeStamp.now();
 
     final var buf = ByteBuffer.allocate(1024);
-    try (var writer = new Mdf4Writer.Builder().createForMemory(buf)) {
-      writer.writeHeader(new HeaderBlock.Builder()
+    try (var writer = Mdf4Writer.builder().createForMemory(buf)) {
+      writer.writeHeader(HeaderBlock.builder()
           .startTime(now)
           .build());
       writer.finalizeFile();
@@ -44,8 +44,8 @@ public class Mdf4FileTest {
     final var now = TimeStamp.now();
 
     final var f = tmpDir.resolve("file.mf4");
-    try (var writer = new Mdf4Writer.Builder().create(f)) {
-      writer.writeHeader(new HeaderBlock.Builder()
+    try (var writer = Mdf4Writer.builder().create(f)) {
+      writer.writeHeader(HeaderBlock.builder()
           .startTime(now)
           .build());
       writer.finalizeFile();

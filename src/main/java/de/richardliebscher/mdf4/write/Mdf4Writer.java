@@ -156,7 +156,7 @@ public class Mdf4Writer implements Closeable {
     input.write(typeId.asInt());
     input.writePadding(4);
     input.write(dataLength + 24L + links.size() * 8L);
-    input.write(links.size());
+    input.write((long) links.size());
     for (Link<?> link : links) {
       input.write(link.asLong());
     }

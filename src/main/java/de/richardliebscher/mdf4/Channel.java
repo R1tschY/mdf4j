@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class Channel {
 
   private static final BitFlags<ChannelFlag> INVALID_FLAGS = BitFlags.of(
-      ChannelFlag.class, INVALIDATION_BIT_VALID, ALL_VALUES_INVALID);
+      INVALIDATION_BIT_VALID, ALL_VALUES_INVALID);
 
   private final ChannelBlock block;
   private final FileContext ctx;

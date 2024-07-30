@@ -82,7 +82,7 @@ public final class TimeStamp implements WriteData {
         ns,
         (int) TimeUnit.SECONDS.toMinutes(stdOffset),
         (int) TimeUnit.SECONDS.toMinutes(offset - stdOffset),
-        BitFlags.of(TimeFlag.class, TimeFlag.TIME_OFFSET_VALID));
+        BitFlags.of(TimeFlag.TIME_OFFSET_VALID));
   }
 
   /**

@@ -19,7 +19,7 @@ public final class ChannelSupport {
   public static void readFully(ReadableByteChannel channel, ByteBuffer buffer) throws IOException {
     while (buffer.remaining() > 0) {
       int bytes = channel.read(buffer);
-      if (bytes == -1) {
+      if (bytes < 0) {
         throw new EOFException();
       }
     }

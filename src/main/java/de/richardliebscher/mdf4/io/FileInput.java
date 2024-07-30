@@ -28,7 +28,7 @@ public class FileInput implements ReadWrite {
 
   private final Path path;
   private final FileChannel byteChannel;
-  private final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES)
+  private final ByteBuffer buffer = ByteBuffer.allocate(28)
       .order(ByteOrder.LITTLE_ENDIAN);
   private final List<OpenOption> options;
 

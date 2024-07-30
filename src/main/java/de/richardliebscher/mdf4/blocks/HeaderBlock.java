@@ -93,7 +93,7 @@ public class HeaderBlock {
     );
   }
 
-  public static Builder build() {
+  public static Builder builder() {
     return new Builder();
   }
 

@@ -47,15 +47,9 @@ public class IdBlock {
     final var versionNumber = input.readI16();
     final var codePageNumber = input.readI16(); // for 3.x
     input.skip(28); // fill bytes
-    final BitFlags<UnfinalizedFlag> unfinalizedFlags;
-    final CustomFlags customUnfinalizedFlags;
-    if (fileId.equals(UNFINISHED_FILE_MAGIC)) {
-      unfinalizedFlags = BitFlags.of(input.readI16(), UnfinalizedFlag.class);
-      customUnfinalizedFlags = CustomFlags.of(input.readI16());
-    } else {
-      unfinalizedFlags = null;
-      customUnfinalizedFlags = null;
-    }
+    final BitFlags<UnfinalizedFlag> unfinalizedFlags = BitFlags.of(input.readI16(),
+        UnfinalizedFlag.class);
+    final CustomFlags customUnfinalizedFlags = CustomFlags.of(input.readI16());
 
     if (version.asInt() != versionNumber) {
       throw new FormatException(
@@ -74,7 +68,11 @@ public class IdBlock {
       throw new FormatException("Unexpected code page number");
     }
 
-    return new IdBlock(version, program, unfinalizedFlags, customUnfinalizedFlags);
+    return new IdBlock(
+        version,
+        program,
+        fileId.equals(UNFINISHED_FILE_MAGIC) ? unfinalizedFlags : null,
+        fileId.equals(UNFINISHED_FILE_MAGIC) ? customUnfinalizedFlags : null);
   }
 
   public static class Type implements FromBytesInput<IdBlock> {

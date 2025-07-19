@@ -1,10 +1,12 @@
+import io.freefair.gradle.plugins.lombok.tasks.Delombok
+
 // SPDX-License-Identifier: CC0-1.0
 
 plugins {
     `java-library`
     signing
     `maven-publish`
-    id("io.freefair.lombok") version "8.3"
+    id("io.freefair.lombok") version "8.13"
     id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
     id("net.researchgate.release") version "3.0.2"
     checkstyle
@@ -40,7 +42,7 @@ repositories {
 
 dependencies {
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
-    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.2")
+    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.5")
     testImplementation(platform("org.junit:junit-bom:5.10.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.24.2")
@@ -74,6 +76,10 @@ tasks.withType<Javadoc>().configureEach {
     options {
         (this as StandardJavadocDocletOptions).addBooleanOption("html5", true)
     }
+}
+
+tasks.withType<Delombok>().configureEach {
+    enabled = false
 }
 
 checkstyle {

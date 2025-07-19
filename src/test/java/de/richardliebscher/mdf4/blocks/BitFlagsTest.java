@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * SPDX-FileCopyrightText: Copyright 2023 Richard Liebscher <r1tschy@posteo.de>
+ */
+
 package de.richardliebscher.mdf4.blocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,19 +28,19 @@ public class BitFlagsTest {
 
   @Test
   void testToString_KnownFlags() {
-    assertThat(BitFlags.of(TestFlag.class, TestFlag.FIRST, TestFlag.SECOND).toString())
+    assertThat(BitFlags.of(TestFlag.FIRST, TestFlag.SECOND).toString())
         .isEqualTo("FIRST,SECOND");
   }
 
   @Test
   void testToString_OneFlags() {
-    assertThat(BitFlags.of(TestFlag.class, TestFlag.FIRST).toString())
+    assertThat(BitFlags.of(TestFlag.FIRST).toString())
         .isEqualTo("FIRST");
   }
 
   @Test
   void testToString_NoFlags() {
-    assertThat(BitFlags.of(TestFlag.class).toString())
+    assertThat(BitFlags.empty(TestFlag.class).toString())
         .isEqualTo("");
   }
 

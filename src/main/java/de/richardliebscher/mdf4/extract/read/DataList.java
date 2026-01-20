@@ -41,6 +41,7 @@ public class DataList<T extends Data<T>> implements Serializable {
     this.offsets = offsets;
   }
 
+  @SuppressWarnings("unchecked")
   public static <T extends Data<T>> DataList<T> from(
       Link<DataContainer<T>> dataRoot,
       BlockType<DataContainer<T>> containerBlockType,
@@ -53,8 +54,7 @@ public class DataList<T extends Data<T>> implements Serializable {
       return single((Link<DataStorage<T>>) (Link<?>) dataRoot);
     } else if (rootBlock instanceof DataListBlock) {
       return fromList((DataListBlock<T>) rootBlock, input);
-    } else if (rootBlock instanceof HeaderListBlock) {
-      final var headerList = (HeaderListBlock<T>) rootBlock;
+    } else if (rootBlock instanceof HeaderListBlock<T> headerList) {
       final var dataList = headerList.getFirstDataList().resolve(DataListBlock.type(), input)
           .orElse(null);
       if (dataList != null) {

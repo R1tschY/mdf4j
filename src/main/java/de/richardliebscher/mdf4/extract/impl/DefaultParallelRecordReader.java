@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -227,7 +226,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
     if (dataList.length <= parts) {
       return IntStream.range(0, dataList.length)
           .mapToObj(i -> newDetachedRecordReader(new long[]{dataList[i]}, new long[]{offsets[i]}))
-          .collect(Collectors.toList());
+          .toList();
     } else {
       final double partLength = dataList.length / (double) parts;
       return IntStream.range(0, parts)
@@ -238,7 +237,7 @@ class DefaultParallelRecordReader<B, R> implements ParallelRecordReader<B, R> {
                 Arrays.copyOfRange(dataList, start, end),
                 Arrays.copyOfRange(offsets, start, end));
           })
-          .collect(Collectors.toList());
+          .toList();
     }
   }
 

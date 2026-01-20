@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -102,7 +101,7 @@ class BusEventDeFactory implements ChannelDeFactory<CanDataFrame> {
           default:
             return new DeserializeIntoVoid<CanDataFrame>();
         }
-      }).collect(Collectors.toList());
+      }).toList();
       return new CanDataFrameDeserialize(fieldDe);
     }
     return null;

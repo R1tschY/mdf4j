@@ -16,11 +16,6 @@ plugins {
 group = "de.richardliebscher.mdf4j"
 version = project.property("version")!!
 
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
-
 sourceSets.create("jmh") {
     // Add access to test traces
     runtimeClasspath += sourceSets.test.get().output
@@ -68,10 +63,19 @@ dependencies {
     //errorprone("com.google.errorprone:error_prone_core:2.18.0")
 }
 
-plugins.withType<JavaPlugin>().configureEach {
-    configure<JavaPluginExtension> {
-        modularity.inferModulePath.set(true)
+java {
+    withSourcesJar()
+    withJavadocJar()
+
+    modularity.inferModulePath.set(true)
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release = 17
 }
 
 tasks.withType<Javadoc>().configureEach {

@@ -12,7 +12,6 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 final class SimpleElementList extends NamedElement implements PropertyValue {
@@ -53,7 +52,7 @@ final class SimpleElementList extends NamedElement implements PropertyValue {
           element.readOnly = this.readOnly;
           element.language = this.language;
           element.value = item.value;
-          return element;
-        }).collect(Collectors.toList()));
+          return (PrimitiveValue) element;
+        }).toList());
   }
 }

@@ -17,7 +17,7 @@ import lombok.NonNull;
 public final class Links<E> implements Serializable, List<Link<E>> {
   private final long[] links;
 
-  public Links(long[] links) {
+  public Links(long... links) {
     this.links = links;
   }
 

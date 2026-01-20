@@ -1055,7 +1055,7 @@ public final class RecordReaderFactory {
       }
     }
 
-    return Pair.of(channelReaders, channels);
+    return Pair.<List<ReadIntoFactory<B>>, List<Channel>>of(channelReaders, channels);
   }
 
   private static final class ReadIntoImpl<B> implements ReadInto<B> {

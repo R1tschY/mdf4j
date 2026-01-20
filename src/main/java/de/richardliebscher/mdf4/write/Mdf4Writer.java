@@ -171,14 +171,13 @@ public class Mdf4Writer implements Closeable {
   public void writeHeader(HeaderBlock headerBlock) throws IOException {
     writeBlockHeader(
         HeaderBlock.ID,
-        new Links<>(new long[]{
+        new Links<>(
             headerBlock.getFirstDataGroup().asLong(),
             headerBlock.getFirstFileHistory(),
             headerBlock.getFirstChannelHierarchy(),
             headerBlock.getFirstAttachment(),
             headerBlock.getFirstEventBlock(),
-            headerBlock.getComment().asLong(),
-        }),
+            headerBlock.getComment().asLong()),
         32);
 
     input.write(headerBlock.getStartTime());

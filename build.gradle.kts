@@ -7,8 +7,8 @@ plugins {
     signing
     `maven-publish`
     id("io.freefair.lombok") version "8.13"
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
-    id("net.researchgate.release") version "3.0.2"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+    id("net.researchgate.release") version "3.1.0"
     checkstyle
     //id("net.ltgt.errorprone") version "3.1.0"
 }
@@ -43,8 +43,10 @@ repositories {
 dependencies {
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
     implementation("org.glassfish.jaxb:jaxb-runtime:4.0.5")
-    testImplementation(platform("org.junit:junit-bom:5.10.1"))
+    testImplementation(platform("org.junit:junit-bom:6.0.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("org.assertj:assertj-core:3.24.2")
     testRuntimeOnly("org.slf4j:jul-to-slf4j:2.0.9")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")

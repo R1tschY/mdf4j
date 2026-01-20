@@ -42,7 +42,8 @@ repositories {
 
 dependencies {
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
-    implementation("org.glassfish.jaxb:jaxb-runtime:4.0.5")
+    runtimeOnly("org.glassfish.jaxb:jaxb-runtime:4.0.5")
+
     testImplementation(platform("org.junit:junit-bom:6.0.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -119,7 +120,7 @@ publishing {
                 licenses {
                     license {
                         name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
                     }
                 }
 

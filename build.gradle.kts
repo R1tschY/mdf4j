@@ -70,7 +70,7 @@ java {
     modularity.inferModulePath.set(true)
 
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 

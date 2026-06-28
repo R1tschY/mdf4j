@@ -21,12 +21,7 @@ import java.util.function.Supplier;
  * @param <T> Success type
  * @param <E> Exception/Error type
  */
-public abstract class Result<T, E extends Throwable> {
-
-  // sealed class pattern
-  private Result() {
-    super();
-  }
+public sealed interface Result<T, E extends Throwable> permits Result.Ok, Result.Err {
 
   /**
    * Try throwing operation and catch exception in result object.
@@ -37,7 +32,7 @@ public abstract class Result<T, E extends Throwable> {
    * @return Result
    */
   @SuppressWarnings("unchecked")
-  public static <T, E extends Throwable> Result<T, E> try_(ThrowingSupplier<T, E> f) {
+  static <T, E extends Throwable> Result<T, E> try_(ThrowingSupplier<T, E> f) {
     try {
       return new Ok<>(f.get());
     } catch (RuntimeException exp) {
@@ -55,7 +50,7 @@ public abstract class Result<T, E extends Throwable> {
    * @return Result
    */
   @SuppressWarnings("unchecked")
-  public static <E extends Throwable> Result<Void, E> try_(ThrowingCallable<E> f) {
+  static <E extends Throwable> Result<Void, E> try_(ThrowingCallable<E> f) {
     try {
       f.call();
       return new Ok<>(null);
@@ -73,7 +68,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <T> Success type
    * @return Result
    */
-  public static <T> Result<T, IOException> tryIo(ThrowingSupplier<T, IOException> f) {
+  static <T> Result<T, IOException> tryIo(ThrowingSupplier<T, IOException> f) {
     try {
       return new Ok<>(f.get());
     } catch (IOException exp) {
@@ -87,7 +82,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param f Throwing procedure
    * @return Result
    */
-  public static Result<Void, IOException> tryIo(ThrowingCallable<IOException> f) {
+  static Result<Void, IOException> tryIo(ThrowingCallable<IOException> f) {
     try {
       f.call();
       return new Ok<>(null);
@@ -101,14 +96,14 @@ public abstract class Result<T, E extends Throwable> {
    *
    * @return {@code true} iff object holds a value
    */
-  public abstract boolean isOk();
+  boolean isOk();
 
   /**
    * Return whether object holds an error.
    *
    * @return {@code true} iff object holds an error
    */
-  public abstract boolean isErr();
+  boolean isErr();
 
   /**
    * Get value or throw containing exception.
@@ -116,7 +111,7 @@ public abstract class Result<T, E extends Throwable> {
    * @return value, if it exists
    * @throws E Throws exception iff object contains exception
    */
-  public abstract T get() throws E;
+  T get() throws E;
 
   /**
    * Unwrap result object.
@@ -125,7 +120,7 @@ public abstract class Result<T, E extends Throwable> {
    * @throws RuntimeException If object contains exception. {@link RuntimeException} wraps checked
    *                          exception.
    */
-  public abstract T unwrap();
+  T unwrap();
 
   /**
    * Get value or return a default value.
@@ -133,7 +128,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param defaultValue Default value when no value exists
    * @return Value or default value, iff no value exists
    */
-  public abstract T getOr(T defaultValue);
+  T getOr(T defaultValue);
 
   /**
    * Get value or use return value of supplier function.
@@ -141,7 +136,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param f Supplier function
    * @return Value or return value of supplier function, iff no value exists
    */
-  public abstract T getOrElse(Supplier<T> f);
+  T getOrElse(Supplier<T> f);
 
   /**
    * Transform value.
@@ -150,7 +145,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <U> New success type
    * @return Result with transformed value or original exception.
    */
-  public abstract <U> Result<U, E> map(Function<T, U> f);
+  <U> Result<U, E> map(Function<T, U> f);
 
   /**
    * Transform exception.
@@ -159,7 +154,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <F> New exception type
    * @return Result with transformed exception value or original value.
    */
-  public abstract <F extends Throwable> Result<T, F> mapErr(Function<E, F> f);
+  <F extends Throwable> Result<T, F> mapErr(Function<E, F> f);
 
   /**
    * Success state of result object.
@@ -167,7 +162,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <T> Success type
    * @param <E> Exception/Error type
    */
-  public static final class Ok<T, E extends Throwable> extends Result<T, E> {
+  final class Ok<T, E extends Throwable> implements Result<T, E> {
 
     private final T value;
 
@@ -244,7 +239,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <T> Success type
    * @param <E> Exception/Error type
    */
-  public static final class Err<T, E extends Throwable> extends Result<T, E> {
+  final class Err<T, E extends Throwable> implements Result<T, E> {
 
     private final E value;
 
@@ -327,7 +322,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <E> Exception type
    */
   @FunctionalInterface
-  public interface ThrowingSupplier<T, E extends Throwable> {
+  interface ThrowingSupplier<T, E extends Throwable> {
 
     /**
      * Call function.
@@ -344,7 +339,7 @@ public abstract class Result<T, E extends Throwable> {
    * @param <E> Exception type
    */
   @FunctionalInterface
-  public interface ThrowingCallable<E extends Throwable> {
+  interface ThrowingCallable<E extends Throwable> {
 
     /**
      * Call procedure.

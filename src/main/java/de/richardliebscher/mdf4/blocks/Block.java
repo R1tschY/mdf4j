@@ -9,5 +9,5 @@ public interface Block {
     BlockTypeId typeId();
     List<? extends Link<?>> links();
     List<Map.Entry<String, String>> content();
-    Link<Metadata> metadataLink();
+    Link<? extends Metadata> metadataLink();
 }

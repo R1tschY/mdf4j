@@ -3,6 +3,7 @@ package de.richardliebscher.mdf4.cli;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.Mdf4File;
 import de.richardliebscher.mdf4.blocks.Block;
+import de.richardliebscher.mdf4.blocks.BlockReader;
 import de.richardliebscher.mdf4.blocks.UnknownBlock;
 
 import java.io.IOException;
@@ -17,18 +18,18 @@ public class Info {
         final var filePath = Path.of(args[0]);
         try (var reader = Mdf4File.open(filePath);
              var writer = new OutputStreamWriter(System.out)) {
-            new BlockTreeWriter(reader, writer).writeTree(Link.nil(), reader.getHeader());
+            new BlockTreeWriter(reader.blockReader(), writer).writeTree(Link.nil(), reader.getHeader());
         }
     }
 
     private static class BlockTreeWriter {
-        private final Mdf4File reader;
+        private final BlockReader reader;
         private final Writer writer;
         private final Set<Link<?>> seen = new HashSet<>();
         private boolean[] last;
         private int level = 0;
 
-        private BlockTreeWriter(Mdf4File reader, Writer writer) {
+        private BlockTreeWriter(BlockReader reader, Writer writer) {
             this.reader = reader;
             this.writer = writer;
         }

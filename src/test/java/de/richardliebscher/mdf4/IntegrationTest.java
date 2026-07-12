@@ -105,8 +105,12 @@ public class IntegrationTest {
   }
 
   private static ByteBufferInput openMdf() throws IOException, URISyntaxException {
+    return openMdf("/primitives.mf4");
+  }
+
+  public static ByteBufferInput openMdf(String path) throws IOException, URISyntaxException {
     final var bytes = Files.readAllBytes(Path.of(
-        requireNonNull(IntegrationTest.class.getResource("/primitives.mf4")).toURI()));
+            requireNonNull(IntegrationTest.class.getResource(path)).toURI()));
     return new ByteBufferInput(ByteBuffer.wrap(bytes));
   }
 

@@ -16,10 +16,10 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(name = "HDComment")
+@XmlRootElement(name = "HDcomment")
 public class HeaderComment extends ElementBase {
   @XmlElement(name = "TX", required = true)
-  private String comment;
+  private String comment; // TODO: can be mixed content
 
   @XmlElement(name = "time_source")
   private String timeSource;

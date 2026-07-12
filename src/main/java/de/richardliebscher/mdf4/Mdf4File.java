@@ -5,9 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
-import de.richardliebscher.mdf4.blocks.BlockType;
-import de.richardliebscher.mdf4.blocks.HeaderBlock;
-import de.richardliebscher.mdf4.blocks.IdBlock;
+import de.richardliebscher.mdf4.blocks.*;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.exceptions.UnsupportedVersionException;
@@ -128,29 +126,10 @@ public class Mdf4File implements Closeable {
   }
 
   /**
-   * Read a low-level MDF block.
-   *
-   * <p>Block is maybe cached.</p>
-   *
-   * @param link Link
-   * @param type Parser for block type
-   * @return Block iff block is not NIL
-   * @throws IOException Failed to read
+   * @return low-level block read access.
    */
-  public <T> Optional<T> readBlock(Link<T> link, BlockType<T> type) throws IOException {
-    return link.resolve(type, ctx.getInput());
-  }
-
-  /**
-   * Read a low-level MDF block and never cache result.
-   *
-   * @param link Link
-   * @param type Parser for block type
-   * @return Block iff block is not NIL
-   * @throws IOException Failed to read
-   */
-  public <T> Optional<T> readBlockNonCache(Link<T> link, BlockType<T> type) throws IOException {
-    return link.resolveNonCached(type, ctx.getInput());
+  public BlockReader blockReader() {
+    return ctx;
   }
 
   /**

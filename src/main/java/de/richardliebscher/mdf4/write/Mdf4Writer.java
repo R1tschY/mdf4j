@@ -172,12 +172,12 @@ public class Mdf4Writer implements Closeable {
     writeBlockHeader(
         HeaderBlock.ID,
         new Links<>(
-            headerBlock.getFirstDataGroup().asLong(),
-            headerBlock.getFirstFileHistory(),
-            headerBlock.getFirstChannelHierarchy(),
-            headerBlock.getFirstAttachment(),
-            headerBlock.getFirstEventBlock(),
-            headerBlock.getComment().asLong()),
+                headerBlock.getFirstDataGroup().asLong(),
+                headerBlock.getFirstFileHistory().asLong(),
+                headerBlock.getFirstChannelHierarchy(),
+                headerBlock.getFirstAttachment(),
+                headerBlock.getFirstEventBlock(),
+                headerBlock.getComment().asLong()),
         32);
 
     input.write(headerBlock.getStartTime());

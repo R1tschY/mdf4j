@@ -13,6 +13,8 @@ import de.richardliebscher.mdf4.TimeStamp;
 import de.richardliebscher.mdf4.extract.read.Links;
 import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ import java.util.Optional;
 public final class HeaderBlock implements Block {
 
   private final Link<DataGroupBlock> firstDataGroup;
-  private final long firstFileHistory;
+  private final Link<FileHistoryBlock> firstFileHistory;
   private final long firstChannelHierarchy;
   private final long firstAttachment;
   private final long firstEventBlock;
@@ -56,10 +58,7 @@ public final class HeaderBlock implements Block {
 
   private HeaderBlock(ByteInput input) throws IOException {
     final var blockHeader = BlockHeader.parseExpecting(ID, input, 6, 24);
-    final var startTime = input.readI64();
-    final var tzOffsetMin = input.readI16();
-    final var dstOffsetMin = input.readI16();
-    final var timeFlags = input.readU8();
+    final var startTime = TimeStamp.parse(input);
     final var timeClass = input.readU8();
     final var flags = input.readU8();
     input.skip(1);
@@ -68,12 +67,12 @@ public final class HeaderBlock implements Block {
 
     final var links = blockHeader.getLinks();
     this.firstDataGroup = Link.of(links[0]);
-    this.firstFileHistory = links[1];
+    this.firstFileHistory = Link.of(links[1]);
     this.firstChannelHierarchy = links[2];
     this.firstAttachment = links[3];
     this.firstEventBlock = links[4];
     this.comment = Link.of(links[5]);
-    this.startTime = new TimeStamp(startTime, tzOffsetMin, dstOffsetMin, BitFlags.of(timeFlags, TimeFlag.class));
+    this.startTime = startTime;
     this.timeClass = Value.of(timeClass, TimeClass.class);
     this.headerFlags = BitFlags.of(flags, HeaderFlag.class);
     this.startAngleRad = startAngleRad;
@@ -82,6 +81,10 @@ public final class HeaderBlock implements Block {
 
   public LazyIoList<DataGroupBlock> getDataGroups(ByteInput input) {
     return () -> new DataGroupBlock.Iterator(firstDataGroup, input);
+  }
+
+  public LazyIoList<FileHistoryBlock> iterFileHistory(ByteInput input) {
+    return () -> new FileHistoryBlock.Iterator(firstFileHistory, input);
   }
 
   public Optional<Metadata> readComment(ByteInput input) throws IOException {
@@ -94,12 +97,12 @@ public final class HeaderBlock implements Block {
 
   public Optional<Double> getStartAngle() {
     return headerFlags.isSet(HeaderFlag.START_ANGLE_VALID) ? Optional.of(startAngleRad)
-        : Optional.empty();
+            : Optional.empty();
   }
 
   public Optional<Double> getStartDistance() {
     return headerFlags.isSet(HeaderFlag.START_DISTANCE_VALID) ? Optional.of(startDistanceM)
-        : Optional.empty();
+            : Optional.empty();
   }
 
   public static HeaderBlock parse(ByteInput input) throws IOException {
@@ -114,7 +117,7 @@ public final class HeaderBlock implements Block {
     return this.firstDataGroup;
   }
 
-  public long getFirstFileHistory() {
+  public Link<FileHistoryBlock> getFirstFileHistory() {
     return this.firstFileHistory;
   }
 
@@ -159,7 +162,7 @@ public final class HeaderBlock implements Block {
   public List<Link<?>> links() {
     return List.of(
             firstDataGroup,
-            Link.of(firstFileHistory),
+            firstFileHistory,
             Link.of(firstChannelHierarchy),
             Link.of(firstAttachment),
             Link.of(firstEventBlock),
@@ -186,7 +189,7 @@ public final class HeaderBlock implements Block {
   public static final class Builder {
 
     private Link<DataGroupBlock> firstDataGroup = Link.nil();
-    private long firstFileHistory = 0;
+    private Link<FileHistoryBlock> firstFileHistory = Link.nil();
     private long firstChannelHierarchy = 0;
     private long firstAttachment = 0;
     private long firstEventBlock = 0;
@@ -204,6 +207,11 @@ public final class HeaderBlock implements Block {
 
     public Builder firstDataGroup(Link<DataGroupBlock> firstDataGroup) {
       this.firstDataGroup = requireNonNull(firstDataGroup);
+      return this;
+    }
+
+    public Builder firstFileHistory(Link<FileHistoryBlock> firstFileHistory) {
+      this.firstFileHistory = requireNonNull(firstFileHistory);
       return this;
     }
 
@@ -235,7 +243,8 @@ public final class HeaderBlock implements Block {
     }
 
     public HeaderBlock build() {
-      return new HeaderBlock(this);
+      return new HeaderBlock(
+              this);
     }
   }
 

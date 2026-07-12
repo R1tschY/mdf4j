@@ -8,10 +8,8 @@ package de.richardliebscher.mdf4.internal;
 import static de.richardliebscher.mdf4.blocks.metadata.XmlConstants.MDF4_NAMESPACE;
 
 import de.richardliebscher.mdf4.Link;
-import de.richardliebscher.mdf4.blocks.Metadata;
+import de.richardliebscher.mdf4.blocks.*;
 import de.richardliebscher.mdf4.blocks.Metadata.Visitor;
-import de.richardliebscher.mdf4.blocks.MetadataBlock;
-import de.richardliebscher.mdf4.blocks.TextBlock;
 import de.richardliebscher.mdf4.cache.Cache;
 import de.richardliebscher.mdf4.exceptions.FormatException;
 import de.richardliebscher.mdf4.extract.read.Scope;
@@ -36,7 +34,7 @@ import javax.xml.stream.events.XMLEvent;
 import javax.xml.stream.util.StreamReaderDelegate;
 import lombok.Getter;
 
-public class FileContext implements Closeable {
+public class FileContext implements Closeable, BlockReader {
 
   @Getter
   private final ByteInput input;
@@ -57,6 +55,14 @@ public class FileContext implements Closeable {
     });
 
     this.fileScope.add(input);
+  }
+
+  public <T> Optional<T> readBlock(Link<T> link, BlockType<T> type) throws IOException {
+    return link.resolve(type, input);
+  }
+
+  public <T> Optional<T> readBlockNonCache(Link<T> link, BlockType<T> type) throws IOException {
+    return link.resolveNonCached(type, input);
   }
 
   public XMLStreamReader newXmlParser(String content) {

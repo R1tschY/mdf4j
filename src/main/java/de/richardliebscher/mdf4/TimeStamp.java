@@ -9,6 +9,7 @@ import de.richardliebscher.mdf4.blocks.BitFlags;
 import de.richardliebscher.mdf4.blocks.TimeFlag;
 import de.richardliebscher.mdf4.blocks.WriteData;
 import de.richardliebscher.mdf4.extract.de.Unsigned;
+import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.ReadWrite;
 import java.io.IOException;
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
@@ -190,11 +192,50 @@ public final class TimeStamp implements WriteData {
     }
   }
 
+  /**
+   * Parse from bytes.
+   *
+   * @param input the input bytes
+   * @return parsed timestamp
+   */
+  public static TimeStamp parse(ByteInput input) throws IOException {
+    final var nanos = input.readI64();
+    final var tzOffsetMin = input.readI16();
+    final var dstOffsetMin = input.readI16();
+    final var timeFlags = input.readU8();
+    return new TimeStamp(nanos, tzOffsetMin, dstOffsetMin, BitFlags.of(timeFlags, TimeFlag.class));
+  }
+
   @Override
   public void write(ReadWrite input) throws IOException {
     input.write(time);
     input.write((short) timeZoneOffsetMin);
     input.write((short) dstOffsetMin);
     input.write(timeFlags.asByte());
+  }
+
+  @Override
+  public String toString() {
+    return "TimeStamp{" +
+            "time=" + time +
+            ", timeZoneOffsetMin=" + timeZoneOffsetMin +
+            ", dstOffsetMin=" + dstOffsetMin +
+            ", timeFlags=" + timeFlags +
+            '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) return false;
+    TimeStamp timeStamp = (TimeStamp) o;
+    return time == timeStamp.time
+            && timeZoneOffsetMin == timeStamp.timeZoneOffsetMin
+            && dstOffsetMin == timeStamp.dstOffsetMin
+            && Objects.equals(timeFlags, timeStamp.timeFlags);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(time, timeZoneOffsetMin, dstOffsetMin, timeFlags);
   }
 }

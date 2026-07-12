@@ -6,13 +6,17 @@
 package de.richardliebscher.mdf4.blocks;
 
 import de.richardliebscher.mdf4.exceptions.FormatException;
+import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.util.Map;
+
 import lombok.Value;
 
 @Value
 public class BlockHeader {
 
+  int blockTypeId;
   long length;
   long[] links;
 
@@ -25,7 +29,21 @@ public class BlockHeader {
     if (id.asInt() != typeId) {
       throw newWrongBlockTypeException(id, typeId);
     }
+    return parse(typeId, input);
+  }
 
+  public static BlockHeader parse(ByteInput input) throws IOException {
+    final var typeId = input.readI32();
+    final byte hash1 = (byte) (typeId & 0xFF);
+    final byte hash2 = (byte) ((typeId >> 8) & 0xFF);
+    if (hash1 != '#' || hash2 != '#') {
+      throw new FormatException(String.format(
+              "Block type does not start with '##', got %02x%02x", hash1, hash2));
+    }
+    return parse(typeId, input);
+  }
+
+  private static BlockHeader parse(int typeId, ByteInput input) throws IOException {
     input.skip(4); // padding
     final var length = input.readI64();
     final var linkCount = input.readI64();
@@ -34,7 +52,7 @@ public class BlockHeader {
     for (int i = 0; i < linkCount; i++) {
       links[i] = input.readI64();
     }
-    return new BlockHeader(length, links);
+    return new BlockHeader(typeId, length, links);
   }
 
   private static FormatException newWrongBlockTypeException(BlockTypeId expected, int typeId) {

@@ -11,7 +11,7 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-public interface Metadata {
+public sealed interface Metadata permits TextBlock, MetadataBlock {
 
   static Metadata parse(ByteInput input) throws IOException {
     final var blockId = BlockTypeId.peekParse(input);

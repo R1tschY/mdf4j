@@ -15,7 +15,7 @@ public final class BlockTypeId {
 
   private final int id;
 
-  private BlockTypeId(int id) {
+  BlockTypeId(int id) {
     this.id = id;
   }
 

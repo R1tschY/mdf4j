@@ -37,9 +37,8 @@ public final class Links<E> implements Serializable, List<Link<E>> {
 
   @Override
   public boolean contains(Object o) {
-    if (o instanceof Long) {
-      final long other = (Long) o;
-      return Arrays.stream(links).anyMatch(l -> l == other);
+    if (o instanceof Link<?> link) {
+      return Arrays.stream(links).anyMatch(l -> l == link.asLong());
     }
     return false;
   }
@@ -67,7 +66,7 @@ public final class Links<E> implements Serializable, List<Link<E>> {
   }
 
   @Override
-  public <T> T[] toArray(T @NonNull [] a) {
+  public <T> @NonNull T @NonNull [] toArray(T @NonNull [] a) {
     throw new UnsupportedOperationException();
   }
 

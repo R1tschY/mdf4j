@@ -10,14 +10,18 @@ import static java.util.Objects.requireNonNull;
 import de.richardliebscher.mdf4.LazyIoList;
 import de.richardliebscher.mdf4.Link;
 import de.richardliebscher.mdf4.TimeStamp;
+import de.richardliebscher.mdf4.extract.read.Links;
+import de.richardliebscher.mdf4.internal.Pair;
 import de.richardliebscher.mdf4.io.ByteInput;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Header/HD-Block.
  */
-public final class HeaderBlock {
+public final class HeaderBlock implements Block {
 
   private final Link<DataGroupBlock> firstDataGroup;
   private final long firstFileHistory;
@@ -144,6 +148,39 @@ public final class HeaderBlock {
 
   public BitFlags<HeaderFlag> getHeaderFlags() {
     return this.headerFlags;
+  }
+
+  @Override
+  public BlockTypeId typeId() {
+    return ID;
+  }
+
+  @Override
+  public List<Link<?>> links() {
+    return List.of(
+            firstDataGroup,
+            Link.of(firstFileHistory),
+            Link.of(firstChannelHierarchy),
+            Link.of(firstAttachment),
+            Link.of(firstEventBlock),
+            comment
+    );
+  }
+
+  @Override
+  public List<Map.Entry<String, String>> content() {
+    return List.of(
+            Pair.of("startTime", startTime.toString()),
+            Pair.of("timeClass", timeClass.toString()),
+            Pair.of("flags", headerFlags.toString()),
+            Pair.of("startAngleRad", String.valueOf(startAngleRad)),
+            Pair.of("startDistanceM", String.valueOf(startDistanceM))
+    );
+  }
+
+  @Override
+  public Link<Metadata> metadataLink() {
+    return comment;
   }
 
   public static final class Builder {

@@ -5,6 +5,7 @@
 
 package de.richardliebscher.mdf4;
 
+import de.richardliebscher.mdf4.blocks.BlockType;
 import de.richardliebscher.mdf4.blocks.HeaderBlock;
 import de.richardliebscher.mdf4.blocks.IdBlock;
 import de.richardliebscher.mdf4.exceptions.ChannelGroupNotFoundException;
@@ -22,6 +23,7 @@ import de.richardliebscher.mdf4.extract.impl.RecordReaderFactory;
 import de.richardliebscher.mdf4.internal.FileContext;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.FileInput;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLInputFactory;
+
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
@@ -57,7 +60,7 @@ public class Mdf4File implements Closeable {
   }
 
   /**
-   * Get HD-Block.
+   * Get low-level HD-Block.
    *
    * @return HD-Block
    */
@@ -125,6 +128,32 @@ public class Mdf4File implements Closeable {
   }
 
   /**
+   * Read a low-level MDF block.
+   *
+   * <p>Block is maybe cached.</p>
+   *
+   * @param link Link
+   * @param type Parser for block type
+   * @return Block iff block is not NIL
+   * @throws IOException Failed to read
+   */
+  public <T> Optional<T> readBlock(Link<T> link, BlockType<T> type) throws IOException {
+    return link.resolve(type, ctx.getInput());
+  }
+
+  /**
+   * Read a low-level MDF block and never cache result.
+   *
+   * @param link Link
+   * @param type Parser for block type
+   * @return Block iff block is not NIL
+   * @throws IOException Failed to read
+   */
+  public <T> Optional<T> readBlockNonCache(Link<T> link, BlockType<T> type) throws IOException {
+    return link.resolveNonCached(type, ctx.getInput());
+  }
+
+  /**
    * Get measurement start time.
    *
    * @return measurement start time
@@ -164,7 +193,7 @@ public class Mdf4File implements Closeable {
    */
   @Deprecated(since = "0.3", forRemoval = true)
   public <B, R> SizedRecordReader<B, R> newRecordReader(
-      RecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
+          RecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createFor(ctx, getDataGroups(), factory);
   }
 
@@ -180,10 +209,10 @@ public class Mdf4File implements Closeable {
    * @throws IOException                   Unable to create record reader
    */
   public <R> SizedRecordReader<R, R> newRecordReader(
-      GroupPredicate predicate,
-      @NonNull ChannelDeFactory<R> deFactory,
-      @NonNull Supplier<R> recordFactory)
-      throws ChannelGroupNotFoundException, IOException {
+          GroupPredicate predicate,
+          @NonNull ChannelDeFactory<R> deFactory,
+          @NonNull Supplier<R> recordFactory)
+          throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory.createFor(ctx, getDataGroups(), new RecordFactory<>() {
       @Override
       public boolean selectGroup(DataGroup dataGroup, ChannelGroup group) throws IOException {
@@ -192,7 +221,7 @@ public class Mdf4File implements Closeable {
 
       @Override
       public DeserializeInto<R> selectChannel(DataGroup dataGroup, ChannelGroup group,
-          Channel channel) throws IOException {
+                                              Channel channel) throws IOException {
         return deFactory.createDeserialization(dataGroup, group, channel);
       }
 
@@ -220,11 +249,11 @@ public class Mdf4File implements Closeable {
    * @throws IOException                   Unable to create record reader
    */
   public <R> SizedRecordReader<R, R> newRecordReader(
-      @NonNull String channelGroupName, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
-      throws ChannelGroupNotFoundException, IOException {
+          @NonNull String channelGroupName, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
+          throws ChannelGroupNotFoundException, IOException {
     return newRecordReader(
-        (dg, cg) -> channelGroupName.equals(cg.getName().orElse(null)),
-        deFactory, recordFactory);
+            (dg, cg) -> channelGroupName.equals(cg.getName().orElse(null)),
+            deFactory, recordFactory);
   }
 
   /**
@@ -239,18 +268,18 @@ public class Mdf4File implements Closeable {
    * @throws IOException                   Unable to create record reader
    */
   public <R> SizedRecordReader<R, R> newRecordReader(
-      int channelGroupIndex, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
-      throws ChannelGroupNotFoundException, IOException {
+          int channelGroupIndex, ChannelDeFactory<R> deFactory, Supplier<R> recordFactory)
+          throws ChannelGroupNotFoundException, IOException {
     return newRecordReader(
-        new GroupPredicate() {
-          private int index = 0;
+            new GroupPredicate() {
+              private int index = 0;
 
-          @Override
-          public boolean test(DataGroup dataGroup, ChannelGroup channelGroup) {
-            return channelGroupIndex == ++index;
-          }
-        },
-        deFactory, recordFactory);
+              @Override
+              public boolean test(DataGroup dataGroup, ChannelGroup channelGroup) {
+                return channelGroupIndex == ++index;
+              }
+            },
+            deFactory, recordFactory);
   }
 
   /**
@@ -272,10 +301,10 @@ public class Mdf4File implements Closeable {
    * @throws IOException                   Unable to create record reader
    */
   public <B, R> Stream<Result<R, IOException>> streamRecords(
-      SerializableRecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
+          SerializableRecordFactory<B, R> factory) throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory
-        .createParallelFor(ctx, getDataGroups(), factory)
-        .stream();
+            .createParallelFor(ctx, getDataGroups(), factory)
+            .stream();
   }
 
   /**
@@ -294,11 +323,11 @@ public class Mdf4File implements Closeable {
    * @see #attachRecordReader
    */
   public <B, R> List<DetachedRecordReader<B, R>> splitRecordReaders(int parts,
-      SerializableRecordFactory<B, R> factory)
-      throws ChannelGroupNotFoundException, IOException {
+                                                                    SerializableRecordFactory<B, R> factory)
+          throws ChannelGroupNotFoundException, IOException {
     return RecordReaderFactory
-        .createParallelFor(ctx, getDataGroups(), factory)
-        .splitIntoDetached(parts);
+            .createParallelFor(ctx, getDataGroups(), factory)
+            .splitIntoDetached(parts);
   }
 
   /**
@@ -312,7 +341,7 @@ public class Mdf4File implements Closeable {
    * @return Reader for deserialized records
    */
   public <B, R> RecordReader<B, R> attachRecordReader(DetachedRecordReader<B, R> reader)
-      throws IOException {
+          throws IOException {
     return reader.attach(ctx);
   }
 

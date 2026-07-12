@@ -6,6 +6,7 @@
 package de.richardliebscher.mdf4;
 
 import de.richardliebscher.mdf4.blocks.BlockType;
+import de.richardliebscher.mdf4.blocks.UnknownBlock;
 import de.richardliebscher.mdf4.blocks.WriteData;
 import de.richardliebscher.mdf4.io.ByteInput;
 import de.richardliebscher.mdf4.io.ReadWrite;
@@ -134,5 +135,15 @@ public final class Link<T> implements Serializable, WriteData {
   @Override
   public void write(ReadWrite input) throws IOException {
     input.write(link);
+  }
+
+  /**
+   * Cast to unknown block link.
+   *
+   * @return the link to cast
+   */
+  @SuppressWarnings("unchecked")
+  public Link<UnknownBlock> asUnknown() {
+    return (Link<UnknownBlock>) this;
   }
 }
